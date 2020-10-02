@@ -35,7 +35,7 @@ remnants = ["bumpalo"]
 
 [dependencies]
 bumpalo = { version = "3.1.2", optional = true }
-derivative = { version = "1.0.3", optional = true }
+derivative = { version = "2.1.1", optional = true }
 
 [dev-dependencies]
 cargo-husky = "1.5.0"
