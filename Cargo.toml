@@ -1,0 +1,17 @@
+[package]
+name = "lignin"
+version = "0.0.0"
+authors = ["Tamme Schichler <tamme@schichler.dev>"]
+edition = "2018"
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bumpalo = { version = "3.1.2", optional = true }
+derivative = { version = "1.0.3", optional = true }
+
+[features]
+bumpalo-collections = ["bumpalo/collections"]
+debug = ["derivative"]
+remnants = ["bumpalo"]
