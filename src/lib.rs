@@ -1,6 +1,13 @@
 #![forbid(unsafe_code)]
+#![doc(html_root_url = "https://docs.rs/lignin/0.0.1")]
+#![warn(clippy::pedantic)]
 
 use core::any::Any;
+
+#[cfg(doctest)]
+pub mod readme {
+	doc_comment::doctest!("../README.md");
+}
 
 #[cfg(feature = "bumpalo")]
 pub use bumpalo;
@@ -58,5 +65,5 @@ impl<'a: 'b, 'b> From<&'a Element<'a>> for Node<'b> {
 impl<'a: 'b, 'b> From<&'a mut Element<'a>> for Node<'b> {
     fn from(element: &'a mut Element<'a>) -> Self {
         Self::Element(element)
-    }
+	}
 }

@@ -1,17 +1,44 @@
 [package]
 name = "lignin"
-version = "0.0.0"
+version = "0.0.1"
 authors = ["Tamme Schichler <tamme@schichler.dev>"]
 edition = "2018"
+description = "A virtual DOM structure, primarily for web use."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/Tamschi/lignin"
+homepage = "https://github.com/Tamschi/lignin/tree/v0.0.1"
+documentation = "https://docs.rs/lignin/0.0.1"
+keywords = ["VDOM", "tree"]
+categories = ["data-structures"]
+readme = "README.md"
+include = [
+	"**/*.rs",
+	"!tests/unincluded_*.rs", # Tests of meta data files not included in the package.
+	"Cargo.toml",
+	"CHANGELOG.md",
+	"CODE_OF_CONDUCT.md",
+	"LICENSE-*",
+	"README.md",
+]
 publish = false
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-bumpalo = { version = "3.1.2", optional = true }
-derivative = { version = "1.0.3", optional = true }
+[badges]
+travis-ci = { repository = "Tamschi/lignin", branch = "develop" }
+is-it-maintained-issue-resolution = { repository = "Tamschi/lignin" }
+is-it-maintained-open-issues = { repository = "Tamschi/lignin" }
+maintenance = { status = "experimental" }
 
 [features]
 bumpalo-collections = ["bumpalo/collections"]
 debug = ["derivative"]
 remnants = ["bumpalo"]
+
+[dependencies]
+bumpalo = { version = "3.1.2", optional = true }
+derivative = { version = "1.0.3", optional = true }
+
+[dev-dependencies]
+cargo-husky = "1.5.0"
+doc-comment = "0.3.3"
+git_info = "0.1.2"
+version-sync = "0.9.1"

@@ -1,0 +1,28 @@
+language: rust
+rust:
+  - 1.40.0
+  - stable
+  - beta
+  - nightly
+stages:
+  - ensure format
+  - deny warnings
+  - test
+script:
+  - cargo +$TRAVIS_RUST_VERSION test --verbose
+jobs:
+  include:
+    - stage: ensure format
+      if: branch = develop
+      script:
+        - rustup toolchain install nightly --profile minimal --component rustfmt
+        - cargo +nightly fmt -- --check
+    - stage: deny warnings
+      if: branch = develop
+      script:
+        - rustup component add clippy
+        - RUSTFLAGS='-D warnings' cargo build --all-targets
+  allow_failures:
+    - rust: nightly
+  fast_finish: true
+cache: cargo
