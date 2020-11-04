@@ -32,4 +32,4 @@ jobs:
   allow_failures:
     - rust: nightly
   fast_finish: true
-cache: cargo
+# cache: cargo # The cache's size makes the CI time out.
