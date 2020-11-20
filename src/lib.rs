@@ -9,16 +9,13 @@ pub mod readme {
 	doc_comment::doctest!("../README.md");
 }
 
-#[cfg(feature = "bumpalo")]
 pub use bumpalo;
 
 #[cfg(feature = "debug")]
 use {core::fmt::Debug, derivative::Derivative};
 
-#[cfg(feature = "remnants")]
 pub mod remnants;
 
-#[cfg(feature = "remnants")]
 use remnants::RemnantSite;
 
 #[non_exhaustive]
@@ -30,7 +27,6 @@ pub enum Node<'a> {
 	Ref(&'a Node<'a>),
 	Multi(&'a [Node<'a>]),
 	Text(&'a str),
-	#[cfg(feature = "remnants")]
 	RemnantSite(&'a RemnantSite<'a>),
 }
 

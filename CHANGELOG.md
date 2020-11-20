@@ -2,7 +2,10 @@
 
 ## next
 
-- Fixed Travis configuration
+* **Breaking:**
+  * Removed "bumpalo" and "remnants" features (always enabled now)
+* Revisions:
+  * Fixed Travis configuration
 
 ## 0.0.1
 
