@@ -1,13 +1,13 @@
 [package]
 name = "lignin"
-version = "0.0.1"
+version = "0.0.2"
 authors = ["Tamme Schichler <tamme@schichler.dev>"]
 edition = "2018"
 description = "A virtual DOM structure, primarily for web use."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Tamschi/lignin"
-homepage = "https://github.com/Tamschi/lignin/tree/v0.0.1"
-documentation = "https://docs.rs/lignin/0.0.1"
+homepage = "https://github.com/Tamschi/lignin/tree/v0.0.2"
+documentation = "https://docs.rs/lignin/0.0.2"
 keywords = ["VDOM", "tree"]
 categories = ["data-structures"]
 readme = "README.md"
@@ -30,10 +30,9 @@ maintenance = { status = "experimental" }
 [features]
 bumpalo-collections = ["bumpalo/collections"]
 debug = ["derivative"]
-remnants = ["bumpalo"]
 
 [dependencies]
-bumpalo = { version = "3.1.2", optional = true }
+bumpalo = "3.1.2" # public
 derivative = { version = "2.1.1", optional = true }
 
 [dev-dependencies]

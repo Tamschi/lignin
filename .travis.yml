@@ -10,7 +10,7 @@ stages:
   - test
 script:
   - cargo +$TRAVIS_RUST_VERSION test --verbose
-  - cargo +$TRAVIS_RUST_VERSION test --features bumpalo-collections--verbose
+  - cargo +$TRAVIS_RUST_VERSION test --features bumpalo-collections --verbose
   - cargo +$TRAVIS_RUST_VERSION test --features debug --verbose
   - cargo +$TRAVIS_RUST_VERSION test --features remnants --verbose
   - cargo +$TRAVIS_RUST_VERSION test --features "bumpalo-collections debug" --verbose
@@ -32,4 +32,4 @@ jobs:
   allow_failures:
     - rust: nightly
   fast_finish: true
-cache: cargo
+# cache: cargo # The cache's size makes the CI time out.

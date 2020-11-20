@@ -1,4 +1,4 @@
-#![doc(html_root_url = "https://docs.rs/lignin/0.0.1")]
+#![doc(html_root_url = "https://docs.rs/lignin/0.0.2")]
 #![forbid(unsafe_code)]
 #![warn(clippy::pedantic)]
 
@@ -9,16 +9,13 @@ pub mod readme {
 	doc_comment::doctest!("../README.md");
 }
 
-#[cfg(feature = "bumpalo")]
 pub use bumpalo;
 
 #[cfg(feature = "debug")]
 use {core::fmt::Debug, derivative::Derivative};
 
-#[cfg(feature = "remnants")]
 pub mod remnants;
 
-#[cfg(feature = "remnants")]
 use remnants::RemnantSite;
 
 #[non_exhaustive]
@@ -30,7 +27,6 @@ pub enum Node<'a> {
 	Ref(&'a Node<'a>),
 	Multi(&'a [Node<'a>]),
 	Text(&'a str),
-	#[cfg(feature = "remnants")]
 	RemnantSite(&'a RemnantSite<'a>),
 }
 

@@ -20,7 +20,6 @@ pub struct RemnantRenderCallback(
 	pub Box<dyn FnOnce(&'_ Bump) -> Result<RemnantState<'_>, Box<dyn Error>>>,
 );
 
-#[cfg(feature = "remnants")]
 pub enum RemnantState<'a> {
 	Bound(&'a Node<'a>, Option<RemnantRenderCallback>),
 	Vanished,
