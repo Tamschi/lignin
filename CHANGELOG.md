@@ -1,6 +1,8 @@
 # lignin Changelog
 
-## next
+## 0.0.2
+
+2020-11-20
 
 * **Breaking:**
   * Removed "bumpalo" and "remnants" features (always enabled now)
