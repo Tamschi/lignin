@@ -1,5 +1,7 @@
 # lignin Changelog
 
+<!-- markdownlint-disable no-trailing-punctuation -->
+
 ## 0.0.2
 
 2020-11-20

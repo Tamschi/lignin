@@ -19,15 +19,16 @@ jobs:
         # github.ref is useless on pull requests.
         # github.head_ref only exists on pull requests.
         ref: ${{ github.head_ref || github.ref }}
-      
+
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: nightly
         profile: minimal
         components: rustfmt
-    - run: cargo +nightly fmt
-      
-    - uses: Tamschi/git-auto-commit-action@v4.7.2
+    - run: cat CI.toml >> Cargo.toml
+    - run: cargo +nightly fmt --all
+
+    - uses: Tamschi/git-auto-commit-action@v4.8.0
       with:
         commit_message: Automatic formatting commit (cargo +nightly fmt)
         file_pattern: '**/*.rs'
