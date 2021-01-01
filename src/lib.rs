@@ -1,4 +1,4 @@
-#![doc(html_root_url = "https://docs.rs/lignin/0.0.2")]
+#![doc(html_root_url = "https://docs.rs/lignin/0.0.3")]
 #![forbid(unsafe_code)]
 #![warn(clippy::pedantic)]
 

@@ -2,9 +2,9 @@
 
 <!-- markdownlint-disable no-trailing-punctuation -->
 
-## next
+## 0.0.3
 
-TODO: Date
+2021-01-01
 
 * **Breaking:**
   * `EventBinding.handler` is a `Pin<Rc<dyn Fn(&dyn Any) + 'a>>` now.
