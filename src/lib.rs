@@ -1,8 +1,9 @@
-#![doc(html_root_url = "https://docs.rs/lignin/0.0.2")]
+#![doc(html_root_url = "https://docs.rs/lignin/0.0.3")]
 #![forbid(unsafe_code)]
 #![warn(clippy::pedantic)]
 
 use core::any::Any;
+use std::{pin::Pin, rc::Rc};
 
 #[cfg(doctest)]
 pub mod readme {
@@ -43,7 +44,7 @@ pub struct Element<'a> {
 pub struct EventBinding<'a> {
 	pub name: &'a str,
 	pub context: &'a dyn Any,
-	pub handler: &'a (dyn Fn(&dyn Any) + 'a),
+	pub handler: Pin<Rc<dyn Fn(&dyn Any) + 'a>>,
 }
 
 #[derive(Clone, Copy)]

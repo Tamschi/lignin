@@ -1,5 +1,14 @@
 # lignin Changelog
 
+<!-- markdownlint-disable no-trailing-punctuation -->
+
+## 0.0.3
+
+2021-01-01
+
+* **Breaking:**
+  * `EventBinding.handler` is a `Pin<Rc<dyn Fn(&dyn Any) + 'a>>` now.
+
 ## 0.0.2
 
 2020-11-20

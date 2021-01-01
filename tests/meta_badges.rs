@@ -64,8 +64,9 @@ fn build_status() {
 	version_sync::assert_contains_regex!(
 		"README.md",
 		&format!(
-			r"^\[!\[Build Status\]\(https://travis-ci\.com/{0}/{{name}}\.svg\?branch={1}\)\]\(https://travis-ci.com/{0}/{{name}}/branches\)$",
-			USER, BRANCH,
+			r"^\[!\[CI\]\(https://github\.com/{user}/{{name}}/workflows/CI/badge\.svg\?branch={branch}\)\]\(https://github\.com/{user}/{{name}}/actions\?query=workflow%3ACI\+branch%3A{branch}\)$",
+			user = USER,
+			branch = BRANCH,
 		)
 	);
 }
