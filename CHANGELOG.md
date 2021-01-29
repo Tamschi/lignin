@@ -2,6 +2,11 @@
 
 <!-- markdownlint-disable no-trailing-punctuation -->
 
+## 0.0.4
+
+* **Breaking:**
+  * Fixed `bumpalo` at `"~3.4.0"` due to minor version Rust version requirement bumps.
+
 ## 0.0.3
 
 2021-01-01
