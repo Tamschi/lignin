@@ -4,6 +4,8 @@
 
 ## 0.0.4
 
+2021-01-29
+
 * **Breaking:**
   * Fixed `bumpalo` at `"~3.4.0"` due to minor version Rust version requirement bumps.
 
