@@ -1,13 +1,13 @@
 [package]
 name = "lignin"
-version = "0.0.3"
+version = "0.0.4"
 authors = ["Tamme Schichler <tamme@schichler.dev>"]
 edition = "2018"
 description = "A virtual DOM structure, primarily for web use."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Tamschi/lignin"
-homepage = "https://github.com/Tamschi/lignin/tree/v0.0.3"
-documentation = "https://docs.rs/lignin/0.0.3"
+homepage = "https://github.com/Tamschi/lignin/tree/v0.0.4"
+documentation = "https://docs.rs/lignin/0.0.4"
 keywords = ["VDOM", "tree"]
 categories = ["data-structures"]
 readme = "README.md"
