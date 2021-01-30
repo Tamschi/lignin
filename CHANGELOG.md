@@ -2,9 +2,9 @@
 
 <!-- markdownlint-disable no-trailing-punctuation -->
 
-## next
+## 0.0.5
 
-TODO: Date
+2021-01-30
 
 * **Breaking:**
   * Upgraded `bumpalo` dependency from ~3.4.0 to ~3.6.0
