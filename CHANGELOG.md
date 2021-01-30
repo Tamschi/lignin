@@ -2,6 +2,16 @@
 
 <!-- markdownlint-disable no-trailing-punctuation -->
 
+## next
+
+TODO: Date
+
+* **Breaking:**
+  * Upgraded `bumpalo` dependency from ~3.4.0 to ~3.6.0
+    > to use fallible allocation downstream in Asteracea.
+  * Increased minimum Rust version from 1.40.0 to 1.44.0
+    > to upgrade bumpalo.
+
 ## 0.0.4
 
 2021-01-29
