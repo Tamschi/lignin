@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/Tamschi/lignin"
 homepage = "https://github.com/Tamschi/lignin/tree/v0.0.5"
 documentation = "https://docs.rs/lignin/0.0.5"
-keywords = ["VDOM", "tree"]
+keywords = ["VDOM", "tree", "no_std"]
 categories = ["data-structures"]
 readme = "README.md"
 include = [
@@ -28,12 +28,12 @@ is-it-maintained-open-issues = { repository = "Tamschi/lignin" }
 maintenance = { status = "experimental" }
 
 [features]
-bumpalo-collections = ["bumpalo/collections"]
-debug = ["derivative"]
+"callbacks" = []
+"default" = ["callbacks"]
 
 [dependencies]
-bumpalo = "~3.6.0" # public, minor version rustc bumps
-derivative = { version = "2.1.1", optional = true }
+lazy_static = "1.4.0"
+web-sys = { version = "0.3.47", features = ["Comment", "Event", "HtmlElement", "Text"] }
 
 [dev-dependencies]
 cargo-husky = "1.5.0"

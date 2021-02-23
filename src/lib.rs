@@ -1,38 +1,43 @@
 #![doc(html_root_url = "https://docs.rs/lignin/0.0.5")]
-#![forbid(unsafe_code)]
 #![warn(clippy::pedantic)]
-
-use core::any::Any;
-use std::{pin::Pin, rc::Rc};
+//TODO: web-sys, annoyingly, makes this moot and also pulls in a number of proc macro dependencies.
+// There should be some way to not depend on it at all when not needed, and to make the `"callbacks"` feature not default.
+// (Replace `Option<web_sys::Comment>` with an always-thereto-convertible `DomRef<Comment>` that's an empty enum without `"callbacks"`?)
+#![no_std]
 
 #[cfg(doctest)]
 pub mod readme {
 	doc_comment::doctest!("../README.md");
 }
 
-pub use bumpalo;
-
-#[cfg(feature = "debug")]
-use {core::fmt::Debug, derivative::Derivative};
+mod callback_registry;
+pub use callback_registry::*;
 
 pub mod remnants;
 
 use remnants::RemnantSite;
 
 #[non_exhaustive]
-#[derive(Clone, Copy)]
-#[cfg_attr(feature = "debug", derive(Debug))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Node<'a> {
-	Comment(&'a str),
-	Element(&'a Element<'a>),
+	Comment {
+		comment: &'a str,
+		dom_binding: Option<CallbackRef<Option<web_sys::Comment>>>,
+	},
+	Element {
+		element: &'a Element<'a>,
+		dom_binding: Option<CallbackRef<Option<web_sys::HtmlElement>>>,
+	},
 	Ref(&'a Node<'a>),
 	Multi(&'a [Node<'a>]),
-	Text(&'a str),
-	RemnantSite(&'a RemnantSite<'a>),
+	Text {
+		text: &'a str,
+		dom_binding: Option<CallbackRef<Option<web_sys::Text>>>,
+	},
+	RemnantSite(&'a RemnantSite),
 }
 
-#[cfg_attr(feature = "debug", derive(Derivative))]
-#[cfg_attr(feature = "debug", derivative(Debug))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Element<'a> {
 	pub name: &'a str,
 	pub attributes: &'a [Attribute<'a>],
@@ -41,13 +46,13 @@ pub struct Element<'a> {
 	pub event_bindings: &'a [EventBinding<'a>],
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EventBinding<'a> {
 	pub name: &'a str,
-	pub context: &'a dyn Any,
-	pub handler: Pin<Rc<dyn Fn(&dyn Any) + 'a>>,
+	pub callback: CallbackRef<web_sys::Event>,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "debug", derive(Debug))]
 pub struct Attribute<'a> {
 	pub name: &'a str,
@@ -56,12 +61,18 @@ pub struct Attribute<'a> {
 
 impl<'a: 'b, 'b> From<&'a Element<'a>> for Node<'b> {
 	fn from(element: &'a Element<'a>) -> Self {
-		Self::Element(element)
+		Self::Element {
+			element,
+			dom_binding: None,
+		}
 	}
 }
 
 impl<'a: 'b, 'b> From<&'a mut Element<'a>> for Node<'b> {
 	fn from(element: &'a mut Element<'a>) -> Self {
-		Self::Element(element)
+		Self::Element {
+			element,
+			dom_binding: None,
+		}
 	}
 }
