@@ -135,7 +135,7 @@ pub struct CallbackRegistration<'a, R, T> {
 	phantom: PhantomData<(&'a R, fn(T))>,
 }
 impl<'a, R, T> CallbackRegistration<'a, R, T> {
-	pub fn new(receiver: Pin<&'_ R>, handler: fn(*const R, T)) -> Self
+	pub fn new(receiver: Pin<&'_ R>, handler: fn(receiver: *const R, parameter: T)) -> Self
 	where
 		R: 'a,
 	{
