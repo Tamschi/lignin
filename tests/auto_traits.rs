@@ -1,6 +1,5 @@
 use lignin::{CallbackRegistration, Node};
-use static_assertions::assert_impl_all;
-use static_assertions::assert_not_impl_any;
+use static_assertions::{assert_impl_all, assert_not_impl_any};
 
 assert_not_impl_any!(Node: Send, Sync);
 
