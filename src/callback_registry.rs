@@ -1,12 +1,26 @@
-use core::{marker::PhantomData, num::NonZeroU64, pin::Pin};
+//! You probably don't need to use this directly. Callback registry plumbing.
+
+use core::{
+	hash::{Hash, Hasher},
+	marker::{PhantomData, PhantomPinned},
+	num::NonZeroU64,
+	pin::Pin,
+};
 
 #[cfg(feature = "callbacks")]
 mod callbacks_on {
 	extern crate std;
 
 	use super::CallbackRegistration;
-	use core::{marker::PhantomData, mem, num::NonZeroU64, pin::Pin};
+	use core::{
+		convert::TryInto,
+		marker::{PhantomData, PhantomPinned},
+		mem,
+		num::NonZeroU64,
+		pin::Pin,
+	};
 	use lazy_static::lazy_static;
+	use mem::size_of_val;
 	use std::{collections::HashMap, sync::RwLock};
 
 	lazy_static! {
@@ -32,10 +46,10 @@ mod callbacks_on {
 		handler_address: usize,
 	}
 
-	pub fn register<'a, R: 'a, T>(
+	pub fn register<R, T>(
 		receiver: Pin<&'_ R>,
 		handler: fn(*const R, T),
-	) -> CallbackRegistration<'a, R, T> {
+	) -> CallbackRegistration<R, T> {
 		let mut registry = REGISTRY.write().unwrap();
 		if registry.key_count == u64::MAX {
 			drop(registry);
@@ -66,6 +80,7 @@ mod callbacks_on {
 			CallbackRegistration {
 				key,
 				phantom: PhantomData,
+				pinned: PhantomPinned,
 			}
 		}
 	}
@@ -90,25 +105,39 @@ mod callbacks_on {
 			invoke_typed(entry.receiver_address, entry.handler_address, parameter)
 		}
 	}
+
+	/// Indicates how exhausted the global callback registry is on a linear scale, with `0` indicating no or very low exhaustion and `255` indicating almost complete or complete exhaustion.
+	#[must_use]
+	pub fn registry_exhaustion() -> u8 {
+		let registry = REGISTRY.read().unwrap();
+		(registry.key_count >> ((size_of_val(&registry.key_count) - 1) * 8))
+			.try_into()
+			.unwrap()
+	}
 }
 
 #[allow(dead_code)]
 #[allow(clippy::let_underscore_drop)]
 #[allow(clippy::needless_pass_by_value)]
 mod callbacks_off {
-	use core::{marker::PhantomData, num::NonZeroU64, pin::Pin};
+	use core::{
+		marker::{PhantomData, PhantomPinned},
+		num::NonZeroU64,
+		pin::Pin,
+	};
 
 	use super::CallbackRegistration;
 
-	pub fn register<'a, R: 'a, T>(
+	pub fn register<R, T>(
 		receiver: Pin<&'_ R>,
 		handler: fn(*const R, T),
-	) -> CallbackRegistration<'a, R, T> {
+	) -> CallbackRegistration<R, T> {
 		let _ = receiver;
 		let _ = handler;
 		CallbackRegistration {
 			key: NonZeroU64::new(u64::MAX).unwrap(),
 			phantom: PhantomData::default(),
+			pinned: PhantomPinned,
 		}
 	}
 
@@ -120,6 +149,12 @@ mod callbacks_off {
 		let _ = key;
 		let _ = parameter;
 	}
+
+	/// Indicates how exhausted the global callback registry is on a linear scale, with `0` indicating no or very low exhaustion and `255` indicating almost complete or complete exhaustion.
+	#[must_use]
+	pub fn registry_exhaustion() -> u8 {
+		0
+	}
 }
 
 #[cfg(feature = "callbacks")]
@@ -128,17 +163,32 @@ use callbacks_on as callbacks;
 #[cfg(not(feature = "callbacks"))]
 use callbacks_off as callbacks;
 
+/// A callback registration handle that should be held onto by the matching receiver `R` or a container with [pin-projection](https://doc.rust-lang.org/stable/core/pin/index.html#pinning-is-structural-for-field) towards that value.
+///
+/// [`CallbackRegistration`] is [`!Unpin`](`Unpin`) for convenience: A receiver correctly becomes [`!Unpin`](`Unpin`) if it contains for example a `Cell<Option<CallbackRegistration<R, T>>`¹⁻².
+///
+/// - - -
+///
+/// 1. [`impl<T: ?Sized> Unpin for Cell<T> where T: Unpin`](`core::cell::Cell`#impl-Unpin)
+/// 2. [`impl<T> Unpin for Option<T> where T: Unpin`](`core::option::Option`#impl-Unpin)
 #[allow(clippy::type_complexity)]
 #[derive(Debug)]
-pub struct CallbackRegistration<'a, R, T> {
+pub struct CallbackRegistration<R, T> {
 	key: NonZeroU64,
-	phantom: PhantomData<(&'a R, fn(T))>,
+	phantom: PhantomData<(*const R, fn(T))>,
+	pinned: PhantomPinned,
 }
-impl<'a, R, T> CallbackRegistration<'a, R, T> {
-	pub fn new(receiver: Pin<&'_ R>, handler: fn(receiver: *const R, parameter: T)) -> Self
-	where
-		R: 'a,
-	{
+impl<R, T> CallbackRegistration<R, T> {
+	/// Creates a new [`CallbackRegistration<R, T>`] with the given `receiver` and `handler`.
+	///
+	/// # Safety
+	///
+	/// **The `receiver` pointer given to `handler` may dangle unless `receiver` remains pinned until the created [`CallbackRegistration`] is dropped.**
+	///
+	/// You can ensure this most easily by storing the latter in for example a `Cell<Option<CallbackRegistration>>` embedded in the `receiver`.
+	///
+	/// Dropping the [`CallbackRegistration`] instance prevents any further calls to `handler` through it.
+	pub fn new(receiver: Pin<&'_ R>, handler: fn(receiver: *const R, parameter: T)) -> Self {
 		callbacks::register(receiver, handler)
 	}
 
@@ -147,14 +197,21 @@ impl<'a, R, T> CallbackRegistration<'a, R, T> {
 		self.into()
 	}
 }
-impl<'a, R, T> Drop for CallbackRegistration<'a, R, T> {
+impl<R, T> Drop for CallbackRegistration<R, T> {
 	fn drop(&mut self) {
 		callbacks::deregister(self)
 	}
 }
 
-impl<'a, R, T> From<&CallbackRegistration<'a, R, T>> for CallbackRef<T> {
-	fn from(registration: &CallbackRegistration<'a, R, T>) -> Self {
+// SAFETY: [`CallbackRegistration`] only refers to a `*const R`, so it acts like `&R` for thread-safety.
+//
+// Without the `"callbacks"` feature, that pointer is actually unreachable, so this type *could* be more generally `Send` and `Sync`.
+// However, since a CallbackRegistration is intended to be primarily handled by the matching `R` instance, this isn't done in order to retain consistency.
+unsafe impl<R, T> Send for CallbackRegistration<R, T> where R: Sync {}
+unsafe impl<R, T> Sync for CallbackRegistration<R, T> where R: Sync {}
+
+impl<R, T> From<&CallbackRegistration<R, T>> for CallbackRef<T> {
+	fn from(registration: &CallbackRegistration<R, T>) -> Self {
 		Self {
 			key: registration.key,
 			phantom: PhantomData::default(),
@@ -163,19 +220,44 @@ impl<'a, R, T> From<&CallbackRegistration<'a, R, T>> for CallbackRef<T> {
 }
 
 #[allow(clippy::type_complexity)]
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug)]
 pub struct CallbackRef<T> {
 	key: NonZeroU64,
 	phantom: PhantomData<(*const (), fn(T))>, // Not Send or Sync!
 }
+
+impl<T> CallbackRef<T> {
+	pub fn call(self, parameter: T) {
+		callbacks::invoke(self.key, parameter)
+	}
+}
+
 impl<T> Clone for CallbackRef<T> {
 	fn clone(&self) -> Self {
 		*self
 	}
 }
 impl<T> Copy for CallbackRef<T> {}
-impl<T> CallbackRef<T> {
-	pub fn call(self, parameter: T) {
-		callbacks::invoke(self.key, parameter)
+impl<T> PartialEq for CallbackRef<T> {
+	fn eq(&self, other: &Self) -> bool {
+		self.key == other.key
 	}
 }
+impl<T> Eq for CallbackRef<T> {}
+impl<T> PartialOrd for CallbackRef<T> {
+	fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+		self.key.partial_cmp(&other.key)
+	}
+}
+impl<T> Ord for CallbackRef<T> {
+	fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+		self.key.cmp(&other.key)
+	}
+}
+impl<T> Hash for CallbackRef<T> {
+	fn hash<H: Hasher>(&self, state: &mut H) {
+		self.key.hash(state)
+	}
+}
+
+pub use callbacks::registry_exhaustion;

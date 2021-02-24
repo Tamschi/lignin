@@ -19,9 +19,21 @@ A virtual DOM structure, primarily for web use.
 
 Please use [cargo-edit](https://crates.io/crates/cargo-edit) to always add the latest version of this library:
 
+<!-- TODO: Make sure this works as expected. -->
+
 ```cmd
-cargo add lignin
+cargo add lignin && cargo add -D lignin --features callbacks
 ```
+
+Some type constraints are more strict with the `"callbacks"` feature enabled, so make sure to always check this way!  
+
+**When writing a renderer that supports callbacks**, instead use
+
+```cmd
+cargo add lignin --features callbacks
+```
+
+to always enable the feature.
 
 ## Example
 
