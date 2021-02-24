@@ -17,4 +17,5 @@ jobs:
         profile: minimal
         components: clippy
     - run: cat CI.toml >> Cargo.toml
+    - run: cargo +nightly clippy --workspace -- -D warnings
     - run: cargo +nightly clippy --workspace --all-features -- -D warnings
