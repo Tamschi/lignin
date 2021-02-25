@@ -103,7 +103,7 @@ impl FeatureNeeded {
 /// The extra trait is necessary because `Into` conflicts on `T: From<T>` and `Option<T>: From<T>`.
 ///
 /// **Warning**:
-
+///
 /// Without the `"callbacks"` feature, the stand-ins in this module implement [`Materialize`] for any target type!  
 /// Make sure to check if your package compiles with this feature enables, most easily by requiring it in the `[dev-dependencies]` section of your *Cargo.toml*.
 pub trait Materialize<T> {

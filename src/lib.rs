@@ -15,23 +15,24 @@ pub use callback_registry::{CallbackRef, CallbackRegistration};
 pub use web::Materialize;
 
 use remnants::RemnantSite;
+use web::DomRef;
 
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Node<'a> {
 	Comment {
 		comment: &'a str,
-		dom_binding: Option<CallbackRef<Option<web::Comment>>>,
+		dom_binding: Option<CallbackRef<DomRef<web::Comment>>>,
 	},
 	Element {
 		element: &'a Element<'a>,
-		dom_binding: Option<CallbackRef<Option<web::HtmlElement>>>,
+		dom_binding: Option<CallbackRef<DomRef<web::HtmlElement>>>,
 	},
 	Ref(&'a Node<'a>),
 	Multi(&'a [Node<'a>]),
 	Text {
 		text: &'a str,
-		dom_binding: Option<CallbackRef<Option<web::Text>>>,
+		dom_binding: Option<CallbackRef<DomRef<web::Text>>>,
 	},
 	RemnantSite(&'a RemnantSite),
 }
@@ -41,7 +42,6 @@ pub struct Element<'a> {
 	pub name: &'a str,
 	pub attributes: &'a [Attribute<'a>],
 	pub content: &'a [Node<'a>],
-	#[cfg_attr(feature = "debug", derivative(Debug = "ignore"))]
 	pub event_bindings: &'a [EventBinding<'a>],
 }
 
@@ -52,7 +52,6 @@ pub struct EventBinding<'a> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "debug", derive(Debug))]
 pub struct Attribute<'a> {
 	pub name: &'a str,
 	pub value: &'a str,
