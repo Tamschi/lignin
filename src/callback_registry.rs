@@ -1,6 +1,6 @@
 //! Callback registry plumbing, for renderers and apps that support them **and** need to run indefinitely.
 
-use crate::{ThreadSafety, ThreadBound, ThreadSafe};
+use crate::{ThreadBound, ThreadSafe, ThreadSafety};
 use core::{
 	hash::{Hash, Hasher},
 	marker::{PhantomData, PhantomPinned},
