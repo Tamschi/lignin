@@ -203,7 +203,7 @@ impl<R, T> Drop for CallbackRegistration<R, T> {
 	}
 }
 
-// SAFETY: [`CallbackRegistration`] only refers to a `*const R`, so it acts like `&R` for thread-safety.
+// SAFETY: `CallbackRegistration<R, T>` only refers to a `*const R`, so it acts like `&R` for thread-safety.
 //
 // Without the `"callbacks"` feature, that pointer is actually unreachable, so this type *could* be more generally `Send` and `Sync`.
 // However, since a CallbackRegistration is intended to be primarily handled by the matching `R` instance, this isn't done in order to retain consistency.
