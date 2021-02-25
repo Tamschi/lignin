@@ -4,17 +4,12 @@
 macro_rules! web_types {
 	{$(
 		$(#[$($attrs:tt)*])*
-		($container:ident$(<$($generics:ident),*$(,)?>)?, $container_str:literal) => ($contents:ty, $contents_str:literal, $contents_link:literal)
+		($container:ident$(<$($generics:ident),*$(,)?>)?, $container_str:literal) => $contents:ty
 	),*$(,)?} => {$(
-		//TODO: This doesn't quite render correctly.
-		/// Erasable stand-in for [`
-		#[doc = $contents_str]
-		/// `](
-		#[doc = $contents_link]
-		/// ) used as callback parameter.
+		// It's unfortunately not possible to puzzle the first line together like below, since it ends up cut off in the overview.
+		$(#[$($attrs)*])*
 		///
 		/// Use [`Materialize::materialize`] to convert it to the actual value.
-		$(#[$($attrs)*])*
 		#[cfg_attr(feature = "callbacks", repr(transparent))]
 		#[derive(Debug, Clone)]
 		pub struct $container$(<$($generics),*>)?(
@@ -43,13 +38,22 @@ macro_rules! web_types {
 }
 
 web_types! {
+	/// Erasable stand-in for [`Option<T>`](`Option`) used as callback parameter.
 	///
 	/// This type is used instead of [`Option<T>`] to also make the [`None`] variant erasable.
-	(DomRef<T>, "DomRef<T>") => (Option<T>, "Option<T>", "`Option`"),
-	(Comment, "Comment") => (web_sys::Comment, "web_sys::Comment", "https://docs.rs/web-sys/0.3/web_sys/struct.Comment.html"),
-	(Event, "Event") => (web_sys::Event, "web_sys::Event", "https://docs.rs/web-sys/0.3/web_sys/struct.Event.html"),
-	(HtmlElement, "HtmlElement") => (web_sys::HtmlElement, "web_sys::HtmlElement", "https://docs.rs/web-sys/0.3/web_sys/struct.HtmlElement.html"),
-	(Text, "Text") => (web_sys::Text, "web_sys::Text", "https://docs.rs/web-sys/0.3/web_sys/struct.Text.html"),
+	(DomRef<T>, "DomRef<T>") => Option<T>,
+
+	/// Erasable stand-in for [`web_sys::Comment`](https://docs.rs/web-sys/0.3/web_sys/struct.Comment.html) used as callback parameter.
+	(Comment, "Comment") => web_sys::Comment,
+
+	/// Erasable stand-in for [`web_sys::Event`](https://docs.rs/web-sys/0.3/web_sys/struct.Event.html) used as callback parameter.
+	(Event, "Event") => web_sys::Event,
+
+	/// Erasable stand-in for [`web_sys::HtmlElement`](https://docs.rs/web-sys/0.3/web_sys/struct.HtmlElement.html) used as callback parameter.
+	(HtmlElement, "HtmlElement") => web_sys::HtmlElement,
+
+	/// Erasable stand-in for [`web_sys::Text`](https://docs.rs/web-sys/0.3/web_sys/struct.Text.html) used as callback parameter.
+	(Text, "Text") => web_sys::Text,
 }
 
 macro_rules! conversions {
