@@ -28,6 +28,9 @@ TODO: Date
   * Event bindings are now both leak-safe and sound
   * VDOM producers can now subscribe to DOM Node reference updates
 
+* Revisions
+  * Run CI against Rust 1.44 instead of Rust 1.44.0 specifically
+
 ## 0.0.5
 
 2021-01-30
