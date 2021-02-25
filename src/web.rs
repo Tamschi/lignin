@@ -7,7 +7,7 @@
 ///
 /// # Implementation Contract
 ///
-/// **This is not a soundness contract**. Code using this type must not rely on it for soundness. However, it is free to panic when encountering an incorrect implementation.
+/// > **This is not a soundness contract**. Code using this type must not rely on it for soundness. However, it is free to panic when encountering an incorrect implementation.
 ///
 /// ## For VDOM-to-DOM renderers:
 ///
