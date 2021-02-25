@@ -20,10 +20,9 @@ pub mod remnants;
 pub mod web;
 
 pub use callback_registry::{CallbackRef, CallbackRegistration};
-pub use web::Materialize;
+pub use web::{DomRef, Materialize};
 
 use remnants::RemnantSite;
-use web::DomRef;
 
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
