@@ -6,7 +6,7 @@
 //!
 //! > **This is not a soundness contract**. Code using this crate must not rely on it for soundness. However, it is free to panic when encountering an incorrect implementation.
 //!
-//! The DOM may contain extra sibling past the nodes mentioned in the VDOM. Renderers must ignore them.
+//! The DOM may contain extra siblings past the nodes mentioned in the VDOM. Renderers must ignore them.
 //!
 //! Similarly, the DOM may contain extra attributes and event bindings. Renderers must ignore them unless attributes collide. Components must clean up the ones they have created on teardown.
 
