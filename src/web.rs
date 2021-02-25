@@ -1,23 +1,64 @@
 //! Erasable web type stand-ins used as callback parameters.
 #![allow(clippy::inline_always)]
 
+/// Used as DOM reference callback parameter. (Expand for implementation contract!)
+///
+/// When you receive a [`DomRef`] containing a stand-in type, use [`Materialize::materialize`] to convert it to the actual value.
+///
+/// # Implementation Contract
+///
+/// **This is not a soundness contract**. Code using this type must not rely on it for soundness. However, it is free to panic when encountering an incorrect implementation.
+///
+/// ## For VDOM-to-DOM renderers:
+///
+/// If a renderer invoked a callback with the [`Added`](`DomRef::Added`) variant, it **must** invoke it with the [`Removing`](`DomRef::Removing`) variant before destroying or reusing the relevant part of the DOM.
+///
+/// This includes cases where the identity of the `CallbackRef` or DOM node changes, in which case the new reference is [`Added`](`DomRef::Added`) after, in this order, [`Removing`](`DomRef::Removing`) the old reference and updating the relevant part(s) of the DOM.
+///
+/// ## For apps/VDOM renderers:
+///
+/// Tearing down and reconstructing the child DOM according to the current child VDOM must be possible at any time.
+///
+/// <!-- The above is a fairly strict constraint. It's here so that renderers aren't forced to (partially) double-buffer the VDOM, even if the current "default" renderer `lignin-dom` does so. -->
+///
+/// Please refer to the variant documentation for more inforation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum DomRef<T> {
+	/// When constructing the DOM, this variant is passed **after** all child elements have been processed and, if applicable, the element has been added to the document tree.
+	///
+	/// In particular, this means:
+	///
+	/// - Manipulating child elements is possible (but this can cause panics to occur later on if an incompatible child diff occurs).
+	/// - Traversing ancestors and their attributes should work.
+	/// - Scrolling the node into view and grabbing focus should work.
+	/// - **Any siblings and ancestor siblings may be in an indeterminate state at this point!**
+	Added(T),
+	/// When tearing down the DOM, this variant is passed **before** any child elements are processed and, if applicable, the element is removed from to the document tree.
+	///
+	/// In particular, this means:
+	///
+	/// - **Child elements must be restored to a clean state compatible with their VDOM here!**
+	/// - Traversing ancestors and their attributes should still work.
+	/// - **Any siblings and ancestor siblings may be in an indeterminate state at this point!**
+	Removing(T),
+}
+
 macro_rules! web_types {
 	{$(
 		$(#[$($attrs:tt)*])*
-		($container:ident$(<$($generics:ident),*$(,)?>)?, $container_str:literal) => $contents:ty
+		($container:ident, $container_str:literal) => $contents:ty
 	),*$(,)?} => {$(
 		// It's unfortunately not possible to puzzle the first line together like below, since it ends up cut off in the overview.
 		$(#[$($attrs)*])*
 		///
 		/// Use [`Materialize::materialize`] to convert it to the actual value.
-		#[cfg_attr(feature = "callbacks", repr(transparent))]
+		// #[cfg_attr(feature = "callbacks", repr(transparent))]
 		#[derive(Debug, Clone)]
-		pub struct $container$(<$($generics),*>)?(
+		pub struct $container(
 			#[cfg(feature = "callbacks")] $contents,
 			#[cfg(not(feature = "callbacks"))] FeatureNeeded,
-			$(#[cfg(not(feature = "callbacks"))] core::marker::PhantomData::<($($generics,)*)>,)?
 		);
-		impl$(<$($generics),*>)? $container$(<$($generics),*>)? {
+		impl $container {
 			/// Creates a new [`
 			#[doc = $container_str]
 			/// `] instance. The `"callbacks"` feature is required to use this function.
@@ -31,18 +72,13 @@ macro_rules! web_types {
 				#[cfg(feature = "callbacks")] value: $contents,
 				#[cfg(not(feature = "callbacks"))] value: FeatureNeeded,
 			) -> Self {
-				Self(value, $(#[cfg(not(feature = "callbacks"))] core::marker::PhantomData::<($($generics,)*)>)?)
+				Self(value)
 			}
 		}
 	)?};
 }
 
 web_types! {
-	/// Erasable stand-in for [`Option<T>`](`Option`) used as callback parameter.
-	///
-	/// This type is used instead of [`Option<T>`] to also make the [`None`] variant erasable.
-	(DomRef<T>, "DomRef<T>") => Option<T>,
-
 	/// Erasable stand-in for [`web_sys::Comment`](https://docs.rs/web-sys/0.3/web_sys/struct.Comment.html) used as callback parameter.
 	(Comment, "Comment") => web_sys::Comment,
 
@@ -62,6 +98,7 @@ macro_rules! conversions {
 	),*$(,)?} => {$(
 		#[cfg(feature = "callbacks")]
 		impl Materialize<$contents> for $container {
+			#[inline(always)] // No-op.
 			fn materialize(self) -> $contents {
 				self.0
 			}
@@ -69,6 +106,7 @@ macro_rules! conversions {
 
 		#[cfg(not(feature = "callbacks"))]
 		impl<AnyType> Materialize<AnyType> for $container {
+			#[inline(always)]
 			fn materialize(self) -> AnyType {
 				unreachable!()
 			}
@@ -76,10 +114,13 @@ macro_rules! conversions {
 	)*};
 }
 
-impl<T: Materialize<U>, U> Materialize<Option<U>> for DomRef<T> {
+impl<T: Materialize<U>, U> Materialize<DomRef<U>> for DomRef<T> {
 	#[inline(always)]
-	fn materialize(self) -> Option<U> {
-		self.0.map(<T as Materialize<U>>::materialize)
+	fn materialize(self) -> DomRef<U> {
+		match self {
+			Self::Added(added) => DomRef::Added(added.materialize()),
+			Self::Removing(removing) => DomRef::Removing(removing.materialize()),
+		}
 	}
 }
 
