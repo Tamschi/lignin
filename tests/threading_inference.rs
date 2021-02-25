@@ -1,58 +1,61 @@
 #![allow(dead_code)]
 
-use lignin::{Align, AutoNode, Deanonymize, Node};
+use lignin::{
+	auto::{Align, Auto, Deanonymize},
+	Node, ThreadBound,
+};
 
-fn threadsafe_empty() -> impl AutoNode<'static> {
-	Node::Multi(&[]).prefer_threadsafe()
+fn thread_safe_empty() -> impl Auto<Node<'static, ThreadBound>> {
+	Node::Multi(&[]).prefer_thread_safe()
 }
 
-fn thread_unsafe_empty() -> impl AutoNode<'static> {
-	Node::<*const ()>::Multi(&[]).prefer_threadsafe()
+fn thread_bound_empty() -> impl Auto<Node<'static, ThreadBound>> {
+	Node::<ThreadBound>::Multi(&[]).prefer_thread_safe()
 }
 
-fn infer_threadsafe() -> impl AutoNode<'static> {
-	Node::Multi(vec![threadsafe_empty().deanonymize()].leak())
+fn infer_thread_safe() -> impl Auto<Node<'static, ThreadBound>> {
+	Node::Multi(vec![thread_safe_empty().deanonymize()].leak())
 }
 
-fn infer_thread_unsafe() -> impl AutoNode<'static> {
-	Node::Multi(vec![thread_unsafe_empty().deanonymize()].leak())
+fn infer_thread_bound() -> impl Auto<Node<'static, ThreadBound>> {
+	Node::Multi(vec![thread_bound_empty().deanonymize()].leak())
 }
 
-fn forward_threadsafe() -> impl AutoNode<'static> {
-	threadsafe_empty().deanonymize()
+fn forward_thread_safe() -> impl Auto<Node<'static, ThreadBound>> {
+	thread_safe_empty().deanonymize()
 }
 
-fn forward_thread_unsafe() -> impl AutoNode<'static> {
-	thread_unsafe_empty().deanonymize()
+fn forward_thread_bound() -> impl Auto<Node<'static, ThreadBound>> {
+	thread_bound_empty().deanonymize()
 }
 
-fn safe() -> impl AutoNode<'static> {
+fn safe() -> impl Auto<Node<'static, ThreadBound>> {
 	Node::Multi(
 		vec![
-			threadsafe_empty().deanonymize().align(),
-			threadsafe_empty().deanonymize().align(),
+			thread_safe_empty().deanonymize().align(),
+			thread_safe_empty().deanonymize().align(),
 		]
 		.leak(),
 	)
-	.prefer_threadsafe()
+	.prefer_thread_safe()
 }
 
-fn unsafe_() -> impl AutoNode<'static> {
+fn bound_() -> impl Auto<Node<'static, ThreadBound>> {
 	Node::Multi(
 		vec![
-			thread_unsafe_empty().deanonymize().align(),
-			thread_unsafe_empty().deanonymize().align(),
+			thread_bound_empty().deanonymize().align(),
+			thread_bound_empty().deanonymize().align(),
 		]
 		.leak(),
 	)
-	.prefer_threadsafe()
+	.prefer_thread_safe()
 }
 
-fn mixed() -> impl AutoNode<'static> {
+fn mixed() -> impl Auto<Node<'static, ThreadBound>> {
 	Node::Multi(
 		vec![
-			threadsafe_empty().deanonymize().align(),
-			thread_unsafe_empty().deanonymize().align(),
+			thread_safe_empty().deanonymize().align(),
+			thread_bound_empty().deanonymize().align(),
 		]
 		.leak(),
 	)

@@ -15,32 +15,26 @@ pub mod readme {
 	doc_comment::doctest!("../README.md");
 }
 
+pub mod auto;
 pub mod callback_registry;
+#[doc(hidden)]
 pub mod remnants;
 pub mod web;
 
 pub use callback_registry::{CallbackRef, CallbackRegistration};
-use sealed::Sealed;
 pub use web::{DomRef, Materialize};
 
+use core::{fmt::Debug, hash::Hash, marker::PhantomData};
 use remnants::RemnantSite;
+use sealed::Sealed;
 
-mod sealed {
-	use crate::{Node, SendSyncness};
+//TODO: The derives emit bounds on S here, which aren't necessary but appear in the documentation.
+// It would be cleaner to explicitly implement all of these traits.
 
-	pub trait Sealed {}
-	impl Sealed for &() {}
-	impl Sealed for *const () {}
-	impl<'a, S: SendSyncness> Sealed for Node<'a, S> {}
-}
-
-pub trait SendSyncness: Sealed {}
-impl SendSyncness for &() {}
-impl SendSyncness for *const () {}
-
+/// `ThreadBindable`
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Node<'a, S: SendSyncness> {
+pub enum Node<'a, S: ThreadSafety> {
 	Comment {
 		comment: &'a str,
 		dom_binding: Option<CallbackRef<DomRef<web::Comment>, S>>,
@@ -55,85 +49,34 @@ pub enum Node<'a, S: SendSyncness> {
 		text: &'a str,
 		dom_binding: Option<CallbackRef<DomRef<web::Text>, S>>,
 	},
+	#[doc(hidden)]
 	RemnantSite(&'a RemnantSite),
 }
-pub trait AutoNode<'a>: Sealed {
-	fn deanonymize(&self) -> Node<'a, *const ()>;
-}
-impl<'a, S: SendSyncness> AutoNode<'a> for Node<'a, S> {
-	fn deanonymize(&self) -> Node<'a, *const ()> {
-		unsafe { *(self as *const _ as *const _) }
-	}
-}
-pub trait Deanonymize<'a> {
-	type Named;
-	fn deanonymize(self) -> Self::Named;
-}
-impl<'a, T> Deanonymize<'a> for T
-where
-	T: AutoNode<'a> + Send + Sync,
-{
-	type Named = Node<'a, &'static ()>;
-	#[must_use]
-	#[allow(clippy::inline_always)]
-	#[inline(always)] // No-op.
-	fn deanonymize(self) -> Self::Named {
-		unsafe { *(&self as *const _ as *const _) }
-	}
-}
-impl<'a> Node<'a, &()> {
-	#[must_use]
-	#[allow(clippy::inline_always)]
-	#[inline(always)] // No-op.
-	pub fn prefer_threadsafe(self) -> Self {
-		self
-	}
-}
-impl<'a> Node<'a, *const ()> {
-	#[must_use]
-	#[allow(clippy::inline_always)]
-	#[inline(always)] // No-op.
-	pub fn prefer_threadsafe(&self) -> Self {
-		*self
-	}
-}
-impl<'a> From<Node<'a, &()>> for Node<'a, *const ()> {
-	#[allow(clippy::inline_always)]
-	#[inline(always)] // No-op.
-	fn from(threadsafe: Node<'a, &()>) -> Self {
-		unsafe { *(&threadsafe as *const _ as *const _) }
-	}
-}
-pub trait Align<T>: Into<T> {
-	#[allow(clippy::inline_always)]
-	#[inline(always)]
-	fn align(self) -> T {
-		self.into()
-	}
-}
-impl<T: Into<U>, U> Align<U> for T {}
 
+/// `ThreadBindable`
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Element<'a, S: SendSyncness> {
+pub struct Element<'a, S: ThreadSafety> {
 	pub name: &'a str,
 	pub attributes: &'a [Attribute<'a>],
 	pub content: &'a [Node<'a, S>],
 	pub event_bindings: &'a [EventBinding<'a, S>],
 }
 
+/// `ThreadBindable`
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct EventBinding<'a, S: SendSyncness> {
+pub struct EventBinding<'a, S: ThreadSafety> {
 	pub name: &'a str,
 	pub callback: CallbackRef<web::Event, S>,
 }
 
+/// `ThreadBindable`
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Attribute<'a> {
 	pub name: &'a str,
 	pub value: &'a str,
 }
 
-impl<'a: 'b, 'b, S: SendSyncness> From<&'a Element<'a, S>> for Node<'b, S> {
+impl<'a: 'b, 'b, S: ThreadSafety> From<&'a Element<'a, S>> for Node<'b, S> {
 	fn from(element: &'a Element<'a, S>) -> Self {
 		Self::Element {
 			element,
@@ -142,7 +85,7 @@ impl<'a: 'b, 'b, S: SendSyncness> From<&'a Element<'a, S>> for Node<'b, S> {
 	}
 }
 
-impl<'a: 'b, 'b, S: SendSyncness> From<&'a mut Element<'a, S>> for Node<'b, S> {
+impl<'a: 'b, 'b, S: ThreadSafety> From<&'a mut Element<'a, S>> for Node<'b, S> {
 	fn from(element: &'a mut Element<'a, S>) -> Self {
 		Self::Element {
 			element,
@@ -150,3 +93,29 @@ impl<'a: 'b, 'b, S: SendSyncness> From<&'a mut Element<'a, S>> for Node<'b, S> {
 		}
 	}
 }
+
+mod sealed {
+	use super::{ThreadBound, ThreadSafe};
+
+	pub trait Sealed {}
+	impl Sealed for ThreadBound {}
+	impl Sealed for ThreadSafe {}
+}
+
+pub trait ThreadSafety:
+	Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord + Hash + Sealed
+{
+}
+
+/// [`ThreadSafety`] marker for `!Send + !Sync`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ThreadBound(PhantomData<*const ()>);
+/// [`ThreadSafety`] marker for `Send + Sync`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ThreadSafe(
+	/// The type here doesn't matter especially (as long as there's a private field to prevent construction),
+	/// but since the [`ThreadSafety`] types are stand-ins for references, I went with one that resembles that.
+	PhantomData<&'static ()>,
+);
+impl ThreadSafety for ThreadBound {}
+impl ThreadSafety for ThreadSafe {}
