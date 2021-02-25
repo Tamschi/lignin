@@ -3,7 +3,7 @@
 use core::{
 	hash::{Hash, Hasher},
 	marker::{PhantomData, PhantomPinned},
-	num::NonZeroU64,
+	num::NonZeroU32,
 	pin::Pin,
 };
 
@@ -16,7 +16,7 @@ mod callbacks_on {
 		convert::TryInto,
 		marker::{PhantomData, PhantomPinned},
 		mem,
-		num::NonZeroU64,
+		num::NonZeroU32,
 		pin::Pin,
 	};
 	use lazy_static::lazy_static;
@@ -28,8 +28,8 @@ mod callbacks_on {
 	}
 
 	struct Registry {
-		key_count: u64,
-		entries: HashMap<NonZeroU64, Entry>,
+		key_count: u32,
+		entries: HashMap<NonZeroU32, Entry>,
 	}
 	impl Default for Registry {
 		fn default() -> Self {
@@ -50,8 +50,8 @@ mod callbacks_on {
 		receiver: Pin<&'_ R>,
 		handler: fn(*const R, T),
 	) -> CallbackRegistration<R, T> {
-		let mut registry = REGISTRY.write().unwrap();
-		if registry.key_count == u64::MAX {
+		let mut registry = REGISTRY.write().expect("always Ok");
+		if registry.key_count == u32::MAX {
 			drop(registry);
 			panic!("[lignin] Callback registry keys exhausted")
 		} else {
@@ -65,7 +65,7 @@ mod callbacks_on {
 			}
 
 			registry.key_count += 1;
-			let key = NonZeroU64::new(registry.key_count).unwrap();
+			let key = NonZeroU32::new(registry.key_count).expect("always Some");
 			assert!(registry
 				.entries
 				.insert(
@@ -88,15 +88,15 @@ mod callbacks_on {
 	pub fn deregister<R, T>(registration: &CallbackRegistration<R, T>) {
 		let removed = REGISTRY
 			.write()
-			.unwrap()
+			.expect("always Ok")
 			.entries
 			.remove(&registration.key)
 			.is_some();
 		assert!(removed)
 	}
 
-	pub fn invoke<T>(key: NonZeroU64, parameter: T) {
-		let registry = REGISTRY.read().unwrap();
+	pub fn invoke<T>(key: NonZeroU32, parameter: T) {
+		let registry = REGISTRY.read().expect("always Ok");
 		if let Some(entry) = registry.entries.get(&key) {
 			let invoke_typed = unsafe {
 				// SAFETY: Same type as above.
@@ -109,10 +109,10 @@ mod callbacks_on {
 	/// Indicates how exhausted the global callback registry is on a linear scale, with `0` indicating no or very low exhaustion and `255` indicating almost complete or complete exhaustion.
 	#[must_use]
 	pub fn registry_exhaustion() -> u8 {
-		let registry = REGISTRY.read().unwrap();
+		let registry = REGISTRY.read().expect("always Ok");
 		(registry.key_count >> ((size_of_val(&registry.key_count) - 1) * 8))
 			.try_into()
-			.unwrap()
+			.expect("always Ok")
 	}
 }
 
@@ -122,7 +122,7 @@ mod callbacks_on {
 mod callbacks_off {
 	use core::{
 		marker::{PhantomData, PhantomPinned},
-		num::NonZeroU64,
+		num::NonZeroU32,
 		pin::Pin,
 	};
 
@@ -135,7 +135,7 @@ mod callbacks_off {
 		let _ = receiver;
 		let _ = handler;
 		CallbackRegistration {
-			key: NonZeroU64::new(u64::MAX).unwrap(),
+			key: NonZeroU32::new(u32::MAX).expect("always Ok"),
 			phantom: PhantomData::default(),
 			pinned: PhantomPinned,
 		}
@@ -145,7 +145,7 @@ mod callbacks_off {
 		let _ = registration;
 	}
 
-	pub fn invoke<T>(key: NonZeroU64, parameter: T) {
+	pub fn invoke<T>(key: NonZeroU32, parameter: T) {
 		let _ = key;
 		let _ = parameter;
 	}
@@ -174,7 +174,7 @@ use callbacks_off as callbacks;
 #[allow(clippy::type_complexity)]
 #[derive(Debug)]
 pub struct CallbackRegistration<R, T> {
-	key: NonZeroU64,
+	key: NonZeroU32,
 	phantom: PhantomData<(*const R, fn(T))>,
 	pinned: PhantomPinned,
 }
@@ -222,7 +222,7 @@ impl<R, T> From<&CallbackRegistration<R, T>> for CallbackRef<T> {
 #[allow(clippy::type_complexity)]
 #[derive(Debug)]
 pub struct CallbackRef<T> {
-	key: NonZeroU64,
+	key: NonZeroU32,
 	phantom: PhantomData<(*const (), fn(T))>, // Not Send or Sync!
 }
 
