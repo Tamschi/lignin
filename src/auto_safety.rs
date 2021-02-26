@@ -18,8 +18,8 @@
 //! >   Node, ThreadBound, ThreadSafe,
 //! > };
 //! >
-//! > fn safe<'a>() -> Node::<'a, ThreadSafe> { unreachable!(); }
-//! > fn bound<'a>() -> Node::<'a, ThreadBound> { unreachable!(); }
+//! > fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
+//! > fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
 //! > fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
 //! > fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! >
@@ -45,8 +45,8 @@
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { unreachable!(); }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { unreachable!(); }
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
 //! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
 //! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! #
@@ -72,8 +72,8 @@
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { unreachable!(); }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { unreachable!(); }
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
 //! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
 //! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! #
@@ -101,8 +101,8 @@
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { unreachable!(); }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { unreachable!(); }
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
 //! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
 //! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! #
@@ -133,8 +133,8 @@
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { unreachable!(); }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { unreachable!(); }
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
 //! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
 //! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! #
@@ -155,8 +155,8 @@
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { unreachable!(); }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { unreachable!(); }
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
 //! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
 //! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! #
@@ -183,8 +183,8 @@
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { unreachable!(); }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { unreachable!(); }
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
 //! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
 //! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! #
@@ -207,7 +207,58 @@
 //! # }
 //! ```
 //!
-//! You also have to do this to annotate the type of local variables:
+//! > You also have to do this to annotate the type of local variables…:
+//! >
+//! > ```
+//! > # use lignin::{
+//! > #   auto_safety::{AutoSafe, Deanonymize as _},
+//! > #   Node, ThreadBound, ThreadSafe,
+//! > # };
+//! > #
+//! > # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
+//! > # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
+//! > # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
+//! > # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! > #
+//! > # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! > #
+//! > # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
+//! > # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! > #
+//! > let safe_node: Node<_> = inferred_safe().deanonymize();
+//! > let bound_node: Node<_> = inferred_bound().deanonymize();
+//! > ```
+//! >
+//! > …or to specify a [`ThreadSafety`] in the return type:
+//! >
+//! > ```
+//! > # use lignin::{
+//! > #   auto_safety::{AutoSafe, Deanonymize as _},
+//! > #   Node, ThreadBound, ThreadSafe,
+//! > # };
+//! > #
+//! > # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
+//! > # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
+//! > # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
+//! > # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! > #
+//! > # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! > #
+//! > # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
+//! > # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! > #
+//! > fn strictly_safe<'a>() -> Node::<'a, ThreadSafe> {
+//! >   inferred_safe().deanonymize()
+//! > }
+//! >
+//! > fn strictly_bound<'a>() -> Node::<'a, ThreadBound> {
+//! >   inferred_bound().deanonymize()
+//! > }
+//! > ```
+//!
+//! #### Identity Cast
+//!
+//! Calling `.deanonymize()` on named types is valid but ultimately useless:
 //!
 //! ```
 //! # use lignin::{
@@ -215,8 +266,8 @@
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { unreachable!(); }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { unreachable!(); }
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
 //! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
 //! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! #
@@ -225,11 +276,18 @@
 //! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
 //! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
 //! #
-//! fn void() {
-//!   let safe_node: Node<_> = inferred_safe().deanonymize();
-//!   let bound_node: Node<_> = inferred_bound().deanonymize();
-//! }
+//! // warning:
+//! //   use of deprecated associated function `lignin::auto_safety::<impl lignin::Node<'a, S>>::deanonymize`:
+//! //   Call of `.deanonymize()` on named type.
+//! let safe_node: Node<ThreadSafe> = safe().deanonymize();
+//! //                                       ^^^^^^^^^^^
+//! let bound_node: Node<ThreadBound> = bound().deanonymize();
+//! //                                          ^^^^^^^^^^^
 //! ```
+//!
+//! Macros can suppress this warning by emitting the method call with [`Span::mixed_site()`](https://doc.rust-lang.org/stable/proc_macro/struct.Span.html#method.mixed_site) hygiene.
+//!
+//! <!-- TODO: Make sure that's actually the case. -->
 //!
 //! #### No Coercion
 //!
@@ -241,8 +299,8 @@
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { unreachable!(); }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { unreachable!(); }
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
 //! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
 //! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! #
@@ -251,9 +309,9 @@
 //! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
 //! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
 //! #
-//! fn safe_3<'a>() -> Node::<'a, ThreadSafe> {
-//! //                 ----------------------
-//! //                 expected `Node<'a, ThreadSafe>` because of return type
+//! fn attempt_safe<'a>() -> Node::<'a, ThreadSafe> {
+//! //                       ----------------------
+//! //                       expected `Node<'a, ThreadSafe>` because of return type
 //!   inferred_bound().deanonymize()
 //! //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected struct `ThreadSafe`, found struct `ThreadBound`
 //! //
@@ -268,8 +326,8 @@
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { unreachable!(); }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { unreachable!(); }
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
 //! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
 //! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! #
@@ -278,9 +336,9 @@
 //! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
 //! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
 //! #
-//! fn bound_3<'a>() -> Node::<'a, ThreadBound> {
-//! //                  -----------------------
-//! //                  expected `Node<'a, ThreadSafe>` because of return type
+//! fn attempt_bound<'a>() -> Node::<'a, ThreadBound> {
+//! //                        -----------------------
+//! //                        expected `Node<'a, ThreadSafe>` because of return type
 //!   inferred_safe().deanonymize()
 //! //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected struct `ThreadBound`, found struct `ThreadSafe`
 //! //
@@ -288,39 +346,6 @@
 //! //          found enum `Node<'_, ThreadSafe>`
 //! }
 //! ```
-//!
-//! #### Identity Cast
-//!
-//! Calling `.deanonymize()` on named types is valid but ultimately useless:
-//!
-//! ```
-//! # use lignin::{
-//! #   auto_safety::{AutoSafe, Deanonymize as _},
-//! #   Node, ThreadBound, ThreadSafe,
-//! # };
-//! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { unreachable!(); }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { unreachable!(); }
-//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
-//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
-//! #
-//! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
-//! #
-//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
-//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
-//! #
-//! fn void() {
-//!   // warning:
-//!   //   use of deprecated associated function `lignin::auto_safety::<impl lignin::Node<'a, S>>::deanonymize`:
-//!   //   Call of `.deanonymize()` on named type.
-//!   let safe_node: Node<ThreadSafe> = safe().deanonymize();
-//!   //                                       ^^^^^^^^^^^
-//!   let bound_node: Node<ThreadBound> = bound().deanonymize();
-//!   //                                          ^^^^^^^^^^^
-//! }
-//! ```
-//!
-//! Macros can suppress this warning by emitting the method call with [`Span::mixed_site()`](https://doc.rust-lang.org/stable/proc_macro/struct.Span.html#method.mixed_site) hygiene.
 //!
 //! # Alignment
 //!
