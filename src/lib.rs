@@ -103,7 +103,7 @@ mod sealed {
 }
 
 pub trait ThreadSafety:
-	Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord + Hash + Sealed
+	Sealed + Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord + Hash
 {
 }
 
