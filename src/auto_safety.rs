@@ -16,8 +16,10 @@ mod sealed {
 	pub trait ThreadBindable: Copy + Sized {}
 }
 
-/// Deanonymize towards the general ([`ThreadBound`]) case.
-pub trait Auto<ThreadBound>
+/// Deanonymize towards the general ([`ThreadBound`]) case. Used as e.g. `-> impl<AutoSafe<…>>`.
+///
+/// See module documentation for usage.
+pub trait AutoSafe<ThreadBound>
 where
 	Self: sealed::ThreadBindable,
 	ThreadBound: sealed::ThreadBindable,
@@ -33,17 +35,19 @@ where
 			// SAFETY:
 			// Under normal circumstances, this trait or method would have to be `unsafe`.
 			// However, we're ensuring only sound implementations exist by sealing it and carefully implementing it only across layout-compatible types.
-			*(self as *const _ as *const _)
+			*(self as *const Self).cast()
 		}
 	}
 }
 
 /// Deanonymize towards the special ([`ThreadSafe`]) case. **This trait must be in scope for correct inference!**
+///
+/// See module documentation for usage.
 pub trait Deanonymize<'a>: sealed::ThreadBindable + Send + Sync {
 	type ThreadSafe: sealed::ThreadBindable;
 	/// Deanonymize towards a compatible concrete type.
 	///
-	/// This method is by value, so it will resolve with higher priority than the by-reference method on [`Auto`].  
+	/// This method is by value, so it will resolve with higher priority than the by-reference method on [`AutoSafe`].  
 	/// Note that not all tooling will show the correct overload here, but the compiler knows which to pick.
 	#[must_use]
 	#[inline(always)] // No-op.
@@ -52,15 +56,15 @@ pub trait Deanonymize<'a>: sealed::ThreadBindable + Send + Sync {
 			// SAFETY:
 			// Under normal circumstances, this trait or method would have to be `unsafe`.
 			// However, we're ensuring only sound implementations exist by sealing it and carefully implementing it only across layout-compatible types.
-			*(&self as *const _ as *const _)
+			*(&self as *const Self).cast()
 		}
 	}
 }
 
 impl<'a, S: ThreadSafety> sealed::ThreadBindable for Node<'a, S> {}
 
-impl<'a, S: ThreadSafety> Auto<Node<'a, ThreadBound>> for Node<'a, S> {}
-impl<'a, T: Send + Sync + Auto<Node<'a, ThreadBound>>> Deanonymize<'a> for T {
+impl<'a, S: ThreadSafety> AutoSafe<Node<'a, ThreadBound>> for Node<'a, S> {}
+impl<'a, T: Send + Sync + AutoSafe<Node<'a, ThreadBound>>> Deanonymize<'a> for T {
 	type ThreadSafe = Node<'a, ThreadSafe>;
 }
 
@@ -90,13 +94,15 @@ impl<'a> From<Node<'a, ThreadSafe>> for Node<'a, ThreadBound> {
 	#[allow(clippy::inline_always)]
 	#[inline(always)] // No-op.
 	fn from(thread_safe: Node<'a, ThreadSafe>) -> Self {
-		unsafe { *(&thread_safe as *const _ as *const _) }
+		unsafe { *(&thread_safe as *const Node<'a, ThreadSafe>).cast() }
 	}
 }
 
 /// Contextually thread-binds an instance, or not. Use only without qualification.
 ///
 /// This trait acts as (i.e.: _is_) [`Into`] on and between thread-bindable types, but without raising `useless_conversion` warnings.
+///
+/// See module documentation for when to use this trait and when it's unnecessary.
 pub trait Align<T: sealed::ThreadBindable>: sealed::ThreadBindable
 where
 	Self: Into<T>,

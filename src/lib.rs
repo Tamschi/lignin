@@ -15,7 +15,7 @@ pub mod readme {
 	doc_comment::doctest!("../README.md");
 }
 
-pub mod auto;
+pub mod auto_safety;
 pub mod callback_registry;
 #[doc(hidden)]
 pub mod remnants;
