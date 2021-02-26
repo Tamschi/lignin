@@ -125,7 +125,7 @@
 //! # }
 //! ```
 //!
-//! each of these fails to compile:
+//! …each of these fails to compile:
 //!
 //! ```compile_fail
 //! # use lignin::{
@@ -276,13 +276,14 @@
 //! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
 //! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
 //! #
-//! // warning:
-//! //   use of deprecated associated function `lignin::auto_safety::<impl lignin::Node<'a, S>>::deanonymize`:
-//! //   Call of `.deanonymize()` on named type.
 //! let safe_node: Node<ThreadSafe> = safe().deanonymize();
 //! //                                       ^^^^^^^^^^^
 //! let bound_node: Node<ThreadBound> = bound().deanonymize();
 //! //                                          ^^^^^^^^^^^
+//! //
+//! // warning:
+//! //   use of deprecated associated function `lignin::auto_safety::<impl lignin::Node<'a, S>>::deanonymize`:
+//! //   Call of `.deanonymize()` on named type.
 //! ```
 //!
 //! Macros can suppress this warning by emitting the method call with [`Span::mixed_site()`](https://doc.rust-lang.org/stable/proc_macro/struct.Span.html#method.mixed_site) hygiene.
@@ -309,15 +310,13 @@
 //! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
 //! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
 //! #
-//! fn attempt_safe<'a>() -> Node::<'a, ThreadSafe> {
-//! //                       ----------------------
-//! //                       expected `Node<'a, ThreadSafe>` because of return type
-//!   inferred_bound().deanonymize()
-//! //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected struct `ThreadSafe`, found struct `ThreadBound`
+//! let safe_node: Node::<ThreadSafe> = inferred_bound().deanonymize();
+//! //             ------------------   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+//! //             |                    expected struct `ThreadSafe`, found struct `ThreadBound`
+//! //             expected due to this
 //! //
-//! // note: expected enum `Node<'a, ThreadSafe>`
+//! // note: expected enum `Node<'_, ThreadSafe>`
 //! //          found enum `Node<'_, ThreadBound>`
-//! }
 //! ```
 //!
 //! ```compile_fail
@@ -336,15 +335,13 @@
 //! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
 //! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
 //! #
-//! fn attempt_bound<'a>() -> Node::<'a, ThreadBound> {
-//! //                        -----------------------
-//! //                        expected `Node<'a, ThreadSafe>` because of return type
-//!   inferred_safe().deanonymize()
-//! //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected struct `ThreadBound`, found struct `ThreadSafe`
+//! let bound_node: Node::<ThreadBound> = inferred_safe().deanonymize();
+//! //              -------------------   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+//! //              |                     expected struct `ThreadBound`, found struct `ThreadSafe`
+//! //              expected due to this
 //! //
-//! // note: expected enum `Node<'a, ThreadBound>`
+//! // note: expected enum `Node<'_, ThreadBound>`
 //! //          found enum `Node<'_, ThreadSafe>`
-//! }
 //! ```
 //!
 //! # Alignment
