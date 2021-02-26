@@ -380,6 +380,7 @@ mod sealed {
 impl<'a, S: ThreadSafety> Node<'a, S> {
 	#[deprecated = "Call of `.deanonymize()` on named type."]
 	#[must_use]
+	#[inline(always)]
 	pub fn deanonymize(self) -> Self {
 		self
 	}
