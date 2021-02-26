@@ -24,6 +24,9 @@
 //! > fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! >
 //! > fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! > #
+//! > # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
+//! > # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
 //! > ```
 //! >
 //! > I recommend using [`bumpalo`](https://github.com/fitzgen/bumpalo) as VDOM allocator since it is fast and versatile, but `lignin` itself has no preference in this regard.
@@ -49,8 +52,16 @@
 //! #
 //! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
 //! #
+//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
+//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! #
 //! fn safe_1<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
 //! fn bound_1<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! #
+//! # fn assert() {
+//! #   assert_safe(safe_1().deanonymize());
+//! #   assert_bound(bound_1().deanonymize());
+//! # }
 //! ```
 //!
 //! …as well as ones where the original return type is inferred (opaque):
@@ -68,8 +79,16 @@
 //! #
 //! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
 //! #
+//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
+//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! #
 //! fn safe_2<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { inferred_safe() }
 //! fn bound_2<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { inferred_bound() }
+//! #
+//! # fn assert() {
+//! #   assert_safe(safe_2().deanonymize());
+//! #   assert_bound(bound_2().deanonymize());
+//! # }
 //! ```
 //!
 //! ## Deanonymization
@@ -89,6 +108,9 @@
 //! #
 //! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
 //! #
+//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
+//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! #
 //! fn safe_1<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> {
 //!   Node::Ref(allocate(safe()))
 //! }
@@ -96,9 +118,14 @@
 //! fn bound_1<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> {
 //!   Node::Ref(allocate(bound()))
 //! }
+//! #
+//! # fn assert() {
+//! #   assert_safe(safe_1().deanonymize());
+//! #   assert_bound(bound_1().deanonymize());
+//! # }
 //! ```
 //!
-//! …either of these fails to compile:
+//! each of these fails to compile:
 //!
 //! ```compile_fail
 //! # use lignin::{
@@ -112,6 +139,9 @@
 //! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! #
 //! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! #
+//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
+//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
 //! #
 //! fn safe_2<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> {
 //!   Node::Ref(allocate(inferred_safe()))
@@ -131,6 +161,9 @@
 //! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! #
 //! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! #
+//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
+//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
 //! #
 //! fn bound_2<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> {
 //!   Node::Ref(allocate(inferred_bound()))
@@ -157,6 +190,9 @@
 //! #
 //! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
 //! #
+//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
+//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! #
 //! fn safe_2<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> {
 //!   Node::Ref(allocate(inferred_safe().deanonymize()))
 //! }
@@ -164,7 +200,127 @@
 //! fn bound_2<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> {
 //!   Node::Ref(allocate(inferred_bound().deanonymize()))
 //! }
+//! #
+//! # fn assert() {
+//! #   assert_safe(safe_2().deanonymize());
+//! #   assert_bound(bound_2().deanonymize());
+//! # }
 //! ```
+//!
+//! You also have to do this to annotate the type of local variables:
+//!
+//! ```
+//! # use lignin::{
+//! #   auto_safety::{AutoSafe, Deanonymize as _},
+//! #   Node, ThreadBound, ThreadSafe,
+//! # };
+//! #
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { unreachable!(); }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { unreachable!(); }
+//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! #
+//! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! #
+//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
+//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! #
+//! fn void() {
+//!   let safe_node: Node<_> = inferred_safe().deanonymize();
+//!   let bound_node: Node<_> = inferred_bound().deanonymize();
+//! }
+//! ```
+//!
+//! #### No Coercion
+//!
+//! Calls to `.deanonymize()` can't be coerced, so each of the following fails to compile:
+//!
+//! ```compile_fail
+//! # use lignin::{
+//! #   auto_safety::{AutoSafe, Deanonymize as _},
+//! #   Node, ThreadBound, ThreadSafe,
+//! # };
+//! #
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { unreachable!(); }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { unreachable!(); }
+//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! #
+//! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! #
+//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
+//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! #
+//! fn safe_3<'a>() -> Node::<'a, ThreadSafe> {
+//! //                 ----------------------
+//! //                 expected `Node<'a, ThreadSafe>` because of return type
+//!   inferred_bound().deanonymize()
+//! //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected struct `ThreadSafe`, found struct `ThreadBound`
+//! //
+//! // note: expected enum `Node<'a, ThreadSafe>`
+//! //          found enum `Node<'_, ThreadBound>`
+//! }
+//! ```
+//!
+//! ```compile_fail
+//! # use lignin::{
+//! #   auto_safety::{AutoSafe, Deanonymize as _},
+//! #   Node, ThreadBound, ThreadSafe,
+//! # };
+//! #
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { unreachable!(); }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { unreachable!(); }
+//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! #
+//! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! #
+//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
+//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! #
+//! fn bound_3<'a>() -> Node::<'a, ThreadBound> {
+//! //                  -----------------------
+//! //                  expected `Node<'a, ThreadSafe>` because of return type
+//!   inferred_safe().deanonymize()
+//! //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected struct `ThreadBound`, found struct `ThreadSafe`
+//! //
+//! // note: expected enum `Node<'a, ThreadBound>`
+//! //          found enum `Node<'_, ThreadSafe>`
+//! }
+//! ```
+//!
+//! #### Identity Cast
+//!
+//! Calling `.deanonymize()` on named types is valid but ultimately useless:
+//!
+//! ```
+//! # use lignin::{
+//! #   auto_safety::{AutoSafe, Deanonymize as _},
+//! #   Node, ThreadBound, ThreadSafe,
+//! # };
+//! #
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { unreachable!(); }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { unreachable!(); }
+//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! #
+//! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! #
+//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
+//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! #
+//! fn void() {
+//!   // warning:
+//!   //   use of deprecated associated function `lignin::auto_safety::<impl lignin::Node<'a, S>>::deanonymize`:
+//!   //   Call of `.deanonymize()` on named type.
+//!   let safe_node: Node<ThreadSafe> = safe().deanonymize();
+//!   //                                       ^^^^^^^^^^^
+//!   let bound_node: Node<ThreadBound> = bound().deanonymize();
+//!   //                                          ^^^^^^^^^^^
+//! }
+//! ```
+//!
+//! Macros can suppress this warning by emitting the method call with [`Span::mixed_site()`](https://doc.rust-lang.org/stable/proc_macro/struct.Span.html#method.mixed_site) hygiene.
 //!
 //! # Alignment
 //!
@@ -180,6 +336,14 @@ mod sealed {
 	/// It's probably good to be a bit more specific in [`Align`](`super::Align`)'s signature, among others.
 	/// The bounds are necessary the default implementations in derived traits and also prevent their object-safety, which is good because that would at best only add useless dynamic dispatch overhead.
 	pub trait ThreadBindable: Copy + Sized {}
+}
+
+impl<'a, S: ThreadSafety> Node<'a, S> {
+	#[deprecated = "Call of `.deanonymize()` on named type."]
+	#[must_use]
+	pub fn deanonymize(self) -> Self {
+		self
+	}
 }
 
 /// Deanonymize towards the general ([`ThreadBound`]) case. Used as e.g. `-> impl<AutoSafe<…>>`.
@@ -235,7 +399,7 @@ impl<'a, T: Send + Sync + AutoSafe<Node<'a, ThreadBound>>> Deanonymize<'a> for T
 }
 
 impl<'a> Node<'a, ThreadSafe> {
-	/// Gently nudges the compiler to choose the thread-safe version of a value if either is possible.
+	/// Gently nudges the compiler to choose the thread-safe version of a value if both are possible.
 	///
 	/// This method is by value, so it will resolve with higher priority than the by-reference method on the thread-bound type.  
 	/// Note that not all tooling will show the correct overload here, but the compiler knows which to pick.
@@ -246,7 +410,7 @@ impl<'a> Node<'a, ThreadSafe> {
 	}
 }
 impl<'a> Node<'a, ThreadBound> {
-	/// Gently nudges the compiler to choose the thread-safe version of a value if either is possible.
+	/// Gently nudges the compiler to choose the thread-safe version of a value if both are is possible.
 	///
 	/// This method is by reference, so it will resolve with lower priority than the by-reference method on the thread-safe type.  
 	/// Note that not all tooling will show the correct overload here, but the compiler knows which to pick.
