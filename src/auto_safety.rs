@@ -1,12 +1,178 @@
-//! Transitive [`ThreadSafety`] inference, mainly for use by frameworks.
+//! Transitive (across function boundaries) [`ThreadSafety`] inference, mainly for use by frameworks.
 //!
 //! All methods in this module are always-inlined no-ops, meaning that there is zero runtime cost to them.
+#![allow(clippy::inline_always)]
 //!
-//! > This feature relies on opaque return types (`-> impl Trait`) leaking [`Send`] and [`Sync`], so the theoretical limit here, even after specialisation lands, are four distinct 'real' types with restrictions on conversion incompatibilities.
+//! > This feature relies on opaque return types (`-> impl Trait`) leaking [`Send`] and [`Sync`], so the theoretical limit here, even after specialization lands, are four distinct 'real' types with restrictions on conversion incompatibilities.
 //! > Fortunately, `lignin` only needs two of these slots with straightforward compatibility, the `!Send + !Sync` and the `Send + Sync` one.
 //! >
 //! > Please refer to the item documentation for implementation details.
-#![allow(clippy::inline_always)]
+//!
+//! # Examples / Usage
+//!
+//! > All examples share the following definitions:
+//! >
+//! > ```rust
+//! > use lignin::{
+//! >   auto_safety::{AutoSafe, Deanonymize as _}, // <-- Important!
+//! >   Node, ThreadBound, ThreadSafe,
+//! > };
+//! >
+//! > fn safe<'a>() -> Node::<'a, ThreadSafe> { unreachable!(); }
+//! > fn bound<'a>() -> Node::<'a, ThreadBound> { unreachable!(); }
+//! > fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
+//! > fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! >
+//! > fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! > ```
+//! >
+//! > I recommend using [`bumpalo`](https://github.com/fitzgen/bumpalo) as VDOM allocator since it is fast and versatile, but `lignin` itself has no preference in this regard.
+//!
+//! > In all examples and the above, [`Node`] can be replaced by any other `ThreadBindable` type.
+//!
+//! ## Basic Forwarding
+//!
+//! To mark the thread-safety of a function as inferred, return [`AutoSafe`] wrapping the [`ThreadBound`] version of the VDOM node you want to return.
+//!
+//! This works with manually-defined sources…:
+//!
+//! ```rust
+//! # use lignin::{
+//! #   auto_safety::{AutoSafe, Deanonymize as _},
+//! #   Node, ThreadBound, ThreadSafe,
+//! # };
+//! #
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { unreachable!(); }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { unreachable!(); }
+//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! #
+//! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! #
+//! fn safe_1<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
+//! fn bound_1<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! ```
+//!
+//! …as well as ones where the original return type is inferred (opaque):
+//!
+//! ```rust
+//! # use lignin::{
+//! #   auto_safety::{AutoSafe, Deanonymize as _},
+//! #   Node, ThreadBound, ThreadSafe,
+//! # };
+//! #
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { unreachable!(); }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { unreachable!(); }
+//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! #
+//! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! #
+//! fn safe_2<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { inferred_safe() }
+//! fn bound_2<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { inferred_bound() }
+//! ```
+//!
+//! ## Deanonymization
+//!
+//! Rust doesn't allow consumption of the inferred concrete return type of a function directly, so while the following works fine…:
+//!
+//! ```rust
+//! # use lignin::{
+//! #   auto_safety::{AutoSafe, Deanonymize as _},
+//! #   Node, ThreadBound, ThreadSafe,
+//! # };
+//! #
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { unreachable!(); }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { unreachable!(); }
+//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! #
+//! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! #
+//! fn safe_1<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> {
+//!   Node::Ref(allocate(safe()))
+//! }
+//!
+//! fn bound_1<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> {
+//!   Node::Ref(allocate(bound()))
+//! }
+//! ```
+//!
+//! …either of these fails to compile:
+//!
+//! ```compile_fail
+//! # use lignin::{
+//! #   auto_safety::{AutoSafe, Deanonymize as _},
+//! #   Node, ThreadBound, ThreadSafe,
+//! # };
+//! #
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { unreachable!(); }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { unreachable!(); }
+//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! #
+//! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! #
+//! fn safe_2<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> {
+//!   Node::Ref(allocate(inferred_safe()))
+//!   //                 ^^^^^^^^^^^^^^^ expected enum `Node`, found opaque type
+//! }
+//! ```
+//!
+//! ```compile_fail
+//! # use lignin::{
+//! #   auto_safety::{AutoSafe, Deanonymize as _},
+//! #   Node, ThreadBound, ThreadSafe,
+//! # };
+//! #
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { unreachable!(); }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { unreachable!(); }
+//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! #
+//! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! #
+//! fn bound_2<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> {
+//!   Node::Ref(allocate(inferred_bound()))
+//!   //                 ^^^^^^^^^^^^^^^^ expected enum `Node`, found opaque type
+//! }
+//! ```
+//!
+//! ### `.deanonymize()`
+//!
+//! Call `.deanonymize()` _without qualification_ on an opaquely-typed value to cast it to the underlying named type.
+//!
+//! This method resolves either through [`AutoSafe`] or [`Deanonymize`], so it's important for both traits to be in scope at the call site!
+//!
+//! ```
+//! # use lignin::{
+//! #   auto_safety::{AutoSafe, Deanonymize as _},
+//! #   Node, ThreadBound, ThreadSafe,
+//! # };
+//! #
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { unreachable!(); }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { unreachable!(); }
+//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! #
+//! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! #
+//! fn safe_2<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> {
+//!   Node::Ref(allocate(inferred_safe().deanonymize()))
+//! }
+//!
+//! fn bound_2<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> {
+//!   Node::Ref(allocate(inferred_bound().deanonymize()))
+//! }
+//! ```
+//!
+//! # Alignment
+//!
+//! TODO
+//!
+//! # [`ThreadSafe`] Preference
+//!
+//! TODO
 
 use crate::{Node, ThreadBound, ThreadSafe, ThreadSafety};
 
