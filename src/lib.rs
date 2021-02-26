@@ -9,6 +9,8 @@
 //! The DOM may contain extra siblings past the nodes mentioned in the VDOM. Renderers must ignore them.
 //!
 //! Similarly, the DOM may contain extra attributes and event bindings. Renderers must ignore them unless attributes collide. Components must clean up the ones they have created on teardown.
+//!
+//! See also the implementation contract on [`DomRef`].
 
 #[cfg(doctest)]
 pub mod readme {

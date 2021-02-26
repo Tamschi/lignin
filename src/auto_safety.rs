@@ -371,7 +371,7 @@ impl<'a, S: ThreadSafety> Node<'a, S> {
 	}
 }
 
-/// Deanonymize towards the general ([`ThreadBound`]) case. Used as e.g. `-> impl<AutoSafe<…>>`.
+/// Deanonymize towards the general ([`ThreadBound`]) case. Used as `-> impl AutoSafe<…>`.
 ///
 /// See module documentation for usage.
 pub trait AutoSafe<ThreadBound>

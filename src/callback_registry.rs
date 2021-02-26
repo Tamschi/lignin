@@ -1,4 +1,4 @@
-//! Callback registry plumbing, for renderers and apps that support them **and** need to run indefinitely.
+//! Callback registry plumbing, for renderers and app runners that support them **and** need to run indefinitely.
 
 use crate::{ThreadBound, ThreadSafe, ThreadSafety};
 use core::{
