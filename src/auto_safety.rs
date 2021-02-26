@@ -8,6 +8,13 @@
 //! >
 //! > Please refer to the item documentation for implementation details.
 //!
+//! **The following is a long explanation that you probably don't have to read.**  
+//! In hand-written code, you can always use [`From`] or [`Into`] to cast a [`…<ThreadSafe>`](`ThreadSafe`) type to the matching [`…<ThreadBound>`](`ThreadBound`) type where necessary.  
+//! If you receive an opaque type, `use lignin::auto_safety::{AutoSafe as _, Deanonymize as _};` and call `.deanonymize()` on it, then **politely** ask the author to consider being more specific.
+//!
+//! If you do intend to use this module, please still declare thread-safety explicitly at crate boundaries, or encourage developers using your library to do so.
+//! [You can find more information on this near the end of this page.](#limiting-autosafe-exposure)
+//!
 //! # Examples / Usage
 //!
 //! > All examples share the following definitions:
@@ -349,6 +356,16 @@
 //! TODO
 //!
 //! # [`ThreadSafe`] Preference
+//!
+//! TODO
+//!
+//! # Limiting [`AutoSafe`] Exposure
+//!
+//! Thread-safety inference is powerful, but also dangerous: A change deep in a library could cause a public function return type to shift, breaking compatibility with downstream crates.
+//! For this reason, and because of its worse ergonomics, `-> impl AutoSafe<…>` should not be exposed in a crate's public API.
+//!
+//! A front-end template language or framework author may still want to avoid requiring explicit threading annotations in most cases.
+//! Even in that case, it's possible to limit this feature to functions not externally visible, by aliasing it with a generated less visible trait:
 //!
 //! TODO
 
