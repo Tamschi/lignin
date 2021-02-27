@@ -28,7 +28,7 @@ pub use web::{DomRef, Materialize};
 
 mod ergonomics;
 
-use core::{fmt::Debug, hash::Hash, marker::PhantomData};
+use core::{convert::Infallible, fmt::Debug, hash::Hash, marker::PhantomData};
 use remnants::RemnantSite;
 use sealed::Sealed;
 
@@ -124,13 +124,19 @@ pub trait ThreadSafety: Sealed {}
 
 /// [`ThreadSafety`] marker for `!Send + !Sync`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ThreadBound(PhantomData<*const ()>);
+pub struct ThreadBound(
+	/// Neither [`Send`] nor [`Sync`].
+	pub PhantomData<*const ()>,
+	/// [Uninhabited.](https://doc.rust-lang.org/nomicon/exotic-sizes.html#empty-types)
+	pub Infallible,
+);
 /// [`ThreadSafety`] marker for `Send + Sync`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ThreadSafe(
-	/// The type here doesn't matter especially (as long as there's a private field to prevent construction),
-	/// but since the [`ThreadSafety`] types are stand-ins for references, I went with one that resembles that.
-	PhantomData<&'static ()>,
+	/// This field here technically doesn't matter, but I went with something to match [`ThreadBound`].
+	pub PhantomData<&'static ()>,
+	/// [Uninhabited.](https://doc.rust-lang.org/nomicon/exotic-sizes.html#empty-types)
+	pub Infallible,
 );
 impl ThreadSafety for ThreadBound {}
 impl ThreadSafety for ThreadSafe {}

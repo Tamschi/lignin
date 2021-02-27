@@ -210,6 +210,7 @@ impl<R, T> CallbackRegistration<R, T> {
 		}
 	}
 
+	/// [`Vdom`](`crate::Vdom`)
 	#[must_use]
 	pub fn to_ref_thread_bound(&self) -> CallbackRef<ThreadBound, T> {
 		CallbackRef {

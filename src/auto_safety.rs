@@ -361,6 +361,8 @@
 //!
 //! # [`ThreadSafe`] Preference
 //!
+//! In some cases
+//!
 //! TODO
 //!
 //! # Limiting [`AutoSafe`] Exposure
@@ -391,7 +393,7 @@ where
 	/// This method is by reference, so it will resolve with lower priority than the by-value method on [`Deanonymize`].  
 	/// Note that not all tooling will show the correct overload here, but the compiler knows which to pick.
 	#[must_use]
-	#[inline(always)] // No-op.
+	#[inline(always)] // Plain deref.
 	fn deanonymize(&self) -> BoundVariant {
 		unsafe {
 			// SAFETY:
@@ -467,7 +469,7 @@ macro_rules! deanonymize_on_named {
 		///
 		/// **Both** [`AutoSafe`] and [`Deanonymize`] must be in scope and the method must be called *without qualification* for this to work.
 		///
-		/// Calling this method on a named type returns the value and type unchanged and produces a deprecation warning.
+		/// > Calling this method on a named type returns the value and type unchanged and produces a deprecation warning.
 		#[deprecated = "Call of `.deanonymize()` on named type."]
 		#[must_use]
 		#[inline(always)] // No-op.
@@ -484,6 +486,7 @@ macro_rules! prefer_thread_safe_safe {
 		/// Gently nudges the compiler to choose the [`ThreadSafe`] version of a value if both are possible.
 		///
 		/// This method is by value, so it will resolve with higher priority than the by-reference method on the [`ThreadBound`] type.
+		///
 		/// Note that not all tooling will show the correct overload here, but the compiler knows which to pick.
 		$(#[$($attrs)*])*
 		#[must_use]
@@ -498,10 +501,11 @@ macro_rules! prefer_thread_safe_bound {
 	() => {
 		/// Gently nudges the compiler to choose the [`ThreadSafe`] version of a value if both are is possible.
 		///
-		/// This method is by reference, so it will resolve with lower priority than the by-reference method on the [`ThreadSafe`] type.  
+		/// This method is by reference, so it will resolve with lower priority than the by-value method on the [`ThreadSafe`] type.
+		///
 		/// Note that not all tooling will show the correct overload here, but the compiler knows which to pick.
 		#[must_use]
-		#[inline(always)] // No-op.
+		#[inline(always)] // Plain deref.
 		pub fn prefer_thread_safe(&self) -> Self {
 			*self
 		}
@@ -512,7 +516,7 @@ impl<'a> Attribute<'a> {
 	deanonymize_on_named!();
 	prefer_thread_safe_safe! {
 		///
-		/// Calling this method on [`Attribute`] produces a deprecation warning since the type is always [`ThreadSafe`].
+		/// > Calling this method on [`Attribute`] produces a deprecation warning since the type is always [`ThreadSafe`].
 		#[deprecated = "Call of `.prefer_thread_safe()` on `Attribute`."]
 	}
 }

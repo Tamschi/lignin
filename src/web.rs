@@ -1,4 +1,7 @@
 //! Erasable web type stand-ins used as callback parameters.
+//!
+//! `struct`s in this module are only inhabited with the `"callbacks"` feature enabled.  
+//! Without it, they become [uninhabited](https://doc.rust-lang.org/nomicon/exotic-sizes.html#empty-types) and are erased entirely at compile-time, so any code paths that depend on them can in turn be removed too.
 #![allow(clippy::inline_always)]
 
 /// Used as DOM reference callback parameter. (Expand for implementation contract!)
@@ -131,7 +134,8 @@ conversions! {
 	Text => web_sys::Text,
 }
 
-/// Replaces erasable values in this module if the `"callbacks"` feature is not active.
+/// Empty. Replaces erasable values in this module if the `"callbacks"` feature is not active.
+#[doc(hidden)]
 #[allow(clippy::empty_enum)]
 #[derive(Debug, Clone)]
 pub enum FeatureNeeded {}
