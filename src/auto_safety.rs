@@ -21,7 +21,7 @@
 //! >
 //! > ```rust
 //! > use lignin::{
-//! >   auto_safety::{AutoSafe, Deanonymize as _}, // <-- Important!
+//! >   auto_safety::{Align as _, AutoSafe, Deanonymize as _}, // <-- Important!
 //! >   Node, ThreadBound, ThreadSafe,
 //! > };
 //! >
@@ -30,7 +30,10 @@
 //! > fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
 //! > fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! >
-//! > fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! > fn allocate<'a, T>(value: T) -> &'a T {
+//! >   // …
+//! > #   Box::leak(Box::new(value))
+//! > }
 //! > #
 //! > # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
 //! > # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
@@ -48,7 +51,7 @@
 //!
 //! ```rust
 //! # use lignin::{
-//! #   auto_safety::{AutoSafe, Deanonymize as _},
+//! #   auto_safety::{Align as _, AutoSafe, Deanonymize as _},
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
@@ -57,7 +60,7 @@
 //! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
 //! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! #
-//! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! #
 //! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
 //! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
@@ -65,17 +68,15 @@
 //! fn safe_1<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
 //! fn bound_1<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! #
-//! # fn assert() {
-//! #   assert_safe(safe_1().deanonymize());
-//! #   assert_bound(bound_1().deanonymize());
-//! # }
+//! # assert_safe(safe_1().deanonymize());
+//! # assert_bound(bound_1().deanonymize());
 //! ```
 //!
 //! …as well as ones where the original return type is inferred (opaque):
 //!
 //! ```rust
 //! # use lignin::{
-//! #   auto_safety::{AutoSafe, Deanonymize as _},
+//! #   auto_safety::{Align as _, AutoSafe, Deanonymize as _},
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
@@ -84,7 +85,7 @@
 //! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
 //! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! #
-//! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! #
 //! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
 //! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
@@ -92,10 +93,8 @@
 //! fn safe_2<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { inferred_safe() }
 //! fn bound_2<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { inferred_bound() }
 //! #
-//! # fn assert() {
-//! #   assert_safe(safe_2().deanonymize());
-//! #   assert_bound(bound_2().deanonymize());
-//! # }
+//! # assert_safe(safe_2().deanonymize());
+//! # assert_bound(bound_2().deanonymize());
 //! ```
 //!
 //! ## Deanonymization
@@ -104,7 +103,7 @@
 //!
 //! ```rust
 //! # use lignin::{
-//! #   auto_safety::{AutoSafe, Deanonymize as _},
+//! #   auto_safety::{Align as _, AutoSafe, Deanonymize as _},
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
@@ -113,7 +112,7 @@
 //! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
 //! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! #
-//! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! #
 //! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
 //! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
@@ -126,17 +125,15 @@
 //!   Node::Ref(allocate(bound()))
 //! }
 //! #
-//! # fn assert() {
-//! #   assert_safe(safe_1().deanonymize());
-//! #   assert_bound(bound_1().deanonymize());
-//! # }
+//! # assert_safe(safe_1().deanonymize());
+//! # assert_bound(bound_1().deanonymize());
 //! ```
 //!
 //! …each of these fails to compile:
 //!
 //! ```compile_fail
 //! # use lignin::{
-//! #   auto_safety::{AutoSafe, Deanonymize as _},
+//! #   auto_safety::{Align as _, AutoSafe, Deanonymize as _},
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
@@ -145,7 +142,7 @@
 //! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
 //! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! #
-//! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! #
 //! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
 //! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
@@ -158,7 +155,7 @@
 //!
 //! ```compile_fail
 //! # use lignin::{
-//! #   auto_safety::{AutoSafe, Deanonymize as _},
+//! #   auto_safety::{Align as _, AutoSafe, Deanonymize as _},
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
@@ -167,7 +164,7 @@
 //! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
 //! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! #
-//! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! #
 //! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
 //! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
@@ -186,7 +183,7 @@
 //!
 //! ```
 //! # use lignin::{
-//! #   auto_safety::{AutoSafe, Deanonymize as _},
+//! #   auto_safety::{Align as _, AutoSafe, Deanonymize as _},
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
@@ -195,7 +192,7 @@
 //! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
 //! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! #
-//! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! #
 //! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
 //! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
@@ -208,17 +205,15 @@
 //!   Node::Ref(allocate(inferred_bound().deanonymize()))
 //! }
 //! #
-//! # fn assert() {
-//! #   assert_safe(safe_2().deanonymize());
-//! #   assert_bound(bound_2().deanonymize());
-//! # }
+//! # assert_safe(safe_2().deanonymize());
+//! # assert_bound(bound_2().deanonymize());
 //! ```
 //!
 //! > You also have to do this to annotate the type of local variables…:
 //! >
 //! > ```
 //! > # use lignin::{
-//! > #   auto_safety::{AutoSafe, Deanonymize as _},
+//! > #   auto_safety::{Align as _, AutoSafe, Deanonymize as _},
 //! > #   Node, ThreadBound, ThreadSafe,
 //! > # };
 //! > #
@@ -227,20 +222,22 @@
 //! > # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
 //! > # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! > #
-//! > # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! > # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! > #
 //! > # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
 //! > # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
 //! > #
 //! > let safe_node: Node<_> = inferred_safe().deanonymize();
 //! > let bound_node: Node<_> = inferred_bound().deanonymize();
+//! > #
+//! > # // No assert here! This test should fail if some some reason this fails to compile without further coercion.
 //! > ```
 //! >
 //! > …or to specify a [`ThreadSafety`] in the return type:
 //! >
 //! > ```
 //! > # use lignin::{
-//! > #   auto_safety::{AutoSafe, Deanonymize as _},
+//! > #   auto_safety::{Align as _, AutoSafe, Deanonymize as _},
 //! > #   Node, ThreadBound, ThreadSafe,
 //! > # };
 //! > #
@@ -249,7 +246,7 @@
 //! > # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
 //! > # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! > #
-//! > # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! > # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! > #
 //! > # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
 //! > # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
@@ -269,7 +266,7 @@
 //!
 //! ```
 //! # use lignin::{
-//! #   auto_safety::{AutoSafe, Deanonymize as _},
+//! #   auto_safety::{Align as _, AutoSafe, Deanonymize as _},
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
@@ -278,7 +275,7 @@
 //! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
 //! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! #
-//! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! #
 //! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
 //! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
@@ -303,7 +300,7 @@
 //!
 //! ```compile_fail
 //! # use lignin::{
-//! #   auto_safety::{AutoSafe, Deanonymize as _},
+//! #   auto_safety::{Align as _, AutoSafe, Deanonymize as _},
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
@@ -312,7 +309,7 @@
 //! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
 //! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! #
-//! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! #
 //! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
 //! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
@@ -328,7 +325,7 @@
 //!
 //! ```compile_fail
 //! # use lignin::{
-//! #   auto_safety::{AutoSafe, Deanonymize as _},
+//! #   auto_safety::{Align as _, AutoSafe, Deanonymize as _},
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
@@ -337,7 +334,7 @@
 //! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
 //! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
 //! #
-//! # fn allocate<'a, T>(value: T) -> &'a T { unreachable!() }
+//! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! #
 //! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
 //! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
@@ -361,9 +358,86 @@
 //!
 //! # [`ThreadSafe`] Preference
 //!
-//! In some cases
+//! The Rust compiler can usually infer the correct [`ThreadSafety`] without annotations if valid choices are in any way limited in this regard.
 //!
-//! TODO
+//! However, this isn't the case for most [`Vdom`] expressions without inputs…:
+//!
+//! ```compile_fail
+//! # use lignin::{
+//! #   auto_safety::{Align as _, AutoSafe, Deanonymize as _},
+//! #   Node, ThreadBound, ThreadSafe,
+//! # };
+//! #
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
+//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! #
+//! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
+//! #
+//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
+//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! #
+//! let attempt_1 = Node::Multi(&[]);
+//! //  ---------   ^^^^^^^^^^^       // See below.
+//! ```
+//!
+//! …or if all inputs are thread-safe and [`.align()`](`Align::align`) is called on each of them:
+//!
+//! ```compile_fail
+//! # use lignin::{
+//! #   auto_safety::{Align as _, AutoSafe, Deanonymize as _},
+//! #   Node, ThreadBound, ThreadSafe,
+//! # };
+//! #
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
+//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! #
+//! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
+//! #
+//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
+//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! #
+//! let attempt_2 = Node::Multi(allocate([safe().align(), inferred_safe().deanonymize().align()]));
+//! //  ---------   ^^^^^^^^^^^ cannot infer type for type parameter `S` declared on the enum `Node`
+//! //  consider giving `attempt_2` the explicit type `Node<'_, S>`, where the type parameter `S` is specified
+//! //
+//! // note: cannot satisfy `_: ThreadSafety`
+//! // note: required by `Multi`
+//! ```
+//!
+//! In these cases, you can call `.prefer_thread_safe()` on the indeterminate expression to nudge the compiler in the right direction.
+//!
+//! ```rust
+//! # use lignin::{
+//! #   auto_safety::{Align as _, AutoSafe, Deanonymize as _},
+//! #   Node, ThreadBound, ThreadSafe,
+//! # };
+//! #
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
+//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! #
+//! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
+//! #
+//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
+//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! #
+//! let safe_1 = Node::Multi(&[]).prefer_thread_safe();
+//!
+//! let safe_2 = Node::Multi(allocate([
+//!   safe().align(),
+//!   inferred_safe().deanonymize().align(),
+//! ])).prefer_thread_safe();
+//! #
+//! # assert_safe(safe_1);
+//! # assert_safe(safe_2);
+//! ```
+//!
+//! > This is implemented directly on the individual [`Vdom`] type variants, so no additional trait imports are necessary to use it.
 //!
 //! # Limiting [`AutoSafe`] Exposure
 //!
@@ -407,11 +481,10 @@ where
 /// Deanonymize towards the special ([`ThreadSafe`]) case. **This trait must be in scope for correct inference!**
 ///
 /// See module documentation for usage.
-pub trait Deanonymize<'a, BoundVariant, SafeVariant>
+pub trait Deanonymize<SafeVariant>
 where
 	Self: Vdom + Send + Sync,
-	BoundVariant: Vdom<ThreadSafety = ThreadBound>,
-	SafeVariant: Vdom<ThreadSafety = ThreadSafe> + Align<BoundVariant>,
+	SafeVariant: Vdom<ThreadSafety = ThreadSafe>,
 {
 	/// Deanonymize towards a compatible concrete type.
 	///
@@ -433,13 +506,6 @@ impl<'a, S, T> AutoSafe<T> for S
 where
 	S: Vdom + Align<T>,
 	T: Vdom<ThreadSafety = ThreadBound>,
-{
-}
-impl<'a, S, T, U> Deanonymize<'a, T, U> for S
-where
-	S: Send + Sync + AutoSafe<T>,
-	T: Vdom<ThreadSafety = ThreadBound>,
-	U: Vdom<ThreadSafety = ThreadSafe> + Align<T>,
 {
 }
 
@@ -532,6 +598,9 @@ macro_rules! impl_auto_safety {
 		impl<'a> $Name<'a, ThreadBound> {
 			prefer_thread_safe_bound!();
 		}
+		impl<'a, O> Deanonymize<$Name<'a, ThreadSafe>> for O where
+			O: Send + Sync + AutoSafe<$Name<'a, ThreadBound>>,
+		{}
 		impl<'a> Align<$Name<'a, ThreadBound>> for $Name<'a, ThreadSafe> {}
 	)*};
 }
@@ -546,5 +615,9 @@ impl<T> CallbackRef<ThreadSafe, T> {
 }
 impl<T> CallbackRef<ThreadBound, T> {
 	prefer_thread_safe_bound!();
+}
+impl<T, O> Deanonymize<CallbackRef<ThreadSafe, T>> for O where
+	O: Send + Sync + AutoSafe<CallbackRef<ThreadBound, T>>
+{
 }
 impl<T> Align<CallbackRef<ThreadBound, T>> for CallbackRef<ThreadSafe, T> {}
