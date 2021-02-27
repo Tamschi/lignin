@@ -17,10 +17,10 @@ assert_eq_align!(Node<'static, ThreadSafe>, Node<'static, ThreadBound>);
 assert_eq_size!(Node<'static, ThreadSafe>, Node<'static, ThreadBound>);
 
 assert_eq_align!(
-	CallbackRef<(), ThreadSafe>,
-	CallbackRef<(), ThreadBound>
+	CallbackRef<ThreadSafe, ()>,
+	CallbackRef<ThreadBound, ()>
 );
 assert_eq_size!(
-	CallbackRef<(), ThreadSafe>,
-	CallbackRef<(), ThreadBound>
+	CallbackRef<ThreadSafe, ()>,
+	CallbackRef<ThreadBound, ()>
 );

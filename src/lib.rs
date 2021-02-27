@@ -39,17 +39,17 @@ use sealed::Sealed;
 pub enum Node<'a, S: ThreadSafety> {
 	Comment {
 		comment: &'a str,
-		dom_binding: Option<CallbackRef<DomRef<web::Comment>, S>>,
+		dom_binding: Option<CallbackRef<S, DomRef<web::Comment>>>,
 	},
 	Element {
 		element: &'a Element<'a, S>,
-		dom_binding: Option<CallbackRef<DomRef<web::HtmlElement>, S>>,
+		dom_binding: Option<CallbackRef<S, DomRef<web::HtmlElement>>>,
 	},
 	Ref(&'a Node<'a, S>),
 	Multi(&'a [Node<'a, S>]),
 	Text {
 		text: &'a str,
-		dom_binding: Option<CallbackRef<DomRef<web::Text>, S>>,
+		dom_binding: Option<CallbackRef<S, DomRef<web::Text>>>,
 	},
 	#[doc(hidden)]
 	RemnantSite(&'a RemnantSite),
@@ -68,7 +68,7 @@ pub struct Element<'a, S: ThreadSafety> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EventBinding<'a, S: ThreadSafety> {
 	pub name: &'a str,
-	pub callback: CallbackRef<web::Event, S>,
+	pub callback: CallbackRef<S, web::Event>,
 }
 
 /// [`Vdom`]
@@ -98,7 +98,9 @@ impl<'a: 'b, 'b, S: ThreadSafety> From<&'a mut Element<'a, S>> for Node<'b, S> {
 
 mod sealed {
 	use super::{ThreadBound, ThreadSafe};
-	use crate::{Node, ThreadSafety};
+	use crate::{
+		remnants::RemnantSite, Attribute, CallbackRef, Element, EventBinding, Node, ThreadSafety,
+	};
 	use core::{fmt::Debug, hash::Hash};
 
 	pub trait Sealed:
@@ -107,7 +109,12 @@ mod sealed {
 	}
 	impl Sealed for ThreadBound {}
 	impl Sealed for ThreadSafe {}
+	impl<'a> Sealed for Attribute<'a> {}
+	impl<S: ThreadSafety, T> Sealed for CallbackRef<S, T> {}
+	impl<'a, S: ThreadSafety> Sealed for Element<'a, S> {}
+	impl<'a, S: ThreadSafety> Sealed for EventBinding<'a, S> {}
 	impl<'a, S: ThreadSafety> Sealed for Node<'a, S> {}
+	impl Sealed for RemnantSite {}
 }
 
 /// Marker trait for thread-safety tokens.
@@ -145,4 +152,4 @@ macro_rules! vdom_impls {
 		}
 	)*};
 }
-vdom_impls!(Node);
+vdom_impls!(Element, EventBinding, Node);
