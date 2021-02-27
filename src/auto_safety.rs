@@ -38,7 +38,7 @@
 //! >
 //! > I recommend using [`bumpalo`](https://github.com/fitzgen/bumpalo) as VDOM allocator since it is fast and versatile, but `lignin` itself has no preference in this regard.
 //!
-//! > In all examples and the above, [`Node`] can be replaced by any other `ThreadBindable` type.
+//! > In all examples and the above, [`Node`] can be replaced by any other [`Vdom`] type.
 //!
 //! ## Basic Forwarding
 //!
@@ -369,13 +369,7 @@
 //!
 //! TODO
 
-use crate::{Node, ThreadBound, ThreadSafe, ThreadSafety};
-
-mod sealed {
-	/// It's probably good to be a bit more specific in [`Align`](`super::Align`)'s signature, among others.
-	/// The bounds are necessary the default implementations in derived traits and also prevent their object-safety, which is good because that would at best only add useless dynamic dispatch overhead.
-	pub trait ThreadBindable: Copy + Sized {}
-}
+use crate::{Node, ThreadBound, ThreadSafe, ThreadSafety, Vdom};
 
 impl<'a, S: ThreadSafety> Node<'a, S> {
 	#[deprecated = "Call of `.deanonymize()` on named type."]
@@ -389,10 +383,10 @@ impl<'a, S: ThreadSafety> Node<'a, S> {
 /// Deanonymize towards the general ([`ThreadBound`]) case. Used as `-> impl AutoSafe<…>`.
 ///
 /// See module documentation for usage.
-pub trait AutoSafe<ThreadBound>
+pub trait AutoSafe<BoundVariant>
 where
-	Self: sealed::ThreadBindable,
-	ThreadBound: sealed::ThreadBindable,
+	Self: Vdom + Align<BoundVariant>,
+	BoundVariant: Vdom<ThreadSafety = ThreadBound>,
 {
 	/// Deanonymize towards a compatible concrete type.
 	///
@@ -400,7 +394,7 @@ where
 	/// Note that not all tooling will show the correct overload here, but the compiler knows which to pick.
 	#[must_use]
 	#[inline(always)] // No-op.
-	fn deanonymize(&self) -> ThreadBound {
+	fn deanonymize(&self) -> BoundVariant {
 		unsafe {
 			// SAFETY:
 			// Under normal circumstances, this trait or method would have to be `unsafe`.
@@ -413,15 +407,19 @@ where
 /// Deanonymize towards the special ([`ThreadSafe`]) case. **This trait must be in scope for correct inference!**
 ///
 /// See module documentation for usage.
-pub trait Deanonymize<'a>: sealed::ThreadBindable + Send + Sync {
-	type ThreadSafe: sealed::ThreadBindable;
+pub trait Deanonymize<'a, BoundVariant, SafeVariant>
+where
+	Self: Vdom + Send + Sync,
+	BoundVariant: Vdom<ThreadSafety = ThreadBound>,
+	SafeVariant: Vdom<ThreadSafety = ThreadSafe> + Align<BoundVariant>,
+{
 	/// Deanonymize towards a compatible concrete type.
 	///
 	/// This method is by value, so it will resolve with higher priority than the by-reference method on [`AutoSafe`].  
 	/// Note that not all tooling will show the correct overload here, but the compiler knows which to pick.
 	#[must_use]
 	#[inline(always)] // No-op.
-	fn deanonymize(self) -> Self::ThreadSafe {
+	fn deanonymize(self) -> SafeVariant {
 		unsafe {
 			// SAFETY:
 			// Under normal circumstances, this trait or method would have to be `unsafe`.
@@ -431,11 +429,18 @@ pub trait Deanonymize<'a>: sealed::ThreadBindable + Send + Sync {
 	}
 }
 
-impl<'a, S: ThreadSafety> sealed::ThreadBindable for Node<'a, S> {}
-
-impl<'a, S: ThreadSafety> AutoSafe<Node<'a, ThreadBound>> for Node<'a, S> {}
-impl<'a, T: Send + Sync + AutoSafe<Node<'a, ThreadBound>>> Deanonymize<'a> for T {
-	type ThreadSafe = Node<'a, ThreadSafe>;
+impl<'a, S, T> AutoSafe<T> for S
+where
+	S: Vdom + Align<T>,
+	T: Vdom<ThreadSafety = ThreadBound>,
+{
+}
+impl<'a, S, T, U> Deanonymize<'a, T, U> for S
+where
+	S: Send + Sync + AutoSafe<T>,
+	T: Vdom<ThreadSafety = ThreadBound>,
+	U: Vdom<ThreadSafety = ThreadSafe> + Align<T>,
+{
 }
 
 impl<'a> Node<'a, ThreadSafe> {
@@ -460,33 +465,35 @@ impl<'a> Node<'a, ThreadBound> {
 		*self
 	}
 }
-impl<'a> From<Node<'a, ThreadSafe>> for Node<'a, ThreadBound> {
-	#[allow(clippy::inline_always)]
-	#[inline(always)] // No-op.
-	fn from(thread_safe: Node<'a, ThreadSafe>) -> Self {
-		unsafe { *(&thread_safe as *const Node<'a, ThreadSafe>).cast() }
-	}
-}
 
 /// Contextually thread-binds an instance, or not. Use only without qualification.
 ///
-/// This trait acts as (i.e.: _is_) [`Into`] on and between thread-bindable types, but without raising `useless_conversion` warnings.
+/// This trait acts as [`Into`] on and between [`Vdom`] types, but without raising `useless_conversion` warnings.
 ///
 /// See module documentation for when to use this trait and when it's unnecessary.
-pub trait Align<T: sealed::ThreadBindable>: sealed::ThreadBindable
-where
-	Self: Into<T>,
-{
+pub trait Align<T: Vdom>: Vdom {
 	/// Contextually thread-binds an instance, or not. Use only without qualification.
 	#[allow(clippy::inline_always)]
 	#[inline(always)] // No-op.
 	fn align(self) -> T {
-		self.into()
+		unsafe {
+			// SAFETY: This trait is sealed and only implemented on and across compatible types.
+			*(&self as *const Self).cast()
+		}
 	}
 }
-impl<T: Into<U>, U> Align<U> for T
+
+impl<'a, S, T> Align<T> for S
 where
-	T: sealed::ThreadBindable,
-	U: sealed::ThreadBindable,
+	S: Vdom + Into<T>,
+	T: Vdom,
 {
+}
+
+impl<'a> From<Node<'a, ThreadSafe>> for Node<'a, ThreadBound> {
+	#[allow(clippy::inline_always)]
+	#[inline(always)] // No-op.
+	fn from(thread_safe: Node<'a, ThreadSafe>) -> Self {
+		thread_safe.align()
+	}
 }

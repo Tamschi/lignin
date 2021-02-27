@@ -33,9 +33,9 @@ use sealed::Sealed;
 //TODO: The derives emit bounds on S here, which aren't necessary but appear in the documentation.
 // It would be cleaner to explicitly implement all of these traits.
 
-/// `ThreadBindable`
+/// [`Vdom`]
 #[non_exhaustive]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Node<'a, S: ThreadSafety> {
 	Comment {
 		comment: &'a str,
@@ -55,8 +55,8 @@ pub enum Node<'a, S: ThreadSafety> {
 	RemnantSite(&'a RemnantSite),
 }
 
-/// `ThreadBindable`
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// [`Vdom`]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Element<'a, S: ThreadSafety> {
 	pub name: &'a str,
 	pub attributes: &'a [Attribute<'a>],
@@ -64,15 +64,15 @@ pub struct Element<'a, S: ThreadSafety> {
 	pub event_bindings: &'a [EventBinding<'a, S>],
 }
 
-/// `ThreadBindable`
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// [`Vdom`]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EventBinding<'a, S: ThreadSafety> {
 	pub name: &'a str,
 	pub callback: CallbackRef<web::Event, S>,
 }
 
-/// `ThreadBindable`
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// [`Vdom`]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Hash)]
 pub struct Attribute<'a> {
 	pub name: &'a str,
 	pub value: &'a str,
@@ -98,16 +98,20 @@ impl<'a: 'b, 'b, S: ThreadSafety> From<&'a mut Element<'a, S>> for Node<'b, S> {
 
 mod sealed {
 	use super::{ThreadBound, ThreadSafe};
+	use crate::{Node, ThreadSafety};
+	use core::{fmt::Debug, hash::Hash};
 
-	pub trait Sealed {}
+	pub trait Sealed:
+		Sized + Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord + Hash
+	{
+	}
 	impl Sealed for ThreadBound {}
 	impl Sealed for ThreadSafe {}
+	impl<'a, S: ThreadSafety> Sealed for Node<'a, S> {}
 }
 
-pub trait ThreadSafety:
-	Sealed + Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord + Hash
-{
-}
+/// Marker trait for thread-safety tokens.
+pub trait ThreadSafety: Sealed {}
 
 /// [`ThreadSafety`] marker for `!Send + !Sync`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -121,3 +125,24 @@ pub struct ThreadSafe(
 );
 impl ThreadSafety for ThreadBound {}
 impl ThreadSafety for ThreadSafe {}
+
+/// This implementation is only used as compatibility marker.
+impl From<ThreadSafe> for ThreadBound {
+	fn from(_: ThreadSafe) -> Self {
+		unreachable!()
+	}
+}
+
+/// Marker trait for VDOM data types, which all vary by [`ThreadSafety`].
+pub trait Vdom: Sealed {
+	type ThreadSafety: ThreadSafety;
+}
+
+macro_rules! vdom_impls {
+	($($name:ident),*$(,)?) => {$(
+		impl<'a, S: ThreadSafety> Vdom for $name<'a, S> {
+			type ThreadSafety = S;
+		}
+	)*};
+}
+vdom_impls!(Node);
