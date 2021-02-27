@@ -21,7 +21,7 @@
 ///
 /// <!-- The above is a fairly strict constraint. It's here so that renderers aren't forced to (partially) double-buffer the VDOM, even if the current "default" renderer `lignin-dom` does so. -->
 ///
-/// Please refer to the variant documentation for more inforation.
+/// Please refer to the variant documentation for more information.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum DomRef<T> {
 	/// When constructing the DOM, this variant is passed **after** all child elements have been processed and, if applicable, the element has been added to the document tree.

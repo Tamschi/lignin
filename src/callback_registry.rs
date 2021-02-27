@@ -1,10 +1,8 @@
 //! Callback registry plumbing, for renderers and app runners that support them **and** need to run indefinitely.
 
-use crate::{ThreadBound, ThreadSafe, ThreadSafety};
+use crate::{ThreadBound, ThreadSafe, ThreadSafety, Vdom};
 use core::{
-	any::type_name,
 	fmt::Debug,
-	hash::{Hash, Hasher},
 	marker::{PhantomData, PhantomPinned},
 	num::NonZeroU32,
 	pin::Pin,
@@ -139,7 +137,7 @@ mod callbacks_off {
 		let _ = handler;
 		CallbackRegistration {
 			key: NonZeroU32::new(u32::MAX).expect("always Ok"),
-			phantom: PhantomData::default(),
+			phantom: PhantomData,
 			pinned: PhantomPinned,
 		}
 	}
@@ -181,14 +179,12 @@ pub struct CallbackRegistration<R, T> {
 	phantom: PhantomData<(*const R, fn(T))>,
 	pinned: PhantomPinned,
 }
-
 // SAFETY: `CallbackRegistration<R, T>` only refers to a `*const R`, so it acts like `&R` for thread-safety.
 //
 // Without the `"callbacks"` feature, that pointer is actually unreachable, so this type *could* be more generally `Send` and `Sync`.
 // However, since a CallbackRegistration is intended to be primarily handled by the matching `R` instance, this isn't done in order to retain consistency.
 unsafe impl<R, T> Send for CallbackRegistration<R, T> where R: Sync {}
 unsafe impl<R: Sync, T> Sync for CallbackRegistration<R, T> {}
-
 impl<R, T> CallbackRegistration<R, T> {
 	/// Creates a new [`CallbackRegistration<R, T>`] with the given `receiver` and `handler`.
 	///
@@ -208,12 +204,18 @@ impl<R, T> CallbackRegistration<R, T> {
 	where
 		R: Sync,
 	{
-		self.into()
+		CallbackRef {
+			key: self.key,
+			phantom: PhantomData,
+		}
 	}
 
 	#[must_use]
 	pub fn to_ref_thread_bound(&self) -> CallbackRef<ThreadBound, T> {
-		self.into()
+		CallbackRef {
+			key: self.key,
+			phantom: PhantomData,
+		}
 	}
 }
 impl<R, T> Drop for CallbackRegistration<R, T> {
@@ -222,72 +224,14 @@ impl<R, T> Drop for CallbackRegistration<R, T> {
 	}
 }
 
-impl<R, T> From<&CallbackRegistration<R, T>> for CallbackRef<ThreadSafe, T>
-where
-	R: Sync,
-{
-	fn from(registration: &CallbackRegistration<R, T>) -> Self {
-		Self {
-			key: registration.key,
-			phantom: PhantomData::default(),
-		}
-	}
-}
-
-impl<R, T> From<&CallbackRegistration<R, T>> for CallbackRef<ThreadBound, T> {
-	fn from(registration: &CallbackRegistration<R, T>) -> Self {
-		Self {
-			key: registration.key,
-			phantom: PhantomData::default(),
-		}
-	}
-}
-
 #[allow(clippy::type_complexity)]
 pub struct CallbackRef<S: ThreadSafety, T> {
-	key: NonZeroU32,
+	pub(crate) key: NonZeroU32,
 	phantom: PhantomData<(S, fn(T))>,
 }
-
-impl<S: ThreadSafety, T> Debug for CallbackRef<S, T> {
-	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-		f.debug_struct(type_name::<Self>())
-			.field("key", &self.key)
-			.finish()
-	}
-}
-
 impl<S: ThreadSafety, T> CallbackRef<S, T> {
 	pub fn call(self, parameter: T) {
 		callbacks::invoke(self.key, parameter)
-	}
-}
-
-impl<S: ThreadSafety, T> Clone for CallbackRef<S, T> {
-	fn clone(&self) -> Self {
-		*self
-	}
-}
-impl<S: ThreadSafety, T> Copy for CallbackRef<S, T> {}
-impl<S: ThreadSafety, T> PartialEq for CallbackRef<S, T> {
-	fn eq(&self, other: &Self) -> bool {
-		self.key == other.key
-	}
-}
-impl<S: ThreadSafety, T> Eq for CallbackRef<S, T> {}
-impl<S: ThreadSafety, T> PartialOrd for CallbackRef<S, T> {
-	fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-		self.key.partial_cmp(&other.key)
-	}
-}
-impl<S: ThreadSafety, T> Ord for CallbackRef<S, T> {
-	fn cmp(&self, other: &Self) -> core::cmp::Ordering {
-		self.key.cmp(&other.key)
-	}
-}
-impl<S: ThreadSafety, T> Hash for CallbackRef<S, T> {
-	fn hash<H: Hasher>(&self, state: &mut H) {
-		self.key.hash(state)
 	}
 }
 

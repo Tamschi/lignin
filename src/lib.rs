@@ -26,6 +26,8 @@ pub mod web;
 pub use callback_registry::{CallbackRef, CallbackRegistration};
 pub use web::{DomRef, Materialize};
 
+mod ergonomics;
+
 use core::{fmt::Debug, hash::Hash, marker::PhantomData};
 use remnants::RemnantSite;
 use sealed::Sealed;
@@ -133,14 +135,7 @@ pub struct ThreadSafe(
 impl ThreadSafety for ThreadBound {}
 impl ThreadSafety for ThreadSafe {}
 
-/// This implementation is only used as compatibility marker.
-impl From<ThreadSafe> for ThreadBound {
-	fn from(_: ThreadSafe) -> Self {
-		unreachable!()
-	}
-}
-
-/// Marker trait for VDOM data types, which all vary by [`ThreadSafety`].
+/// Marker trait for VDOM data types, which (almost) all vary by [`ThreadSafety`].
 pub trait Vdom: Sealed {
 	type ThreadSafety: ThreadSafety;
 }

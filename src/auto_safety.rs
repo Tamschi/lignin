@@ -355,6 +355,10 @@
 //!
 //! TODO
 //!
+//! ## More lenient conversion with [`Into`]
+//!
+//! TODO
+//!
 //! # [`ThreadSafe`] Preference
 //!
 //! TODO
@@ -468,7 +472,7 @@ impl<'a> Node<'a, ThreadBound> {
 
 /// Contextually thread-binds an instance, or not. Use only without qualification.
 ///
-/// This trait acts as [`Into`] on and between [`Vdom`] types, but without raising `useless_conversion` warnings.
+/// This trait acts as [`Into`] on and between variants of the same [`Vdom`] type, but without raising `useless_conversion` warnings.
 ///
 /// See module documentation for when to use this trait and when it's unnecessary.
 pub trait Align<T: Vdom>: Vdom {
@@ -483,17 +487,6 @@ pub trait Align<T: Vdom>: Vdom {
 	}
 }
 
-impl<'a, S, T> Align<T> for S
-where
-	S: Vdom + Into<T>,
-	T: Vdom,
-{
-}
-
-impl<'a> From<Node<'a, ThreadSafe>> for Node<'a, ThreadBound> {
-	#[allow(clippy::inline_always)]
-	#[inline(always)] // No-op.
-	fn from(thread_safe: Node<'a, ThreadSafe>) -> Self {
-		thread_safe.align()
-	}
-}
+/// Not derived from the [`Into`] constraints since those are too broad.
+impl<T> Align<T> for T where T: Vdom {}
+impl<'a> Align<Node<'a, ThreadBound>> for Node<'a, ThreadSafe> {}
