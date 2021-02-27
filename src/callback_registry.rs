@@ -1,6 +1,6 @@
 //! Callback registry plumbing, for renderers and app runners that support them **and** need to run indefinitely.
 
-use crate::{ThreadBound, ThreadSafe, ThreadSafety, Vdom};
+use crate::{ThreadBound, ThreadSafe, ThreadSafety};
 use core::{
 	fmt::Debug,
 	marker::{PhantomData, PhantomPinned},

@@ -12,7 +12,7 @@
 //! In hand-written code, you can always use [`From`] or [`Into`] to cast a [`…<ThreadSafe>`](`ThreadSafe`) type to the matching [`…<ThreadBound>`](`ThreadBound`) type where necessary.  
 //! If you receive an opaque type, `use lignin::auto_safety::{AutoSafe as _, Deanonymize as _};` and call `.deanonymize()` on it, then **politely** ask the author to consider being more specific.
 //!
-//! If you do intend to use this module, please still declare thread-safety explicitly at crate boundaries, or encourage developers using your library to do so.
+//! If you do intend to use this module, please still declare [`ThreadSafe`] explicitly at crate boundaries, or encourage developers using your library to do so.
 //! [You can find more information on this near the end of this page.](#limiting-autosafe-exposure)
 //!
 //! # Examples / Usage
@@ -42,7 +42,7 @@
 //!
 //! ## Basic Forwarding
 //!
-//! To mark the thread-safety of a function as inferred, return [`AutoSafe`] wrapping the [`ThreadBound`] version of the VDOM node you want to return.
+//! To mark the [`ThreadSafety`] of a function as inferred, return [`AutoSafe`] wrapping the [`ThreadBound`] version of the VDOM node you want to return.
 //!
 //! This works with manually-defined sources…:
 //!
@@ -373,16 +373,10 @@
 //!
 //! TODO
 
-use crate::{Node, ThreadBound, ThreadSafe, ThreadSafety, Vdom};
-
-impl<'a, S: ThreadSafety> Node<'a, S> {
-	#[deprecated = "Call of `.deanonymize()` on named type."]
-	#[must_use]
-	#[inline(always)]
-	pub fn deanonymize(self) -> Self {
-		self
-	}
-}
+use crate::{
+	Attribute, CallbackRef, Element, EventBinding, Node, ThreadBound, ThreadSafe, ThreadSafety,
+	Vdom,
+};
 
 /// Deanonymize towards the general ([`ThreadBound`]) case. Used as `-> impl AutoSafe<…>`.
 ///
@@ -447,29 +441,6 @@ where
 {
 }
 
-impl<'a> Node<'a, ThreadSafe> {
-	/// Gently nudges the compiler to choose the thread-safe version of a value if both are possible.
-	///
-	/// This method is by value, so it will resolve with higher priority than the by-reference method on the thread-bound type.  
-	/// Note that not all tooling will show the correct overload here, but the compiler knows which to pick.
-	#[must_use]
-	#[inline(always)] // No-op.
-	pub fn prefer_thread_safe(self) -> Self {
-		self
-	}
-}
-impl<'a> Node<'a, ThreadBound> {
-	/// Gently nudges the compiler to choose the thread-safe version of a value if both are is possible.
-	///
-	/// This method is by reference, so it will resolve with lower priority than the by-reference method on the thread-safe type.  
-	/// Note that not all tooling will show the correct overload here, but the compiler knows which to pick.
-	#[must_use]
-	#[inline(always)] // No-op.
-	pub fn prefer_thread_safe(&self) -> Self {
-		*self
-	}
-}
-
 /// Contextually thread-binds an instance, or not. Use only without qualification.
 ///
 /// This trait acts as [`Into`] on and between variants of the same [`Vdom`] type, but without raising `useless_conversion` warnings.
@@ -489,4 +460,87 @@ pub trait Align<T: Vdom>: Vdom {
 
 /// Not derived from the [`Into`] constraints since those are too broad.
 impl<T> Align<T> for T where T: Vdom {}
-impl<'a> Align<Node<'a, ThreadBound>> for Node<'a, ThreadSafe> {}
+
+macro_rules! deanonymize_on_named {
+	() => {
+		/// When called on an opaque type, deanonymizes it into the underlying named type.
+		///
+		/// **Both** [`AutoSafe`] and [`Deanonymize`] must be in scope and the method must be called *without qualification* for this to work.
+		///
+		/// Calling this method on a named type returns the value and type unchanged and produces a deprecation warning.
+		#[deprecated = "Call of `.deanonymize()` on named type."]
+		#[must_use]
+		#[inline(always)] // No-op.
+		pub fn deanonymize(self) -> Self {
+			self
+		}
+	};
+}
+
+macro_rules! prefer_thread_safe_safe {
+	{
+		$(#[$($attrs:tt)*])*
+	} => {
+		/// Gently nudges the compiler to choose the [`ThreadSafe`] version of a value if both are possible.
+		///
+		/// This method is by value, so it will resolve with higher priority than the by-reference method on the [`ThreadBound`] type.
+		/// Note that not all tooling will show the correct overload here, but the compiler knows which to pick.
+		$(#[$($attrs)*])*
+		#[must_use]
+		#[inline(always)] // No-op.
+		pub fn prefer_thread_safe(self) -> Self {
+			self
+		}
+	};
+}
+
+macro_rules! prefer_thread_safe_bound {
+	() => {
+		/// Gently nudges the compiler to choose the [`ThreadSafe`] version of a value if both are is possible.
+		///
+		/// This method is by reference, so it will resolve with lower priority than the by-reference method on the [`ThreadSafe`] type.  
+		/// Note that not all tooling will show the correct overload here, but the compiler knows which to pick.
+		#[must_use]
+		#[inline(always)] // No-op.
+		pub fn prefer_thread_safe(&self) -> Self {
+			*self
+		}
+	};
+}
+
+impl<'a> Attribute<'a> {
+	deanonymize_on_named!();
+	prefer_thread_safe_safe! {
+		///
+		/// Calling this method on [`Attribute`] produces a deprecation warning since the type is always [`ThreadSafe`].
+		#[deprecated = "Call of `.prefer_thread_safe()` on `Attribute`."]
+	}
+}
+
+macro_rules! impl_auto_safety {
+	($($Name:ident),*$(,)?) => {$(
+		impl<'a, S: ThreadSafety> $Name<'a, S> {
+			deanonymize_on_named!();
+		}
+		impl<'a> $Name<'a, ThreadSafe> {
+			prefer_thread_safe_safe!();
+		}
+		impl<'a> $Name<'a, ThreadBound> {
+			prefer_thread_safe_bound!();
+		}
+		impl<'a> Align<$Name<'a, ThreadBound>> for $Name<'a, ThreadSafe> {}
+	)*};
+}
+
+impl_auto_safety!(Element, EventBinding, Node);
+
+impl<S: ThreadSafety, T> CallbackRef<S, T> {
+	deanonymize_on_named!();
+}
+impl<T> CallbackRef<ThreadSafe, T> {
+	prefer_thread_safe_safe!();
+}
+impl<T> CallbackRef<ThreadBound, T> {
+	prefer_thread_safe_bound!();
+}
+impl<T> Align<CallbackRef<ThreadBound, T>> for CallbackRef<ThreadSafe, T> {}

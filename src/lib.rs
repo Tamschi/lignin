@@ -136,8 +136,14 @@ impl ThreadSafety for ThreadBound {}
 impl ThreadSafety for ThreadSafe {}
 
 /// Marker trait for VDOM data types, which (almost) all vary by [`ThreadSafety`].
+///
+/// Somewhat uselessly implemented on [`Attribute`], which is always [`ThreadSafe`].
 pub trait Vdom: Sealed {
 	type ThreadSafety: ThreadSafety;
+}
+
+impl<'a> Vdom for Attribute<'a> {
+	type ThreadSafety = ThreadSafe;
 }
 
 macro_rules! vdom_impls {
@@ -148,3 +154,7 @@ macro_rules! vdom_impls {
 	)*};
 }
 vdom_impls!(Element, EventBinding, Node);
+
+impl<S: ThreadSafety, T> Vdom for CallbackRef<S, T> {
+	type ThreadSafety = S;
+}
