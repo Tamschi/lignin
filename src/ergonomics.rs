@@ -2,14 +2,12 @@
 #![allow(clippy::match_same_arms)]
 
 use crate::{
-	auto_safety::Align, CallbackRef, CallbackRegistration, Element, Node, ThreadBound, ThreadSafe,
-	ThreadSafety,
+	auto_safety::Align, CallbackRef, CallbackRegistration, Element, EventBinding, Node,
+	ThreadBound, ThreadSafe, ThreadSafety,
 };
 use core::{
 	any::type_name,
-	fmt,
-	fmt::Debug,
-	fmt::Formatter,
+	fmt::{self, Debug, Formatter},
 	hash::{Hash, Hasher},
 };
 
@@ -131,9 +129,35 @@ macro_rules! vdom_ergonomics {
 
 vdom_ergonomics!([
 	Element {
-		debug: |&self, _f| todo!(),
-		partial_eq: |&self, _other| todo!(),
-		hash: |&self, _state| todo!(),
+		debug: |&self, f| f
+			.debug_struct("Element")
+			.field("name", &self.name)
+			.field("attributes", &self.attributes)
+			.field("content", &self.content)
+			.field("event_bindings", &self.event_bindings)
+			.finish(),
+		partial_eq: |&self, other| self.name == other.name
+			&& self.attributes == other.attributes
+			&& self.content == other.content
+			&& self.event_bindings == other.event_bindings,
+		hash: |&self, state| {
+			self.name.hash(state);
+			self.attributes.hash(state);
+			self.event_bindings.hash(state);
+			self.content.hash(state); // Recursion.
+		},
+	},
+	EventBinding {
+		debug: |&self, f| f
+			.debug_struct("EventBinding")
+			.field("name", &self.name)
+			.field("callback", &self.callback)
+			.finish(),
+		partial_eq: |&self, other| self.name == other.name && self.callback == other.callback,
+		hash: |&self, state| {
+			self.name.hash(state);
+			self.callback.hash(state);
+		},
 	},
 	Node {
 		debug: |&self, f| match self {
@@ -236,16 +260,16 @@ vdom_ergonomics!([
 				element,
 				dom_binding,
 			} => {
-				element.hash(state);
-				dom_binding.hash(state)
+				dom_binding.hash(state);
+				element.hash(state); // Recursion.
 			}
-			Node::Ref(node) => node.hash(state),
-			Node::Multi(nodes) => nodes.hash(state),
+			Node::Ref(node) => node.hash(state),     // Recursion.
+			Node::Multi(nodes) => nodes.hash(state), // Recursion.
 			Node::Text { text, dom_binding } => {
 				text.hash(state);
 				dom_binding.hash(state)
 			}
-			Node::RemnantSite(remnant_site) => remnant_site.hash(state),
+			Node::RemnantSite(remnant_site) => remnant_site.hash(state), // Recursion (eventually).
 		},
 	}
 ]);
