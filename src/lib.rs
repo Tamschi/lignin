@@ -1,6 +1,7 @@
 #![doc(html_root_url = "https://docs.rs/lignin/0.0.5")]
 #![no_std]
 #![warn(clippy::pedantic)]
+// #![warn(missing_docs)] //TODO
 
 //! # Implementation Contract
 //!
@@ -37,7 +38,6 @@ use sealed::Sealed;
 
 /// [`Vdom`]
 #[non_exhaustive]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Node<'a, S: ThreadSafety> {
 	Comment {
 		comment: &'a str,
@@ -57,8 +57,7 @@ pub enum Node<'a, S: ThreadSafety> {
 	RemnantSite(&'a RemnantSite),
 }
 
-/// [`Vdom`]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+/// [`Vdom`] A single HTML element with `name`, `attributes`, `content` and `event_bindings`.
 pub struct Element<'a, S: ThreadSafety> {
 	pub name: &'a str,
 	pub attributes: &'a [Attribute<'a>],
@@ -66,36 +65,18 @@ pub struct Element<'a, S: ThreadSafety> {
 	pub event_bindings: &'a [EventBinding<'a, S>],
 }
 
-/// [`Vdom`]
+/// [`Vdom`] A single DOM event binding with `name` and `callback`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EventBinding<'a, S: ThreadSafety> {
 	pub name: &'a str,
 	pub callback: CallbackRef<S, web::Event>,
 }
 
-/// [`Vdom`]
+/// [`Vdom`] A single HTML attribute with `name` and `value`.
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Hash)]
 pub struct Attribute<'a> {
 	pub name: &'a str,
 	pub value: &'a str,
-}
-
-impl<'a: 'b, 'b, S: ThreadSafety> From<&'a Element<'a, S>> for Node<'b, S> {
-	fn from(element: &'a Element<'a, S>) -> Self {
-		Self::Element {
-			element,
-			dom_binding: None,
-		}
-	}
-}
-
-impl<'a: 'b, 'b, S: ThreadSafety> From<&'a mut Element<'a, S>> for Node<'b, S> {
-	fn from(element: &'a mut Element<'a, S>) -> Self {
-		Self::Element {
-			element,
-			dom_binding: None,
-		}
-	}
 }
 
 mod sealed {
@@ -105,10 +86,8 @@ mod sealed {
 	};
 	use core::{fmt::Debug, hash::Hash};
 
-	pub trait Sealed:
-		Sized + Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord + Hash
-	{
-	}
+	//TODO: Move these bounds to `Vdom`.
+	pub trait Sealed: Sized + Debug + Clone + Copy + PartialEq + Eq + Hash {}
 	impl Sealed for ThreadBound {}
 	impl Sealed for ThreadSafe {}
 	impl<'a> Sealed for Attribute<'a> {}
