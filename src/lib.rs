@@ -169,7 +169,9 @@ impl<'a> Vdom for Attribute<'a> {
 
 macro_rules! vdom_impls {
 	($($name:ident),*$(,)?) => {$(
-		impl<'a, S: ThreadSafety> Vdom for $name<'a, S> {
+		impl<'a, S> Vdom for $name<'a, S> where
+			S: ThreadSafety,
+		{
 			type ThreadSafety = S;
 		}
 	)*};

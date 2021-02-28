@@ -99,27 +99,40 @@ macro_rules! vdom_ergonomics {
 			}
 		}
 
-		impl<'a, S: ThreadSafety> Debug for $VdomName<'a, S> {
+		impl<'a, S> Debug for $VdomName<'a, S> where
+			S: ThreadSafety,
+		{
 			fn fmt(&$debug_self, $debug_f: &mut Formatter<'_>) -> fmt::Result {
 				$debug
 			}
 		}
 
-		impl<'a, S: ThreadSafety> Clone for $VdomName<'a, S> {
+		impl<'a, S> Clone for $VdomName<'a, S> where
+			S: ThreadSafety,
+		{
 			fn clone(&self) -> Self {
 				*self
 			}
 		}
-		impl<'a, S: ThreadSafety> Copy for $VdomName<'a, S> {}
+		impl<'a, S> Copy for $VdomName<'a, S> where
+			S: ThreadSafety,
+		{}
 
-		impl<'a, S1: ThreadSafety, S2: ThreadSafety> PartialEq<$VdomName<'a, S2>> for $VdomName<'a, S1> {
+		impl<'a, S1, S2> PartialEq<$VdomName<'a, S2>> for $VdomName<'a, S1> where
+			S1: ThreadSafety,
+			S2: ThreadSafety,
+		{
 			fn eq(&$eq_self, $eq_other: &$VdomName<'a, S2>) -> bool {
 				$partial_eq
 			}
 		}
-		impl<'a, S: ThreadSafety> Eq for $VdomName<'a, S> {}
+		impl<'a, S> Eq for $VdomName<'a, S> where
+			S: ThreadSafety,
+		{}
 
-		impl<'a, S: ThreadSafety> Hash for $VdomName<'a, S> {
+		impl<'a, S> Hash for $VdomName<'a, S> where
+			S: ThreadSafety,
+		{
 			fn hash<H: Hasher>(&$hash_self, $hash_state: &mut H) {
 				$hash
 			}
@@ -276,7 +289,10 @@ vdom_ergonomics!([
 
 // Conversions between distinct types //
 
-impl<'a: 'b, 'b, S: ThreadSafety> From<&'a Element<'a, S>> for Node<'b, S> {
+impl<'a, S> From<&'a Element<'a, S>> for Node<'a, S>
+where
+	S: ThreadSafety,
+{
 	fn from(element: &'a Element<'a, S>) -> Self {
 		Self::Element {
 			element,
@@ -285,7 +301,10 @@ impl<'a: 'b, 'b, S: ThreadSafety> From<&'a Element<'a, S>> for Node<'b, S> {
 	}
 }
 
-impl<'a: 'b, 'b, S: ThreadSafety> From<&'a mut Element<'a, S>> for Node<'b, S> {
+impl<'a, S> From<&'a mut Element<'a, S>> for Node<'a, S>
+where
+	S: ThreadSafety,
+{
 	fn from(element: &'a mut Element<'a, S>) -> Self {
 		Self::Element {
 			element,

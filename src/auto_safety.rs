@@ -526,9 +526,6 @@ pub trait Align<T: Vdom>: Vdom {
 	}
 }
 
-/// Not derived from the [`Into`] constraints since those are too broad.
-impl<T> Align<T> for T where T: Vdom {}
-
 macro_rules! deanonymize_on_named {
 	() => {
 		/// When called on an opaque type, deanonymizes it into the underlying named type.
@@ -598,10 +595,16 @@ macro_rules! impl_auto_safety {
 		impl<'a> $Name<'a, ThreadBound> {
 			prefer_thread_safe_bound!();
 		}
-		impl<'a, O> Deanonymize<$Name<'a, ThreadSafe>> for O where
-			O: Send + Sync + AutoSafe<$Name<'a, ThreadBound>>,
+		impl<'a, V> Deanonymize<$Name<'a, ThreadSafe>> for V where
+			V: Send + Sync + AutoSafe<$Name<'a, ThreadBound>>,
 		{}
-		impl<'a> Align<$Name<'a, ThreadBound>> for $Name<'a, ThreadSafe> {}
+
+		/// Not derived from the [`Into`] constraints on `$Name` directly since those are too broad.
+		impl<'a, S1, S2> Align<$Name<'a, S2>> for $Name<'a, S1>
+		where
+			S1: ThreadSafety + Into<S2>,
+			S2: ThreadSafety,
+		{}
 	)*};
 }
 
@@ -620,4 +623,9 @@ impl<T, O> Deanonymize<CallbackRef<ThreadSafe, T>> for O where
 	O: Send + Sync + AutoSafe<CallbackRef<ThreadBound, T>>
 {
 }
-impl<T> Align<CallbackRef<ThreadBound, T>> for CallbackRef<ThreadSafe, T> {}
+impl<S1, S2, T> Align<CallbackRef<S2, T>> for CallbackRef<S1, T>
+where
+	S1: ThreadSafety + Into<S2>,
+	S2: ThreadSafety,
+{
+}
