@@ -82,7 +82,6 @@ pub enum Node<'a, S: ThreadSafety> {
 		element: &'a Element<'a, S>,
 		dom_binding: Option<CallbackRef<S, DomRef<web::HtmlElement>>>,
 	},
-	Ref(&'a Node<'a, S>),
 	Multi(&'a [Node<'a, S>]),
 	Text {
 		text: &'a str,

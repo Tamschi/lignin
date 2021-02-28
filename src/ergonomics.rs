@@ -190,7 +190,6 @@ vdom_ergonomics!([
 				.field("element", element)
 				.field("dom_binding", dom_binding)
 				.finish(),
-			Node::Ref(node) => f.debug_tuple("Node::Ref").field(node).finish(),
 			Node::Multi(nodes) => f.debug_tuple("Node::Ref").field(nodes).finish(),
 			Node::Text { text, dom_binding } => f
 				.debug_struct("Node::Text")
@@ -237,8 +236,6 @@ vdom_ergonomics!([
 						(_, _) => false,
 					},
 			(Node::Element { .. }, _) => false,
-			(Node::Ref(n_1), Node::Ref(n_2)) => n_1 == n_2,
-			(Node::Ref(_), _) => false,
 			(Node::Multi(n_1), Node::Multi(n_2)) => n_1 == n_2,
 			(Node::Multi(_), _) => false,
 			(
@@ -276,7 +273,6 @@ vdom_ergonomics!([
 				dom_binding.hash(state);
 				element.hash(state); // Recursion.
 			}
-			Node::Ref(node) => node.hash(state),     // Recursion.
 			Node::Multi(nodes) => nodes.hash(state), // Recursion.
 			Node::Text { text, dom_binding } => {
 				text.hash(state);
