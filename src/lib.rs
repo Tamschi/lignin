@@ -47,7 +47,7 @@
 //! [`Hash`](`core::hash::Hash`) is implemented recursively in this crate and is potentially expensive.
 //! The same applies to [`PartialEq`] and [`Eq`].
 //!
-//! **`lignin` does not implement hash caching by itself**, so users of a [`HashMap`](https://doc.rust-lang.org/stable/std/collections/struct.HashMap.html) or similar container should wrap node graphs in a "`HashCached<T>`" type first.
+//! **`lignin` does not implement hash caching by itself**, so users of [`HashMap`](https://doc.rust-lang.org/stable/std/collections/struct.HashMap.html) or similar containers should wrap node graphs in a "`HashCached<T>`" type first.
 #[cfg(doctest)]
 pub mod readme {
 	doc_comment::doctest!("../README.md");
