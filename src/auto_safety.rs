@@ -118,11 +118,11 @@
 //! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
 //! #
 //! fn safe_1<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> {
-//!   Node::Ref(allocate(safe()))
+//!   Node::Multi(allocate([safe()]))
 //! }
 //!
 //! fn bound_1<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> {
-//!   Node::Ref(allocate(bound()))
+//!   Node::Multi(allocate([bound()]))
 //! }
 //! #
 //! # assert_safe(safe_1().deanonymize());
@@ -198,11 +198,11 @@
 //! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
 //! #
 //! fn safe_2<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> {
-//!   Node::Ref(allocate(inferred_safe().deanonymize()))
+//!   Node::Multi(allocate([inferred_safe().deanonymize()]))
 //! }
 //!
 //! fn bound_2<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> {
-//!   Node::Ref(allocate(inferred_bound().deanonymize()))
+//!   Node::Multi(allocate([inferred_bound().deanonymize()]))
 //! }
 //! #
 //! # assert_safe(safe_2().deanonymize());
@@ -450,8 +450,8 @@
 //! TODO
 
 use crate::{
-	Attribute, CallbackRef, Element, EventBinding, Node, ThreadBound, ThreadSafe, ThreadSafety,
-	Vdom,
+	Attribute, CallbackRef, Element, EventBinding, Node, ReorderableFragment, ThreadBound,
+	ThreadSafe, ThreadSafety, Vdom,
 };
 
 /// Deanonymize towards the general ([`ThreadBound`]) case. Used as `-> impl AutoSafe<…>`.
@@ -608,7 +608,7 @@ macro_rules! impl_auto_safety {
 	)*};
 }
 
-impl_auto_safety!(Element, EventBinding, Node);
+impl_auto_safety!(Element, EventBinding, Node, ReorderableFragment);
 
 impl<S: ThreadSafety, T> CallbackRef<S, T> {
 	deanonymize_on_named!();
