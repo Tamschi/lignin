@@ -1,7 +1,7 @@
 #![doc(html_root_url = "https://docs.rs/lignin/0.0.5")]
 #![no_std]
 #![warn(clippy::pedantic)]
-// #![warn(missing_docs)] //TODO
+#![warn(missing_docs)] //TODO
 
 //! `lignin`, named after the structural polymer found in plants, is a lightweight but comprehensive VDOM data type library for use in a wider web context.
 //!
@@ -98,6 +98,21 @@ use sealed::Sealed;
 //TODO: Should `Vdom` types implement `PartialOrd` and `Ord`?
 
 /// [`Vdom`] A single generic VDOM node.
+///
+/// This should be relatively small:
+///
+/// ```rust
+/// # use core::mem::size_of;
+/// # use lignin::{Node, ThreadSafe};
+/// if size_of::<usize>() == 8 {
+///   assert!(size_of::<Node<ThreadSafe>>() <= 24);
+/// }
+///
+/// // e.g. current Wasm
+/// if size_of::<usize>() == 4 {
+///   assert!(size_of::<Node<ThreadSafe>>() <= 16);
+/// }
+/// ```
 pub enum Node<'a, S: ThreadSafety> {
 	/// Represents a DOM [*Comment*](https://developer.mozilla.org/en-US/docs/Web/API/Comment) node.
 	Comment {
@@ -115,7 +130,7 @@ pub enum Node<'a, S: ThreadSafety> {
 	///
 	/// TODO?: Explain a bit more what's specified and what isn't.
 	Memoized {
-		state_key: u128,
+		state_key: u64,
 		content: &'a Node<'a, S>,
 	},
 	/// A DOM-transparent sequence of VDOM nodes. Used to hint diffs in case of additions and removals.
