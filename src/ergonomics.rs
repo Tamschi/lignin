@@ -258,7 +258,7 @@ vdom_ergonomics!([
 				.field("content", content)
 				.finish(),
 			Node::Multi(nodes) => f.debug_tuple("Node::Multi").field(nodes).finish(),
-			Node::Keyed(pairs) => f.debug_tuple("Node::Keyed").field(pairs).finish(),
+			Node::Keyed(fragments) => f.debug_tuple("Node::Keyed").field(fragments).finish(),
 			Node::Text { text, dom_binding } => f
 				.debug_struct("Node::Text")
 				.field("text", text)

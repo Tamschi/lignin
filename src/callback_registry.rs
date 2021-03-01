@@ -176,6 +176,7 @@ use callbacks_off as callbacks;
 #[derive(Debug)]
 pub struct CallbackRegistration<R, T> {
 	key: NonZeroU32,
+	///FIXME: Can this be written with `&R` (removing the manual `Send` and `Sync` impls below)?
 	phantom: PhantomData<(*const R, fn(T))>,
 	pinned: PhantomPinned,
 }
@@ -184,7 +185,7 @@ pub struct CallbackRegistration<R, T> {
 // Without the `"callbacks"` feature, that pointer is actually unreachable, so this type *could* be more generally `Send` and `Sync`.
 // However, since a CallbackRegistration is intended to be primarily handled by the matching `R` instance, this isn't done in order to retain consistency.
 unsafe impl<R, T> Send for CallbackRegistration<R, T> where R: Sync {}
-unsafe impl<R: Sync, T> Sync for CallbackRegistration<R, T> {}
+unsafe impl<R, T> Sync for CallbackRegistration<R, T> where R: Sync {}
 impl<R, T> CallbackRegistration<R, T> {
 	/// Creates a new [`CallbackRegistration<R, T>`] with the given `receiver` and `handler`.
 	///
@@ -210,7 +211,6 @@ impl<R, T> CallbackRegistration<R, T> {
 		}
 	}
 
-	/// [`Vdom`](`crate::Vdom`)
 	#[must_use]
 	pub fn to_ref_thread_bound(&self) -> CallbackRef<ThreadBound, T> {
 		CallbackRef {
@@ -225,12 +225,14 @@ impl<R, T> Drop for CallbackRegistration<R, T> {
 	}
 }
 
-#[allow(clippy::type_complexity)]
+/// [`Vdom`](`crate::Vdom`) A callback reference linked to a [`CallbackRegistration`].
 pub struct CallbackRef<S: ThreadSafety, T> {
 	pub(crate) key: NonZeroU32,
 	phantom: PhantomData<(S, fn(T))>,
 }
 impl<S: ThreadSafety, T> CallbackRef<S, T> {
+	/// Invokes the stored handler with the stored receiver and `parameter`,
+	/// provided that the original [`CallbackReference`] hasn't been dropped yet.
 	pub fn call(self, parameter: T) {
 		callbacks::invoke(self.key, parameter)
 	}
