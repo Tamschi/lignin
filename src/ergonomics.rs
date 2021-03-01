@@ -9,8 +9,10 @@ use crate::{
 };
 use core::{
 	any::type_name,
+	cmp::{self, Ordering},
 	fmt::{self, Debug, Formatter},
 	hash::{Hash, Hasher},
+	matches,
 };
 
 //TODO:
@@ -59,6 +61,16 @@ impl<S: ThreadSafety, T> Hash for CallbackRef<S, T> {
 		self.key.hash(state)
 	}
 }
+impl<S1: ThreadSafety, S2: ThreadSafety, T> PartialOrd<CallbackRef<S2, T>> for CallbackRef<S1, T> {
+	fn partial_cmp(&self, other: &CallbackRef<S2, T>) -> Option<Ordering> {
+		todo!()
+	}
+}
+impl<S: ThreadSafety, T> Ord for CallbackRef<S, T> {
+	fn cmp(&self, other: &Self) -> Ordering {
+		todo!()
+	}
+}
 
 impl<R, T> From<&CallbackRegistration<R, T>> for CallbackRef<ThreadSafe, T>
 where
@@ -81,6 +93,7 @@ macro_rules! vdom_ergonomics {
 			debug: |&$debug_self:ident, $debug_f:ident| $debug:expr,
 			partial_eq: |&$eq_self:ident, $eq_other:ident| $partial_eq:expr,
 			hash: |&$hash_self:ident, $hash_state:ident| $hash:expr,
+			cmp: |$cmp_cmp:ident, $cmp_final_cmp:ident, &$cmp_self:ident, $cmp_other:ident| $cmp:expr,
 		}
 	),*$(,)?]) => {$(
 		impl<'a> From<$VdomName<'a, ThreadSafe>> for $VdomName<'a, ThreadBound> {
@@ -129,6 +142,50 @@ macro_rules! vdom_ergonomics {
 				$hash
 			}
 		}
+
+		#[allow(unused_macros, unused_variables)] //TODO
+		impl<'a, S1, S2> PartialOrd<$VdomName<'a, S2>> for $VdomName<'a, S1>
+		where
+			S1: ThreadSafety,
+			S2: ThreadSafety,
+		{
+			fn partial_cmp(&$cmp_self, $cmp_other: &$VdomName<'a, S2>) -> Option<core::cmp::Ordering> {
+				{
+					macro_rules! $cmp_cmp {
+						($first:expr, $second:expr) => {
+							let partial_ord = PartialOrd::partial_cmp($first, $second);
+							if !matches!(partial_ord, Some(Ordering::Equal)) {
+								return partial_ord;
+							}
+						};
+					}
+					macro_rules! $cmp_final_cmp {
+						($first:expr, $second:expr) => (PartialOrd::partial_cmp($first, $second))
+					}
+					$cmp
+				}
+			}
+		}
+		#[allow(unused_macros, unused_variables)] //TODO
+		impl<'a, S> Ord for $VdomName<'a, S>
+		where
+			S: ThreadSafety,
+		{
+			fn cmp(&$cmp_self, $cmp_other: &Self) -> Ordering {
+				macro_rules! $cmp_cmp {
+					($first:expr, $second:expr) => {
+						let ord = Ord::cmp($first, $second);
+						if !matches!(ord, Ordering::Equal) {
+							return ord;
+						}
+					};
+				}
+				macro_rules! $cmp_final_cmp {
+					($first:expr, $second:expr) => (Ord::cmp($first, $second))
+				}
+				$cmp
+			}
+		}
 	)*};
 }
 
@@ -151,6 +208,15 @@ vdom_ergonomics!([
 			self.event_bindings.hash(state);
 			self.content.hash(state); // Recursion.
 		},
+		cmp: |cmp, final_cmp, &self, other| {
+			cmp!(self.name, other.name);
+			cmp!(self.attributes, other.attributes);
+			for i in 0..cmp::min(self.event_bindings.len(), other.event_bindings.len()) {
+				cmp!(&self.event_bindings[i], &other.event_bindings[i]);
+			}
+			cmp!(&self.event_bindings.len(), &other.event_bindings.len());
+			final_cmp!(&self.content, &other.content) // Recursion.
+		},
 	},
 	EventBinding {
 		debug: |&self, f| f
@@ -162,6 +228,10 @@ vdom_ergonomics!([
 		hash: |&self, state| {
 			self.name.hash(state);
 			self.callback.hash(state);
+		},
+		cmp: |cmp, final_cmp, &self, other| {
+			cmp!(self.name, other.name);
+			final_cmp!(&self.callback, &other.callback)
 		},
 	},
 	Node {
@@ -293,6 +363,7 @@ vdom_ergonomics!([
 			}
 			Node::RemnantSite(remnant_site) => remnant_site.hash(state), // Recursion (eventually).
 		},
+		cmp: |cmp, final_cmp, &self, other| todo!(),
 	},
 	ReorderableFragment {
 		debug: |&self, f| f
@@ -304,6 +375,10 @@ vdom_ergonomics!([
 		hash: |&self, state| {
 			self.dom_key.hash(state);
 			self.content.hash(state); // Recursion.
+		},
+		cmp: |cmp, final_cmp, &self, other| {
+			cmp!(&self.dom_key, &other.dom_key);
+			final_cmp!(&self.content, &other.content) // Recursion.
 		},
 	}
 ]);

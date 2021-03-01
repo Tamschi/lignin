@@ -32,7 +32,7 @@
 //!
 //! # Deep Comparisons
 //!
-//! All [`core`] comparison traits ([`PartialEq`], [`Eq`], [`PartialOrd`] and [`Ord`]) operate on the entire reachable VDOM graph and are implemented recursively where applicable.
+//! All [`core`] comparison traits ([`PartialEq`], [`Eq`], [`PartialOrd`] and [`Ord`]) are implemented recursively where applicable.
 //!
 //! Note that [`CallbackRef`]s derived from separate instances of [`CallbackRegistration`] are still considered distinct,
 //! regardless of the `receiver` and `handler` used to make them.
@@ -52,7 +52,7 @@
 //! [`Hash`](`core::hash::Hash`) is implemented recursively in this crate and is potentially expensive.
 //! The same applies to [`PartialEq`], [`Eq`], [`PartialOrd`] and [`Ord`].
 //!
-//! As an exception, [`Memoized` nodes](`Node::Memoized`) are compared only by their [`state_key`](`Node::Memoized::state_key`).
+//! As an exception, [`Node::Memoized`] instances are compared only by their [`state_key`](`Node::Memoized::state_key`).
 //! Their [`content`](`Node::Memoized::content`) is ignored for comparisons and does not factor into their [hash](`core::hash`).
 //!
 //! **`lignin` does not implement hash caching by itself**, so users of [`HashMap`](https://doc.rust-lang.org/stable/std/collections/struct.HashMap.html) or similar containers should wrap node graphs in a "`HashCached<T>`" type first.
@@ -99,12 +99,12 @@ use sealed::Sealed;
 
 /// [`Vdom`] A single generic VDOM node.
 pub enum Node<'a, S: ThreadSafety> {
-	/// Represents a DOM [Comment](https://developer.mozilla.org/en-US/docs/Web/API/Comment) node.
+	/// Represents a DOM [*Comment*](https://developer.mozilla.org/en-US/docs/Web/API/Comment) node.
 	Comment {
 		comment: &'a str,
 		dom_binding: Option<CallbackRef<S, DomRef<web::Comment>>>,
 	},
-	/// Represents a single [HTMLElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement).
+	/// Represents a single [*HTMLElement*](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement).
 	Element {
 		element: &'a Element<'a, S>,
 		dom_binding: Option<CallbackRef<S, DomRef<web::HtmlElement>>>,
@@ -147,7 +147,7 @@ pub enum Node<'a, S: ThreadSafety> {
 /// [`Vdom`] A VDOM node that has its DOM identity preserved during DOM updates even after being repositioned within a (path-)matching [`Node::Keyed`].
 pub struct ReorderableFragment<'a, S: ThreadSafety> {
 	pub dom_key: usize,
-	pub content: &'a Node<'a, S>,
+	pub content: Node<'a, S>,
 }
 
 #[allow(clippy::doc_markdown)]
