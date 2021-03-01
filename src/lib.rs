@@ -63,12 +63,9 @@
 //!
 //! For the same reason, there is formally no information about VDOM identity, which could be used to render self-referential XML documents.
 //!
-//! > In practice, it **may** be possible to determine identity by comparing pointers, but there are caveats around pointer comparisons.  
-//! > For example, `lignin` lets apps freely mix instances allocated on the stack and heap in the same VDOM graph, but [pointer equality between those isn't necessarily meaningful](TODO).
+//! > In practice, it **may** be possible to determine identity by comparing pointers, but this would require some workarounds regarding `lignin`'s slices-of-values to be general.
 //! >
-//! > The implementation itself is also quite error-prone on types that are [`Copy`] due to implicit by-value copies there.
-//! >
-//! > Proceed with extreme caution and architecture assertions if you must!
+//! > The implementation itself is quite error-prone on types that are [`Copy`] due to implicit by-value copies there. Proceed with caution if you must!
 //!
 //! Element and attribute names are always plain `&str`s, which isn't ideal for software that renders its GUI more directly than through a web browser.
 //! I'm open to maintaining a generic fork if there's interest in this regard.

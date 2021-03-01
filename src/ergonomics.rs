@@ -195,13 +195,13 @@ vdom_ergonomics!([
 			.debug_struct("Element")
 			.field("name", &self.name)
 			.field("attributes", &self.attributes)
-			.field("content", &self.content)
+			.field("content", &self.content) // Recursion.
 			.field("event_bindings", &self.event_bindings)
 			.finish(),
 		partial_eq: |&self, other| self.name == other.name
 			&& self.attributes == other.attributes
-			&& self.content == other.content
-			&& self.event_bindings == other.event_bindings,
+			&& self.event_bindings == other.event_bindings
+			&& self.content == other.content, // Recursion.
 		hash: |&self, state| {
 			self.name.hash(state);
 			self.attributes.hash(state);
@@ -255,7 +255,7 @@ vdom_ergonomics!([
 			Node::Memoized { state_key, content } => f
 				.debug_struct("Node::Memoized")
 				.field("state_key", state_key)
-				.field("content", content)
+				.field("content", content) // Recursion.
 				.finish(),
 			Node::Multi(nodes) => f.debug_tuple("Node::Multi").field(nodes).finish(),
 			Node::Keyed(fragments) => f.debug_tuple("Node::Keyed").field(fragments).finish(),
@@ -313,9 +313,9 @@ vdom_ergonomics!([
 				},
 			) => sk_1 == sk_2,
 			(Node::Memoized { .. }, _) => false,
-			(Node::Multi(n_1), Node::Multi(n_2)) => n_1 == n_2,
+			(Node::Multi(n_1), Node::Multi(n_2)) => n_1 == n_2, // Recursion.
 			(Node::Multi(_), _) => false,
-			(Node::Keyed(p_1), Node::Keyed(p_2)) => p_1 == p_2,
+			(Node::Keyed(p_1), Node::Keyed(p_2)) => p_1 == p_2, // Recursion.
 			(Node::Keyed(_), _) => false,
 			(
 				Node::Text {
@@ -334,7 +334,7 @@ vdom_ergonomics!([
 						(_, _) => false,
 					},
 			(Node::Text { .. }, _) => false,
-			(Node::RemnantSite(rs_1), Node::RemnantSite(rs_2)) => rs_1 == rs_2,
+			(Node::RemnantSite(rs_1), Node::RemnantSite(rs_2)) => rs_1 == rs_2, // Recursion.
 			(Node::RemnantSite(_), _) => false,
 		},
 		hash: |&self, state| match self {
@@ -369,7 +369,7 @@ vdom_ergonomics!([
 		debug: |&self, f| f
 			.debug_struct("ReorderableFragment")
 			.field("dom_key", &self.dom_key)
-			.field("content", &self.content)
+			.field("content", &self.content) // Recursion.
 			.finish(),
 		partial_eq: |&self, other| self.dom_key == other.dom_key && self.content == other.content,
 		hash: |&self, state| {
