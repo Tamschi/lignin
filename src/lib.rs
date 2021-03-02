@@ -5,10 +5,19 @@
 
 //! `lignin`, named after the structural polymer found in plants, is a lightweight but comprehensive VDOM data type library for use in a wider web context.
 //!
+//! # About the Documentation
+//!
+//! DOM API terms are ***bold italic*** and linked to the MDN Web Docs.
+//! (Please file an issue if this isn't the case somewhere.)
+//!
 //! # Implementation Contract
 //!
 //! > **This is not a soundness contract**. Code using this crate must not rely on it for soundness.
 //! > However, it is free to panic when encountering an incorrect implementation.
+//!
+//! ## Security
+//!
+//! See the implementation contract on [`Node::Text::text`].
 //!
 //! ## Correctness
 //!
@@ -65,7 +74,7 @@
 //!
 //! > In practice, it **may** be possible to determine identity by comparing pointers, but this would require some workarounds regarding `lignin`'s slices-of-values to be general.
 //! >
-//! > The implementation itself is quite error-prone on types that are [`Copy`] due to implicit by-value copies there. Proceed with caution if you must!
+//! > The implementation itself would be quite error-prone on types that are [`Copy`] due to implicit by-value copies there. Proceed with caution if you must!
 //!
 //! Element and attribute names are always plain `&str`s, which isn't ideal for software that renders its GUI more directly than through a web browser.
 //! I'm open to maintaining a generic fork if there's interest in this regard.
@@ -111,17 +120,17 @@ use sealed::Sealed;
 /// }
 /// ```
 pub enum Node<'a, S: ThreadSafety> {
-	/// Represents a DOM [*Comment*](https://developer.mozilla.org/en-US/docs/Web/API/Comment) node.
+	/// Represents a [***Comment***](https://developer.mozilla.org/en-US/docs/Web/API/Comment) node.
 	Comment {
 		comment: &'a str,
 		dom_binding: Option<CallbackRef<S, DomRef<web::Comment>>>,
 	},
-	/// Represents a single [*HTMLElement*](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement).
+	/// Represents a single [***HTMLElement***](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement).
 	Element {
 		element: &'a Element<'a, S>,
 		dom_binding: Option<CallbackRef<S, DomRef<web::HtmlElement>>>,
 	},
-	/// Uses shallow comparison and hashing based on its `state_key` only.
+	/// DOM-transparent. This variant uses shallow comparison and hashes based on its `state_key` only.
 	///
 	/// A (good enough) `content` [hash](`core::hash`) makes for a good `state_key`, but this isn't the only possible scheme and may not be the optimal one for your use case.
 	///
@@ -130,11 +139,13 @@ pub enum Node<'a, S: ThreadSafety> {
 		state_key: u64,
 		content: &'a Node<'a, S>,
 	},
-	/// A DOM-transparent sequence of VDOM nodes. Used to hint diffs in case of additions and removals.
+	/// DOM-transparent. Represents a sequence of VDOM nodes.
+	///
+	/// Used to hint diffs in case of additions and removals.
 	Multi(&'a [Node<'a, S>]),
 	/// A sequence of VDOM nodes that's transparent at rest, but encodes information on how to reuse and reorder elements when diffing.
 	///
-	/// **List indices are bad [`ReorderableFragment::dom_key`] values!**
+	/// **List indices are bad [`ReorderableFragment::dom_key`] values** unless reordered along with the items!
 	/// Use the [`Multi`](`Node::Multi`) variant instead if you don't track component identity.
 	///
 	/// # Implementation Contract
@@ -142,17 +153,37 @@ pub enum Node<'a, S: ThreadSafety> {
 	/// > **This is not a soundness contract**. Code using this crate must not rely on it for soundness.
 	/// > However, it is free to panic when encountering an incorrect implementation.
 	///
-	/// The [`ReorderableFragment::dom_key`] values must be unique within a slice reference by a [`Node::Keyed`] instance.
+	/// The [`ReorderableFragment::dom_key`] values must be unique within a slice referenced by a [`Node::Keyed`] instance.
 	///
 	/// > This rule does not apply between distinct [`ReorderableFragment`] slices, even if they overlap in memory or one is reachable from the other.
 	///TODO
 	Keyed(&'a [ReorderableFragment<'a, S>]),
-	//TODO: Map that allows shuffling of elements!
-	/// Represents a DOM [Text](https://developer.mozilla.org/en-US/docs/Web/API/Text) node.
+	/// Represents a [***Text***](https://developer.mozilla.org/en-US/docs/Web/API/Text) node.
 	Text {
+		/// The [`Text`](`Node::Text`)'s [***Node.textContent***](https://developer.mozilla.org/en-US/docs/Web/API/Node/textContent).
+		///
+		/// # Implementation Contract
+		///
+		/// > **This is not a soundness contract**. Code using this crate must not rely on it for soundness.
+		/// > However, it is free to panic when encountering an incorrect implementation.
+		///
+		/// ## **Security**
+		///
+		/// This field contains unescaped *plaintext*. Renderers **must** escape **all** control characters and sequences.
+		///
+		/// Not doing so opens the door for [XSS](https://developer.mozilla.org/en-US/docs/Glossary/Cross-site_scripting) vulnerabilities.
+		///
+		/// In order to support e.g. formatting instructions, apps should (carefully) parse user-generated content and translate it into a matching VDOM graph.
+		///
+		/// Live components also have the option of using for example [`Node::Element::dom_binding`] to set [***Element.innerHTML***](https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML),
+		/// but this is not recommended due to the difficulty of implementing allow-listing with such an approach.
 		text: &'a str,
 		dom_binding: Option<CallbackRef<S, DomRef<web::Text>>>,
 	},
+	/// Currently unused.
+	///
+	/// The plan here is to allow fragments to linger in the DOM after being diffed out, which seems like the most economical way to enable e.g. fade-out animations.
+	//[not `doc`] There should be a callback for this occasion, and they should be placed in such a way in the DOM that, by default, they are rendered *in front* of a replacement in the same location.
 	RemnantSite(&'a RemnantSite),
 }
 
@@ -163,24 +194,37 @@ pub struct ReorderableFragment<'a, S: ThreadSafety> {
 }
 
 #[allow(clippy::doc_markdown)]
-/// [`Vdom`] Represents a single [*HTMLElement*](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement) as `name`, `attributes`, `content` and `event_bindings`.
+/// [`Vdom`] Represents a single [***HTMLElement***](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement) as `name`, `attributes`, `content` and `event_bindings`.
 pub struct Element<'a, S: ThreadSafety> {
+	/// The [***Element.tag_name***](https://developer.mozilla.org/en-US/docs/Web/API/Element/tagName).
+	///
+	/// Unlike in the browser, this is generally treated case-*sensitively*, meaning for example `"div"` doesn't equal `"DIV"`.
+	///
+	/// Since browsers will generally return the canonical uppercase name, it's recommended to generate the VDOM this way also, to avoid unnecessary mismatches.
 	pub name: &'a str,
+	/// The [***Element.attributes***](https://developer.mozilla.org/en-US/docs/Web/API/Element/attributes).
+	///
+	/// Note that while this collection is unordered in the browser, reordering attributes will generally affect diffing performance.
 	pub attributes: &'a [Attribute<'a>],
+	/// Maps to [***Node.childNodes***](https://developer.mozilla.org/en-US/docs/Web/API/Node/childNodes).
 	pub content: Node<'a, S>,
 	pub event_bindings: &'a [EventBinding<'a, S>],
 }
 
 /// [`Vdom`] Represents a single DOM event binding with `name` and `callback`.
 pub struct EventBinding<'a, S: ThreadSafety> {
+	/// The event name.
 	pub name: &'a str,
+	/// A callback reference created via [`CallbackRegistration`].
 	pub callback: CallbackRef<S, web::Event>,
 }
 
-/// [`Vdom`] Represents a single HTML [*Attr*](https://developer.mozilla.org/en-US/docs/Web/API/Attr) with `name` and `value`.
+/// [`Vdom`] Represents a single HTML [***Attr***](https://developer.mozilla.org/en-US/docs/Web/API/Attr) with `name` and `value`.
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Hash)]
 pub struct Attribute<'a> {
+	/// The unescaped [***name***](https://developer.mozilla.org/en-US/docs/Web/API/Attr#properties).
 	pub name: &'a str,
+	/// The unescaped [***value***](https://developer.mozilla.org/en-US/docs/Web/API/Attr#properties).
 	pub value: &'a str,
 }
 
@@ -234,6 +278,9 @@ impl ThreadSafety for ThreadSafe {}
 ///
 /// Somewhat uselessly implemented on [`Attribute`], which is always [`ThreadSafe`].
 pub trait Vdom: Sealed + Sized + Debug + Clone + Copy + PartialEq + Eq + Hash {
+	/// The [`ThreadSafety`] of the [`Vdom`] type, either [`ThreadSafe`] or [`ThreadBound`].
+	///
+	/// This comes from a generic type argument `S`, but [`Attribute`] is always [`ThreadSafe`].
 	type ThreadSafety: ThreadSafety;
 }
 

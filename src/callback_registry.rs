@@ -244,7 +244,7 @@ pub struct CallbackRef<S: ThreadSafety, T> {
 }
 impl<S: ThreadSafety, T> CallbackRef<S, T> {
 	/// Invokes the stored handler with the stored receiver and `parameter`,
-	/// provided that the original [`CallbackReference`] hasn't been dropped yet.
+	/// provided that the original [`CallbackRegistration`] hasn't been dropped yet.
 	#[allow(clippy::inline_always)]
 	#[inline(always)] // Proxy function.
 	pub fn call(self, parameter: T) {

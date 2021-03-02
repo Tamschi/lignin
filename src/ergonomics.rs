@@ -1,8 +1,6 @@
 //! This module is private but contains various convenience implementations not used by the rest of the library that may be useful to consumers of this crate.
 #![allow(clippy::match_same_arms)]
 
-//TODO: Implement `PartialOrd` and `Ord`.
-
 use crate::{
 	auto_safety::Align, CallbackRef, CallbackRegistration, Element, EventBinding, Node,
 	ReorderableFragment, ThreadBound, ThreadSafe, ThreadSafety,
