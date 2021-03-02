@@ -93,7 +93,7 @@ macro_rules! vdom_ergonomics {
 			debug: |&$debug_self:ident, $debug_f:ident| $debug:expr,
 			partial_eq: |&$eq_self:ident, $eq_other:ident| $partial_eq:expr,
 			hash: |&$hash_self:ident, $hash_state:ident| $hash:expr,
-			cmp: |$cmp_cmp:ident, $cmp_final_cmp:ident, &$cmp_self:ident, $cmp_other:ident| $cmp:expr,
+			cmp: |&$cmp_self:ident, $cmp_other:ident| $cmp:expr,
 		}
 	),*$(,)?]) => {$(
 		impl<'a> From<$VdomName<'a, ThreadSafe>> for $VdomName<'a, ThreadBound> {
@@ -143,27 +143,14 @@ macro_rules! vdom_ergonomics {
 			}
 		}
 
-		#[allow(unused_macros, unused_variables)] //TODO
 		impl<'a, S1, S2> PartialOrd<$VdomName<'a, S2>> for $VdomName<'a, S1>
 		where
 			S1: ThreadSafety,
 			S2: ThreadSafety,
 		{
-			fn partial_cmp(&$cmp_self, $cmp_other: &$VdomName<'a, S2>) -> Option<core::cmp::Ordering> {
-				{
-					macro_rules! $cmp_cmp {
-						($first:expr, $second:expr) => {
-							let partial_ord = PartialOrd::partial_cmp($first, $second);
-							if !matches!(partial_ord, Some(Ordering::Equal)) {
-								return partial_ord;
-							}
-						};
-					}
-					macro_rules! $cmp_final_cmp {
-						($first:expr, $second:expr) => (PartialOrd::partial_cmp($first, $second))
-					}
-					$cmp
-				}
+			#[inline(always)] // Proxy function.
+			fn partial_cmp(&self, other: &$VdomName<'a, S2>) -> Option<core::cmp::Ordering> {
+				Some(Ord::cmp(self.align_ref(), other.align_ref()))
 			}
 		}
 		#[allow(unused_macros, unused_variables)] //TODO
@@ -172,21 +159,19 @@ macro_rules! vdom_ergonomics {
 			S: ThreadSafety,
 		{
 			fn cmp(&$cmp_self, $cmp_other: &Self) -> Ordering {
-				macro_rules! $cmp_cmp {
-					($first:expr, $second:expr) => {
-						let ord = Ord::cmp($first, $second);
-						if !matches!(ord, Ordering::Equal) {
-							return ord;
-						}
-					};
-				}
-				macro_rules! $cmp_final_cmp {
-					($first:expr, $second:expr) => (Ord::cmp($first, $second))
-				}
 				$cmp
 			}
 		}
 	)*};
+}
+
+macro_rules! cmp {
+	($first:expr, $second:expr) => {
+		let ord = Ord::cmp($first, $second);
+		if !matches!(ord, Ordering::Equal) {
+			return ord;
+		}
+	};
 }
 
 vdom_ergonomics!([
@@ -208,14 +193,14 @@ vdom_ergonomics!([
 			self.event_bindings.hash(state);
 			self.content.hash(state); // Recursion.
 		},
-		cmp: |cmp, final_cmp, &self, other| {
+		cmp: |&self, other| {
 			cmp!(self.name, other.name);
 			cmp!(self.attributes, other.attributes);
 			for i in 0..cmp::min(self.event_bindings.len(), other.event_bindings.len()) {
 				cmp!(&self.event_bindings[i], &other.event_bindings[i]);
 			}
 			cmp!(&self.event_bindings.len(), &other.event_bindings.len());
-			final_cmp!(&self.content, &other.content) // Recursion.
+			self.content.cmp(&other.content) // Recursion.
 		},
 	},
 	EventBinding {
@@ -229,9 +214,9 @@ vdom_ergonomics!([
 			self.name.hash(state);
 			self.callback.hash(state);
 		},
-		cmp: |cmp, final_cmp, &self, other| {
+		cmp: |&self, other| {
 			cmp!(self.name, other.name);
-			final_cmp!(&self.callback, &other.callback)
+			self.callback.cmp(&other.callback)
 		},
 	},
 	Node {
@@ -363,7 +348,7 @@ vdom_ergonomics!([
 			}
 			Node::RemnantSite(remnant_site) => remnant_site.hash(state), // Recursion (eventually).
 		},
-		cmp: |cmp, final_cmp, &self, other| todo!(),
+		cmp: |&self, other| todo!(),
 	},
 	ReorderableFragment {
 		debug: |&self, f| f
@@ -376,9 +361,9 @@ vdom_ergonomics!([
 			self.dom_key.hash(state);
 			self.content.hash(state); // Recursion.
 		},
-		cmp: |cmp, final_cmp, &self, other| {
+		cmp: |&self, other| {
 			cmp!(&self.dom_key, &other.dom_key);
-			final_cmp!(&self.content, &other.content) // Recursion.
+			self.content.cmp(&other.content) // Recursion.
 		},
 	}
 ]);
