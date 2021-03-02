@@ -205,8 +205,9 @@ mod sealed {
 }
 
 /// Marker trait for thread-safety tokens.
-pub trait ThreadSafety:
-	Sealed + Sized + Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord + Hash
+pub trait ThreadSafety: Sealed + Into<ThreadBound>
+where
+	Self: Sized + Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord + Hash,
 {
 }
 
