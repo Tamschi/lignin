@@ -277,7 +277,10 @@ impl ThreadSafety for ThreadSafe {}
 /// Marker trait for VDOM data types, which (almost) all vary by [`ThreadSafety`].
 ///
 /// Somewhat uselessly implemented on [`Attribute`], which is always [`ThreadSafe`].
-pub trait Vdom: Sealed + Sized + Debug + Clone + Copy + PartialEq + Eq + Hash {
+pub trait Vdom: Sealed
+where
+	Self: Sized + Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord + Hash,
+{
 	/// The [`ThreadSafety`] of the [`Vdom`] type, either [`ThreadSafe`] or [`ThreadBound`].
 	///
 	/// This comes from a generic type argument `S`, but [`Attribute`] is always [`ThreadSafe`].
