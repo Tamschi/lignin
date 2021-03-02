@@ -524,6 +524,16 @@ pub trait Align<T: Vdom>: Vdom {
 			*(&self as *const Self).cast()
 		}
 	}
+
+	/// Contextually thread-binds a reference, or not. Use only without qualification.
+	#[allow(clippy::inline_always)]
+	#[inline(always)] // No-op.
+	fn align_ref(&self) -> &T {
+		unsafe {
+			// SAFETY: This trait is sealed and only implemented on and across compatible types.
+			&*(self as *const Self).cast()
+		}
+	}
 }
 
 macro_rules! deanonymize_on_named {
