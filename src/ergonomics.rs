@@ -63,12 +63,12 @@ impl<S: ThreadSafety, T> Hash for CallbackRef<S, T> {
 }
 impl<S1: ThreadSafety, S2: ThreadSafety, T> PartialOrd<CallbackRef<S2, T>> for CallbackRef<S1, T> {
 	fn partial_cmp(&self, other: &CallbackRef<S2, T>) -> Option<Ordering> {
-		todo!()
+		self.key.partial_cmp(&other.key)
 	}
 }
 impl<S: ThreadSafety, T> Ord for CallbackRef<S, T> {
 	fn cmp(&self, other: &Self) -> Ordering {
-		todo!()
+		self.key.cmp(&other.key)
 	}
 }
 
