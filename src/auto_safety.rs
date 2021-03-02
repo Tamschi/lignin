@@ -567,6 +567,18 @@ macro_rules! prefer_thread_safe_safe {
 		pub fn prefer_thread_safe(self) -> Self {
 			self
 		}
+
+		/// Gently nudges the compiler to choose the [`ThreadSafe`] version of a reference if both are possible.
+		///
+		/// This method is once by single reference, so it will resolve with higher priority than the twice-by-reference method on the [`ThreadBound`] type.
+		///
+		/// Note that not all tooling will show the correct overload here, but the compiler knows which to pick.
+		$(#[$($attrs)*])*
+		#[must_use]
+		#[inline(always)] // No-op.
+		pub fn prefer_thread_safe_ref(&self) -> &Self {
+			self
+		}
 	};
 }
 
@@ -580,6 +592,17 @@ macro_rules! prefer_thread_safe_bound {
 		#[must_use]
 		#[inline(always)] // Plain deref.
 		pub fn prefer_thread_safe(&self) -> Self {
+			*self
+		}
+
+		/// Gently nudges the compiler to choose the [`ThreadSafe`] version of a reference if both are is possible.
+		///
+		/// This method is twice by reference, so it will resolve with lower priority than the once-by-reference method on the [`ThreadSafe`] type.
+		///
+		/// Note that not all tooling will show the correct overload here, but the compiler knows which to pick.
+		#[must_use]
+		#[inline(always)] // Plain deref.
+		pub fn prefer_thread_safe_ref<'b>(self: &'_ &'b Self) -> &'b Self {
 			*self
 		}
 	};
