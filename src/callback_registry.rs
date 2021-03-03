@@ -1,4 +1,7 @@
 //! Callback registry plumbing, for renderers and app runners that support them **and** need to run indefinitely.
+//!
+//! When not using this module directly, apps, if they enable the `"callbacks"` feature, run out of unique callback IDs after more than four billion total [`CallbackRegistration::new`] calls across all threads in a single run of the program.
+//! As such, you *probably* don't need to access this module, but if you do then it's available.
 
 use crate::{sealed::Sealed, ThreadBound, ThreadSafe, ThreadSafety};
 use core::{
