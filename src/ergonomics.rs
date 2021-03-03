@@ -13,12 +13,6 @@ use core::{
 	matches,
 };
 
-//TODO:
-// The derives of common traits for most types in this library emit bounds on S, which aren't necessary but appear in the documentation.
-// It would be cleaner to explicitly implement all of these traits.
-
-//TODO: How important are `PartialOrd` and `Ord`?
-
 impl From<ThreadSafe> for ThreadBound {
 	/// Unreachable. Available as compatibility marker when handling generic [`ThreadSafety`] directly.
 	fn from(_: ThreadSafe) -> Self {
@@ -368,25 +362,51 @@ vdom_ergonomics!([
 
 // Conversions between distinct types //
 
-impl<'a, S> From<&'a Element<'a, S>> for Node<'a, S>
+impl<'a, S1, S2> From<&'a Element<'a, S1>> for Node<'a, S2>
 where
-	S: ThreadSafety,
+	S1: ThreadSafety + Into<S2>,
+	S2: ThreadSafety,
 {
-	fn from(element: &'a Element<'a, S>) -> Self {
+	fn from(element: &'a Element<'a, S1>) -> Self {
 		Self::Element {
-			element,
+			element: element.align_ref(),
 			dom_binding: None,
 		}
 	}
 }
 
-impl<'a, S> From<&'a mut Element<'a, S>> for Node<'a, S>
+impl<'a, S1, S2> From<&'a mut Element<'a, S1>> for Node<'a, S2>
+where
+	S1: ThreadSafety + Into<S2>,
+	S2: ThreadSafety,
+{
+	fn from(element: &'a mut Element<'a, S1>) -> Self {
+		Self::Element {
+			element: element.align_ref(),
+			dom_binding: None,
+		}
+	}
+}
+
+impl<'a, S> From<&'a str> for Node<'a, S>
 where
 	S: ThreadSafety,
 {
-	fn from(element: &'a mut Element<'a, S>) -> Self {
-		Self::Element {
-			element,
+	fn from(text: &'a str) -> Self {
+		Self::Text {
+			text,
+			dom_binding: None,
+		}
+	}
+}
+
+impl<'a, S> From<&'a mut str> for Node<'a, S>
+where
+	S: ThreadSafety,
+{
+	fn from(text: &'a mut str) -> Self {
+		Self::Text {
+			text,
 			dom_binding: None,
 		}
 	}
