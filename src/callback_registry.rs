@@ -52,7 +52,7 @@ mod callbacks_on {
 		receiver: Pin<&'_ R>,
 		handler: fn(*const R, T),
 	) -> CallbackRegistration<R, T> {
-		let mut registry = REGISTRY.write().expect("always Ok");
+		let mut registry = REGISTRY.write().unwrap();
 		if registry.key_count == u32::MAX {
 			drop(registry);
 			panic!("[lignin] Callback registry keys exhausted")
@@ -67,7 +67,7 @@ mod callbacks_on {
 			}
 
 			registry.key_count += 1;
-			let key = NonZeroU32::new(registry.key_count).expect("always Some");
+			let key = NonZeroU32::new(registry.key_count).unwrap();
 			assert!(registry
 				.entries
 				.insert(
@@ -88,17 +88,16 @@ mod callbacks_on {
 	}
 
 	pub fn deregister<R, T>(registration: &CallbackRegistration<R, T>) {
-		let removed = REGISTRY
+		REGISTRY
 			.write()
-			.expect("always Ok")
+			.unwrap()
 			.entries
 			.remove(&registration.key)
-			.is_some();
-		assert!(removed)
+			.expect("`CallbackRegistration` double-drop");
 	}
 
 	pub fn invoke<T>(key: NonZeroU32, parameter: T) {
-		let registry = REGISTRY.read().expect("always Ok");
+		let registry = REGISTRY.read().unwrap();
 		if let Some(entry) = registry.entries.get(&key) {
 			let invoke_typed = unsafe {
 				// SAFETY: Same type as above.
@@ -110,10 +109,29 @@ mod callbacks_on {
 
 	#[must_use]
 	pub fn registry_exhaustion() -> u8 {
-		let registry = REGISTRY.read().expect("always Ok");
+		let registry = REGISTRY.read().unwrap();
 		(registry.key_count >> ((size_of_val(&registry.key_count) - 1) * 8))
 			.try_into()
-			.expect("always Ok")
+			.unwrap()
+	}
+
+	#[allow(clippy::result_unit_err)]
+	pub unsafe fn reset_callback_registry() -> Result<(), ()> {
+		let mut registry = REGISTRY.write().unwrap();
+		#[allow(clippy::option_if_let_else)]
+		if let Some(highest) = registry.entries.keys().max() {
+			registry.key_count = highest.get();
+			Err(())
+		} else {
+			registry.key_count = 0;
+			Ok(())
+		}
+	}
+
+	pub unsafe fn yet_more_unsafe_force_clear_callback_registry() {
+		let mut registry = REGISTRY.write().unwrap();
+		registry.entries.clear();
+		registry.key_count = 0;
 	}
 }
 
@@ -139,7 +157,7 @@ mod callbacks_off {
 		let _ = receiver;
 		let _ = handler;
 		CallbackRegistration {
-			key: NonZeroU32::new(u32::MAX).expect("always Ok"),
+			key: NonZeroU32::new(u32::MAX).unwrap(),
 			phantom: PhantomData,
 			pinned: PhantomPinned,
 		}
@@ -161,6 +179,15 @@ mod callbacks_off {
 	pub const fn registry_exhaustion() -> u8 {
 		0
 	}
+
+	#[allow(clippy::result_unit_err)]
+	#[inline(always)]
+	pub unsafe fn reset_callback_registry() -> Result<(), ()> {
+		Ok(())
+	}
+
+	#[inline(always)]
+	pub unsafe fn yet_more_unsafe_force_clear_callback_registry() {}
 }
 
 #[cfg(feature = "callbacks")]
@@ -208,7 +235,8 @@ impl<R, T> CallbackRegistration<R, T> {
 		callbacks::register(receiver, handler)
 	}
 
-	#[inline(always)] // Basically just a deref-copy.
+	/// Creates a [`ThreadBound`] [`CallbackRef`] from this [`CallbackRegistration`].
+	#[inline(always)]
 	#[must_use]
 	pub fn to_ref_thread_bound(&self) -> CallbackRef<ThreadBound, T> {
 		self.to_ref() // Actually resolves to `ToRefThreadBoundFallback::to_ref`.
@@ -221,6 +249,11 @@ where
 	// Using a separate `impl` block instead of a `where` clause on the method means it outright doesn't exist if `R: !Sync`.
 	// This lets it be resolved on the trait instead even without qualification.
 
+	/// Creates a [`ThreadSafe`] [`CallbackRef`] from this [`CallbackRegistration`].
+	///
+	/// > If you are developing a macro framework with [`ThreadSafety`] inference, see [`ToRefThreadBoundFallback`] for a way to overload this method appropriately.
+	/// >
+	/// > For handwritten code or generated code with stricter thread-safety, please use [`.to_ref_thread_bound()`](`Self::to_ref_thread_bound`) instead whenever possible.
 	#[allow(clippy::inline_always)]
 	#[inline(always)] // Basically just a deref-copy.
 	#[must_use]
@@ -231,7 +264,7 @@ where
 		}
 	}
 }
-/// Provides a fallback alternative implementation to [`CallbackRegistry::to_ref`] for use in macro frameworks.
+/// Provides a fallback alternative implementation to [`CallbackRegistration::to_ref`] for use in macro frameworks.
 ///
 /// There is no limitation on the receiver's [`Sync`]ness, but in turn the resulting [`CallbackRef`] is [`ThreadBound`].
 pub trait ToRefThreadBoundFallback<T>: Sealed + Sized {
@@ -276,17 +309,36 @@ pub fn registry_exhaustion() -> u8 {
 	callbacks::registry_exhaustion()
 }
 
+/// Tries to rewind the total callback registration counter to zero.
+///
+/// # Errors
+///
+/// Should that fail (because there are still callbacks registered), the counter is instead set to the lowest value that ensures no colliding [`CallbackRegistration`].
+///
+/// # Safety
+///
+/// The caller (generally a renderer) must ensure that no currently existing [`CallbackRef`]s created from a dropped [`CallbackRegistration`] can have their [`.call(…)`](`CallbackRef::call`) function invoked during or after this call.
 #[allow(clippy::inline_always)]
 #[allow(clippy::module_name_repetitions)]
 #[allow(clippy::result_unit_err)]
 #[inline(always)] // Proxy function.
 pub unsafe fn reset_callback_registry() -> Result<(), ()> {
-	todo!()
+	callbacks::reset_callback_registry()
 }
 
+/// Clears the callback registry entirely and resets the total callback registration counter to zero.
+///
+/// # Safety
+///
+/// Like with [`reset_callback_registry()`], the caller must ensure that no currently existing [`CallbackRef`]s created from a dropped [`CallbackRegistration`] can have their [`.call(…)`](`CallbackRef::call`) function invoked during or after this call.
+///
+/// Additionally, the caller (usually an `unsafe` app runner) must ensure that no currently existing [`CallbackRegistration`] instances are ever dropped.
+/// Failing this second condition doesn't quite cause undefined behavior, but can cause unrelated parts of the app to misbehave and the callback registry to become poisoned immediately or later.
+///
+/// Please be very careful when using this. Practically any code in the entire app can violate the soundness condition in a difficult to track down way.
 #[allow(clippy::inline_always)]
 #[allow(clippy::module_name_repetitions)]
 #[inline(always)] // Proxy function.
 pub unsafe fn yet_more_unsafe_force_clear_callback_registry() {
-	todo!()
+	callbacks::yet_more_unsafe_force_clear_callback_registry()
 }

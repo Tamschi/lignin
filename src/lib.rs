@@ -259,7 +259,7 @@ pub struct Element<'a, S: ThreadSafety> {
 /// Note that the running total of [`CallbackRegistration`]s made can be limited to [`u32::MAX`] or around four billion.
 /// (See [`callback_registry`] for information on how to get around this, if necessary.)
 ///
-/// While this limit is likely hard to hit, economising registrations a little will still (indirectly) improve app performance.
+/// While this limit is likely hard to hit, economizing registrations a little will still (indirectly) improve app performance.
 /// Lazily registering callbacks for events only when rendering is also the easiest way for framework developers to use [pinning](core::pin) to avoid heap allocations.
 pub struct EventBinding<'a, S: ThreadSafety> {
 	/// The event name.
