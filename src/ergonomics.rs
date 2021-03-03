@@ -394,7 +394,7 @@ where
 	S2: ThreadSafety,
 {
 	fn from(content: &'a [Node<'a, S1>]) -> Self {
-		Self::Multi(unsafe { *(&content as *const &[Node<S1>]).cast() })
+		Node::Multi(content).align()
 	}
 }
 
@@ -404,7 +404,7 @@ where
 	S2: ThreadSafety,
 {
 	fn from(content: &'a mut [Node<'a, S1>]) -> Self {
-		Self::Multi(unsafe { *(&content as *const &mut [Node<S1>]).cast() })
+		Node::Multi(content).align()
 	}
 }
 
