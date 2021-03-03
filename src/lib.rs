@@ -122,6 +122,11 @@ use sealed::Sealed;
 pub enum Node<'a, S: ThreadSafety> {
 	/// Represents a [***Comment***](https://developer.mozilla.org/en-US/docs/Web/API/Comment) node.
 	Comment {
+		/// The comment's body, as unescaped plaintext.
+		///
+		/// Renderers shouldn't insert padding whitespace around it, except as required by e.g. pretty-printing.
+		///
+		///TODO: Forbidden character sequences.
 		comment: &'a str,
 		dom_binding: Option<CallbackRef<S, DomRef<web::Comment>>>,
 	},
@@ -134,9 +139,19 @@ pub enum Node<'a, S: ThreadSafety> {
 	///
 	/// A (good enough) `content` [hash](`core::hash`) makes for a good `state_key`, but this isn't the only possible scheme and may not be the optimal one for your use case.
 	///
-	/// TODO?: Explain a bit more what's specified and what isn't.
+	/// # Implementation Contract (reminder)
+	///
+	/// Note that when diffing a non-[`Memoized`](`Node::Memoized`) [`Node`] into a [`Node::Memoized`] (and vice-versa), renderers must still behave as if the DOM tree was recreated, which means cycling all [***Node***](https://developer.mozilla.org/en-US/docs/Web/API/Node) reference bindings even if they match.
+	///
+	/// > However, this often happens with matching or near-matching fragments during hydration of a web app.
+	/// >
+	/// > *If you already have a function to strip diff subscriptions (e.g. [***Node***](https://developer.mozilla.org/en-US/docs/Web/API/Node) bindings) from a tree,
+	/// > or even just one to strip all callbacks (but this is less efficient), it's likely more efficient to do so and then recurse.
+	/// >
+	/// > Make sure the trees are actually somewhat compatible first, or you may end up processing the old VDOM twice for nothing.
 	Memoized {
 		state_key: u64,
+		/// The VDOM tree memoized by this [`Node`].
 		content: &'a Node<'a, S>,
 	},
 	/// DOM-transparent. Represents a sequence of VDOM nodes.
@@ -155,8 +170,14 @@ pub enum Node<'a, S: ThreadSafety> {
 	///
 	/// The [`ReorderableFragment::dom_key`] values must be unique within a slice referenced by a [`Node::Keyed`] instance.
 	///
-	/// > This rule does not apply between distinct [`ReorderableFragment`] slices, even if they overlap in memory or one is reachable from the other.
-	///TODO
+	///
+	/// If a [`dom_key`](`ReorderableFragment::dom_key`) value appears both in the initial and target slice of a [`ReorderableFragment::dom_key`] diff,
+	/// those [`ReorderableFragment`] instances are considered path-matching and any respective [***Node***](https://developer.mozilla.org/en-US/docs/Web/API/Node)(s!) **must**
+	/// be moved to their new location without being recreated.
+	///
+	/// > These rules do not apply between distinct [`ReorderableFragment`] slices, even if they overlap in memory or one is reachable from the other.
+	///
+	/// > The recursive diff otherwise proceeds as normal. There are no rules on whether it happens before or after the reordering.
 	Keyed(&'a [ReorderableFragment<'a, S>]),
 	/// Represents a [***Text***](https://developer.mozilla.org/en-US/docs/Web/API/Text) node.
 	Text {
@@ -236,6 +257,8 @@ pub struct EventBinding<'a, S: ThreadSafety> {
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Hash)]
 pub struct Attribute<'a> {
 	/// The unescaped [***name***](https://developer.mozilla.org/en-US/docs/Web/API/Attr#properties).
+	///
+	///TODO?: Forbidden characters.
 	pub name: &'a str,
 	/// The unescaped [***value***](https://developer.mozilla.org/en-US/docs/Web/API/Attr#properties).
 	pub value: &'a str,

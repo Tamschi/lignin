@@ -277,12 +277,15 @@ pub fn registry_exhaustion() -> u8 {
 }
 
 #[allow(clippy::inline_always)]
+#[allow(clippy::module_name_repetitions)]
+#[allow(clippy::result_unit_err)]
 #[inline(always)] // Proxy function.
 pub unsafe fn reset_callback_registry() -> Result<(), ()> {
 	todo!()
 }
 
 #[allow(clippy::inline_always)]
+#[allow(clippy::module_name_repetitions)]
 #[inline(always)] // Proxy function.
 pub unsafe fn yet_more_unsafe_force_clear_callback_registry() {
 	todo!()
