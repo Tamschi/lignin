@@ -447,7 +447,38 @@
 //! A front-end template language or framework author may still want to avoid requiring explicit threading annotations in most cases.
 //! Even in that case, it's possible to limit this feature to functions not externally visible, by aliasing it with a generated less visible trait:
 //!
-//! TODO
+//! ```compile_fail
+//! # fn main() {} // Don't wrap example in function.
+//! use lignin::{
+//!   auto_safety::AutoSafe_alias,
+//!   Node, ThreadBound,
+//! };
+//!
+//! AutoSafe_alias!(pub(crate) InternalAutoSafe);
+//! //-------------------------------------------
+//! //`InternalAutoSafe<Node<'static, ThreadBound>>` declared as private
+//!
+//! pub fn public() -> impl InternalAutoSafe<Node<'static, ThreadBound>> {
+//! //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+//! //can't leak private trait
+//!   Node::Multi(&[]).prefer_thread_safe()
+//! }
+//! ```
+//!
+//! ```rust
+//! # fn main() {} // Don't wrap example in function.
+//! # use lignin::{
+//! #   auto_safety::AutoSafe_alias,
+//! #   Node, ThreadBound,
+//! # };
+//! // Same imports.
+//!
+//! AutoSafe_alias!(pub(crate) InternalAutoSafe);
+//!
+//! pub(crate) fn less_visible() -> impl InternalAutoSafe<Node<'static, ThreadBound>> {
+//!   Node::Multi(&[]).prefer_thread_safe()
+//! }
+//! ```
 
 use crate::{
 	Attribute, CallbackRef, Element, EventBinding, Node, ReorderableFragment, ThreadBound,
@@ -662,3 +693,26 @@ where
 	S2: ThreadSafety,
 {
 }
+
+/// Mainly for use by frameworks. Canonically located at `auto_safe::AutoSafe_alias`.  
+/// Creates a custom-visibility alias for [`auto_safety::AutoSafe`](`AutoSafe`).
+///
+/// See [`auto_safety`#limiting-autosafe-exposure](`crate::auto_safety`#limiting-autosafe-exposure) for more information.
+#[macro_export]
+macro_rules! AutoSafe_alias {
+	($vis:vis $Name:ident) => {
+		/// An alias for [`$crate::auto_safety::AutoSafe`] with custom visibility.
+		$vis trait $Name<BoundVariant>: $crate::auto_safety::AutoSafe<BoundVariant>
+		where
+			BoundVariant: $crate::Vdom<ThreadSafety = $crate::ThreadBound>,
+		{}
+		impl<T, BoundVariant> $Name<BoundVariant> for T
+		where
+			T: $crate::auto_safety::AutoSafe<BoundVariant>,
+			BoundVariant: $crate::Vdom<ThreadSafety = $crate::ThreadBound>,
+		{}
+	};
+}
+
+#[doc(inline)]
+pub use crate::AutoSafe_alias;
