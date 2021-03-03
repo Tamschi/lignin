@@ -388,6 +388,26 @@ where
 	}
 }
 
+impl<'a, S1, S2> From<&'a [Node<'a, S1>]> for Node<'a, S2>
+where
+	S1: ThreadSafety + Into<S2>,
+	S2: ThreadSafety,
+{
+	fn from(content: &'a [Node<'a, S1>]) -> Self {
+		Self::Multi(unsafe { *(&content as *const &[Node<S1>]).cast() })
+	}
+}
+
+impl<'a, S1, S2> From<&'a mut [Node<'a, S1>]> for Node<'a, S2>
+where
+	S1: ThreadSafety + Into<S2>,
+	S2: ThreadSafety,
+{
+	fn from(content: &'a mut [Node<'a, S1>]) -> Self {
+		Self::Multi(unsafe { *(&content as *const &mut [Node<S1>]).cast() })
+	}
+}
+
 impl<'a, S> From<&'a str> for Node<'a, S>
 where
 	S: ThreadSafety,
