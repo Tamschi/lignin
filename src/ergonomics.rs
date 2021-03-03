@@ -397,8 +397,6 @@ impl<'a, S: ThreadSafety> Node<'a, S> {
 	///
 	/// This operation is recursive across *for example* [`Node::Multi`] and [`Node::Keyed`], which sum up their contents in this regard.
 	#[must_use]
-	#[allow(clippy::unknown_clippy_lints)] //TODO
-	#[allow(clippy::missing_panics_doc)] //TODO
 	pub fn dom_len(&self) -> usize {
 		match self {
 			Node::Comment { .. } | Node::Element { .. } | Node::Text { .. } => 1,
