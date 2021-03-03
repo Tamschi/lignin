@@ -1,7 +1,7 @@
 #![doc(html_root_url = "https://docs.rs/lignin/0.0.5")]
 #![no_std]
 #![warn(clippy::pedantic)]
-#![warn(missing_docs)] //TODO
+#![warn(missing_docs)]
 
 //! `lignin`, named after the structural polymer found in plants, is a lightweight but comprehensive VDOM data type library for use in a wider web context.
 //!
@@ -101,8 +101,6 @@ use core::{convert::Infallible, fmt::Debug, hash::Hash, marker::PhantomData};
 use remnants::RemnantSite;
 use sealed::Sealed;
 
-//TODO: Should `Vdom` types implement `PartialOrd` and `Ord`?
-
 /// [`Vdom`] A single generic VDOM node.
 ///
 /// This should be relatively small:
@@ -128,11 +126,18 @@ pub enum Node<'a, S: ThreadSafety> {
 		///
 		///TODO: Forbidden character sequences.
 		comment: &'a str,
+		/// Registers for [***Comment***](https://developer.mozilla.org/en-US/docs/Web/API/Comment) reference updates.
+		///
+		/// See [`DomRef`] for more information.
 		dom_binding: Option<CallbackRef<S, DomRef<web::Comment>>>,
 	},
 	/// Represents a single [***HTMLElement***](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement).
 	Element {
+		/// The [`Element`] to render.
 		element: &'a Element<'a, S>,
+		/// Registers for [***HTMLElement***](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement) reference updates.
+		///
+		/// See [`DomRef`] for more information.
 		dom_binding: Option<CallbackRef<S, DomRef<web::HtmlElement>>>,
 	},
 	/// DOM-transparent. This variant uses shallow comparison and hashes based on its `state_key` only.
@@ -145,11 +150,14 @@ pub enum Node<'a, S: ThreadSafety> {
 	///
 	/// > However, this often happens with matching or near-matching fragments during hydration of a web app.
 	/// >
-	/// > *If you already have a function to strip diff subscriptions (e.g. [***Node***](https://developer.mozilla.org/en-US/docs/Web/API/Node) bindings) from a tree,
+	/// > *If you already have a function to strip subscriptions* (e.g. [***Node***](https://developer.mozilla.org/en-US/docs/Web/API/Node) reference bindings) from a DOM and VDOM tree,
 	/// > or even just one to strip all callbacks (but this is less efficient), it's likely more efficient to do so and then recurse.
 	/// >
 	/// > Make sure the trees are actually somewhat compatible first, or you may end up processing the old VDOM twice for nothing.
 	Memoized {
+		/// A value that's (very likely to be) distinct between VDOM graphs where the path of two [`Node::Memoized`] instances matches but their [`Node::Memoized::content`] is distinct.
+		///
+		/// Consider using a (good enough) hash of [`content`](`Node::Memoized::content`) for this purpose.
 		state_key: u64,
 		/// The VDOM tree memoized by this [`Node`].
 		content: &'a Node<'a, S>,
@@ -199,6 +207,9 @@ pub enum Node<'a, S: ThreadSafety> {
 		/// Live components also have the option of using for example [`Node::Element::dom_binding`] to set [***Element.innerHTML***](https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML),
 		/// but this is not recommended due to the difficulty of implementing allow-listing with such an approach.
 		text: &'a str,
+		/// Registers for [***Text***](https://developer.mozilla.org/en-US/docs/Web/API/Text) reference updates.
+		///
+		/// See [`DomRef`] for more information.
 		dom_binding: Option<CallbackRef<S, DomRef<web::Text>>>,
 	},
 	/// Currently unused.
@@ -209,8 +220,12 @@ pub enum Node<'a, S: ThreadSafety> {
 }
 
 /// [`Vdom`] A VDOM node that has its DOM identity preserved during DOM updates even after being repositioned within a (path-)matching [`Node::Keyed`].
+///
+/// For more information, see [`Node::Keyed`].
 pub struct ReorderableFragment<'a, S: ThreadSafety> {
+	/// A key uniquely identifying a [`ReorderableFragment`] within any directly spanning [`Node::Keyed`].
 	pub dom_key: usize,
+	/// The [`Node`] to render from this [`ReorderableFragment`].
 	pub content: Node<'a, S>,
 }
 
