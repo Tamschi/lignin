@@ -1,6 +1,6 @@
 //! Callback registry plumbing, for renderers and app runners that support them **and** need to run indefinitely.
 
-use crate::{ThreadBound, ThreadSafe, ThreadSafety};
+use crate::{sealed::Sealed, ThreadBound, ThreadSafe, ThreadSafety};
 use core::{
 	fmt::Debug,
 	marker::{PhantomData, PhantomPinned},
@@ -210,23 +210,39 @@ impl<R, T> CallbackRegistration<R, T> {
 
 	#[inline(always)] // Basically just a deref-copy.
 	#[must_use]
-	pub fn to_ref(&self) -> CallbackRef<ThreadSafe, T>
-	where
-		R: Sync,
-	{
+	pub fn to_ref_thread_bound(&self) -> CallbackRef<ThreadBound, T> {
+		self.to_ref() // Actually resolves to `ToRefThreadBoundFallback::to_ref`.
+	}
+}
+impl<R, T> CallbackRegistration<R, T>
+where
+	R: Sync,
+{
+	// Using a separate `impl` block instead of a `where` clause on the method means it outright doesn't exist if `R: !Sync`.
+	// This lets it be resolved on the trait instead even without qualification.
+
+	#[allow(clippy::inline_always)]
+	#[inline(always)] // Basically just a deref-copy.
+	#[must_use]
+	pub fn to_ref(&self) -> CallbackRef<ThreadSafe, T> {
 		CallbackRef {
 			key: self.key,
 			phantom: PhantomData,
 		}
 	}
-
-	#[inline(always)] // Basically just a deref-copy.
-	#[must_use]
-	pub fn to_ref_thread_bound(&self) -> CallbackRef<ThreadBound, T> {
-		CallbackRef {
-			key: self.key,
-			phantom: PhantomData,
-		}
+}
+/// Provides a fallback alternative implementation to [`CallbackRegistry::to_ref`] for use in macro frameworks.
+///
+/// There is no limitation on the receiver's [`Sync`]ness, but in turn the resulting [`CallbackRef`] is [`ThreadBound`].
+pub trait ToRefThreadBoundFallback<T>: Sealed + Sized {
+	/// See [`CallbackRegistration::to_ref`], except that this method is unconstrained and that the resulting [`CallbackRef`] is [`ThreadBound`].
+	fn to_ref(&self) -> CallbackRef<ThreadBound, T>;
+}
+impl<R, T> ToRefThreadBoundFallback<T> for CallbackRegistration<R, T> {
+	#[allow(clippy::inline_always)]
+	#[inline(always)] // Proxy function.
+	fn to_ref(&self) -> CallbackRef<ThreadBound, T> {
+		self.to_ref_thread_bound()
 	}
 }
 impl<R, T> Drop for CallbackRegistration<R, T> {

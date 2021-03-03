@@ -208,10 +208,23 @@ pub struct Element<'a, S: ThreadSafety> {
 	pub attributes: &'a [Attribute<'a>],
 	/// Maps to [***Node.childNodes***](https://developer.mozilla.org/en-US/docs/Web/API/Node/childNodes).
 	pub content: Node<'a, S>,
+	/// DOM event bindings requested by a component.
+	///
+	/// See [`EventBinding`] for more information.
 	pub event_bindings: &'a [EventBinding<'a, S>],
 }
 
 /// [`Vdom`] Represents a single DOM event binding with `name` and `callback`.
+///
+#[allow(clippy::doc_markdown)]
+/// Renderers usually should either manage these through [***EventTarget.addEventListener***](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener)/[***….removeEventListener***](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/removeEventListener)
+/// or ignore them entirely. See [`web`] for a bit more information on that.
+///
+/// Note that the running total of [`CallbackRegistration`]s made can be limited to [`u32::MAX`] or around four billion.
+/// (See [`callback_registry`] for information on how to get around this, if necessary.)
+///
+/// While this limit is likely hard to hit, economising registrations a little will still (indirectly) improve app performance.
+/// Lazily registering callbacks for events only when rendering is also the easiest way for framework developers to use [pinning](core::pin) to avoid heap allocations.
 pub struct EventBinding<'a, S: ThreadSafety> {
 	/// The event name.
 	pub name: &'a str,
@@ -231,8 +244,8 @@ pub struct Attribute<'a> {
 mod sealed {
 	use super::{ThreadBound, ThreadSafe};
 	use crate::{
-		remnants::RemnantSite, Attribute, CallbackRef, Element, EventBinding, Node,
-		ReorderableFragment, ThreadSafety,
+		remnants::RemnantSite, Attribute, CallbackRef, CallbackRegistration, Element, EventBinding,
+		Node, ReorderableFragment, ThreadSafety,
 	};
 
 	//TODO: Move these bounds to `Vdom`.
@@ -240,6 +253,7 @@ mod sealed {
 	impl Sealed for ThreadBound {}
 	impl Sealed for ThreadSafe {}
 	impl<'a> Sealed for Attribute<'a> {}
+	impl<R, T> Sealed for CallbackRegistration<R, T> {}
 	impl<S: ThreadSafety, T> Sealed for CallbackRef<S, T> {}
 	impl<'a, S: ThreadSafety> Sealed for Element<'a, S> {}
 	impl<'a, S: ThreadSafety> Sealed for EventBinding<'a, S> {}
