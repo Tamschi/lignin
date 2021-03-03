@@ -340,7 +340,81 @@ vdom_ergonomics!([
 			}
 			Node::RemnantSite(remnant_site) => remnant_site.hash(state), // Recursion (eventually).
 		},
-		cmp: |&self, other| todo!(),
+		cmp: |&self, other| match (self, other) {
+			(
+				Node::Comment {
+					comment: c_1,
+					dom_binding: db_1,
+				},
+				Node::Comment {
+					comment: c_2,
+					dom_binding: db_2,
+				},
+			) => {
+				cmp!(c_1, c_2);
+				db_1.cmp(db_2)
+			}
+			(
+				Node::Element {
+					element: e_1,
+					dom_binding: db_1,
+				},
+				Node::Element {
+					element: e_2,
+					dom_binding: db_2,
+				},
+			) => {
+				cmp!(db_1, db_2);
+				e_1.cmp(e_2) // Recursion.
+			}
+			(
+				Node::Memoized {
+					state_key: sk_1,
+					content: c_1,
+				},
+				Node::Memoized {
+					state_key: sk_2,
+					content: c_2,
+				},
+			) => {
+				cmp!(sk_1, sk_2);
+				c_1.cmp(c_2) // Recursion.
+			}
+			(Node::Multi(c_1), Node::Multi(c_2)) => {
+				c_1.cmp(c_2) // Recursion.
+			}
+			(Node::Keyed(c_1), Node::Keyed(c_2)) => {
+				c_1.cmp(c_2)
+			}
+			(
+				Node::Text {
+					text: t_1,
+					dom_binding: db_1,
+				},
+				Node::Text {
+					text: t_2,
+					dom_binding: db_2,
+				},
+			) => {
+				cmp!(t_1, t_2);
+				db_1.cmp(db_2)
+			}
+			(Node::RemnantSite(rs_1), Node::RemnantSite(rs_2)) => {
+				rs_1.cmp(rs_2)
+			}
+			(Node::Comment { .. }, _) => Ordering::Less,
+			(_, Node::Comment { .. }) => Ordering::Greater,
+			(Node::Element { .. }, _) => Ordering::Less,
+			(_, Node::Element { .. }) => Ordering::Greater,
+			(Node::Memoized { .. }, _) => Ordering::Less,
+			(_, Node::Memoized { .. }) => Ordering::Greater,
+			(Node::Multi(_), _) => Ordering::Less,
+			(_, Node::Multi(_)) => Ordering::Greater,
+			(Node::Keyed(_), _) => Ordering::Less,
+			(_, Node::Keyed(_)) => Ordering::Greater,
+			(Node::Text { .. }, _) => Ordering::Less,
+			(_, Node::Text { .. }) => Ordering::Greater,
+		},
 	},
 	ReorderableFragment {
 		debug: |&self, f| f

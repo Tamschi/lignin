@@ -271,7 +271,6 @@ mod sealed {
 		Node, ReorderableFragment, ThreadSafety,
 	};
 
-	//TODO: Move these bounds to `Vdom`.
 	pub trait Sealed {}
 	impl Sealed for ThreadBound {}
 	impl Sealed for ThreadSafe {}
