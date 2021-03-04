@@ -479,6 +479,9 @@
 //!   Node::Multi(&[]).prefer_thread_safe()
 //! }
 //! ```
+//!
+//! As the generated trait is a subtrait of [`AutoSafe`], its instances can be treated the same as that trait's,
+//! as long as [`AutoSafe`] and [`Deanonymize`] are in scope.
 
 use crate::{
 	Attribute, CallbackRef, Element, EventBinding, Node, ReorderableFragment, ThreadBound,

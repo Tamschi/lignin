@@ -254,7 +254,8 @@ where
 
 	/// Creates a [`ThreadSafe`] [`CallbackRef`] from this [`CallbackRegistration`].
 	///
-	/// > If you are developing a macro framework with [`ThreadSafety`] inference, see [`ToRefThreadBoundFallback`] for a way to overload this method appropriately.
+	/// > If you are developing a macro framework with [`ThreadSafety`] inference, see [`ToRefThreadBoundFallback`] for a way to overload this method appropriately.  
+	/// > (See also the warning there.)
 	/// >
 	/// > For handwritten code or generated code with stricter thread-safety, please use [`.to_ref_thread_bound()`](`Self::to_ref_thread_bound`) instead whenever possible.
 	#[allow(clippy::inline_always)]
@@ -270,6 +271,10 @@ where
 /// Provides a fallback alternative implementation to [`CallbackRegistration::to_ref`] for use in macro frameworks.
 ///
 /// There is no limitation on the receiver's [`Sync`]ness, but in turn the resulting [`CallbackRef`] is [`ThreadBound`].
+///
+/// > **Warning:** Using this trait can unhelpfully mask the source of [`ThreadBound`] in a larger application.
+/// >
+/// > If your framework supports optional [`Sync`]ness annotations, consider requiring them on originally thread-bound components.
 pub trait ToRefThreadBoundFallback<T>: Sealed + Sized {
 	/// See [`CallbackRegistration::to_ref`], except that this method is unconstrained and that the resulting [`CallbackRef`] is [`ThreadBound`].
 	fn to_ref(&self) -> CallbackRef<ThreadBound, T>;
