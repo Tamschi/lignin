@@ -17,7 +17,7 @@
 //!
 //! ## Security
 //!
-//! See the implementation contract on [`Node::Text::text`].
+//! See the implementation contract on [`Node::Text::text`] and [`Node::Comment::comment`].
 //!
 //! ## Correctness
 //!
@@ -124,7 +124,20 @@ pub enum Node<'a, S: ThreadSafety> {
 		///
 		/// Renderers shouldn't insert padding whitespace around it, except as required by e.g. pretty-printing.
 		///
-		///TODO: Forbidden character sequences.
+		/// # Implementation Contract
+		///
+		/// > **This is not a soundness contract**. Code using this crate must not rely on it for soundness.
+		/// > However, it is free to panic when encountering an incorrect implementation.
+		///
+		/// ## **Security**
+		///
+		/// This field may contain arbitrary character sequences, some of which are illegal in [***Comment***](https://developer.mozilla.org/en-US/docs/Web/API/Comment)s at least when serialized as HTML.
+		/// See <https://html.spec.whatwg.org/multipage/syntax.html#comments> for more information.
+		///
+		/// Renderers **must** either refuse or replace illegal-for-target comments which ones that are inert.
+		///
+		/// Not doing so opens the door for [XSS](https://developer.mozilla.org/en-US/docs/Glossary/Cross-site_scripting)
+		/// and/or format confusion vulnerabilities.
 		comment: &'a str,
 		/// Registers for [***Comment***](https://developer.mozilla.org/en-US/docs/Web/API/Comment) reference updates.
 		///
