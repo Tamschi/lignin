@@ -145,7 +145,6 @@ macro_rules! vdom_ergonomics {
 				Some(Ord::cmp(self.align_ref(), other.align_ref()))
 			}
 		}
-		#[allow(unused_macros, unused_variables)] //TODO
 		impl<'a, S> Ord for $VdomName<'a, S>
 		where
 			S: ThreadSafety,
@@ -507,7 +506,7 @@ where
 }
 
 impl<'a, S: ThreadSafety> Node<'a, S> {
-	/// Calculates the aggregate surface level length of this [`Node`] in DOM nodes.
+	/// Calculates the aggregate surface level length of this [`Node`] in [***Node***](https://developer.mozilla.org/en-US/docs/Web/API/Node)s.
 	///
 	/// This operation is recursive across *for example* [`Node::Multi`] and [`Node::Keyed`], which sum up their contents in this regard.
 	#[must_use]
@@ -519,6 +518,22 @@ impl<'a, S: ThreadSafety> Node<'a, S> {
 			Node::Keyed(pairs) => pairs.iter().map(|pair| pair.content.dom_len()).sum(),
 			Node::RemnantSite(_) => {
 				todo!("RemnantSite dom_len")
+			}
+		}
+	}
+
+	/// Determines whether this [`Node`] represents no [***Node***](https://developer.mozilla.org/en-US/docs/Web/API/Node)s at all.
+	///
+	/// This operation is recursive across *for example* [`Node::Multi`] and [`Node::Keyed`], which sum up their contents in this regard.
+	#[must_use]
+	pub fn dom_empty(&self) -> bool {
+		match self {
+			Node::Comment { .. } | Node::Element { .. } | Node::Text { .. } => false,
+			Node::Memoized { content, .. } => content.dom_empty(),
+			Node::Multi(nodes) => nodes.iter().all(Node::dom_empty),
+			Node::Keyed(pairs) => pairs.iter().all(|pair| pair.content.dom_empty()),
+			Node::RemnantSite(_) => {
+				todo!("RemnantSite dom_empty")
 			}
 		}
 	}
