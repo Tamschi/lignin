@@ -681,7 +681,7 @@ macro_rules! deanonymize_on_named {
 
 macro_rules! prefer_thread_safe_safe {
 	{
-		$(#[$($attrs:tt)*])*
+		$(#[$($attrs:tt)*])* $(by value: $(#[$($value_attrs:tt)*])*)* $(by ref: $(#[$($ref_attrs:tt)*])*)?
 	} => {
 		/// Gently nudges the compiler to choose the [`ThreadSafe`] version of a value if both are possible.
 		///
@@ -689,6 +689,7 @@ macro_rules! prefer_thread_safe_safe {
 		///
 		/// Note that not all tooling will show the correct overload here, but the compiler knows which to pick.
 		$(#[$($attrs)*])*
+		$($(#[$($value_attrs)*])*)?
 		#[must_use]
 		#[inline(always)] // No-op.
 		pub fn prefer_thread_safe(self) -> Self {
@@ -701,6 +702,7 @@ macro_rules! prefer_thread_safe_safe {
 		///
 		/// Note that not all tooling will show the correct overload here, but the compiler knows which to pick.
 		$(#[$($attrs)*])*
+		$($(#[$($ref_attrs)*])*)?
 		#[must_use]
 		#[inline(always)] // No-op.
 		pub fn prefer_thread_safe_ref(&self) -> &Self {
@@ -740,7 +742,10 @@ impl<'a> Attribute<'a> {
 	prefer_thread_safe_safe! {
 		///
 		/// > Calling this method on [`Attribute`] produces a deprecation warning since the type is always [`ThreadSafe`].
+		by value:
 		#[deprecated = "Call of `.prefer_thread_safe()` on `Attribute`."]
+		by ref:
+		#[deprecated = "Call of `.prefer_thread_safe_ref()` on `Attribute`."]
 	}
 }
 
