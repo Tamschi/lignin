@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["lignin"] = [{"text":"impl&lt;T&gt; StructuralPartialEq for DomRef&lt;T&gt;","synthetic":false,"types":[]},{"text":"impl&lt;'a&gt; StructuralPartialEq for Attribute&lt;'a&gt;","synthetic":false,"types":[]},{"text":"impl StructuralPartialEq for ThreadBound","synthetic":false,"types":[]},{"text":"impl StructuralPartialEq for ThreadSafe","synthetic":false,"types":[]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

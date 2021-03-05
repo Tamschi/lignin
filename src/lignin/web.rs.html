@@ -1,0 +1,328 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lignin\src\web.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>web.rs - source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled ><script id="default-settings"></script><script src="../../storage.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+<link rel="alternate icon" type="image/png" href="../../favicon-16x16.png">
+<link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../../lignin/index.html'><div class='logo-container rust-logo'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><script src="../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" class="help-button">?</button>
+                <a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1">  1</span>
+<span id="2">  2</span>
+<span id="3">  3</span>
+<span id="4">  4</span>
+<span id="5">  5</span>
+<span id="6">  6</span>
+<span id="7">  7</span>
+<span id="8">  8</span>
+<span id="9">  9</span>
+<span id="10"> 10</span>
+<span id="11"> 11</span>
+<span id="12"> 12</span>
+<span id="13"> 13</span>
+<span id="14"> 14</span>
+<span id="15"> 15</span>
+<span id="16"> 16</span>
+<span id="17"> 17</span>
+<span id="18"> 18</span>
+<span id="19"> 19</span>
+<span id="20"> 20</span>
+<span id="21"> 21</span>
+<span id="22"> 22</span>
+<span id="23"> 23</span>
+<span id="24"> 24</span>
+<span id="25"> 25</span>
+<span id="26"> 26</span>
+<span id="27"> 27</span>
+<span id="28"> 28</span>
+<span id="29"> 29</span>
+<span id="30"> 30</span>
+<span id="31"> 31</span>
+<span id="32"> 32</span>
+<span id="33"> 33</span>
+<span id="34"> 34</span>
+<span id="35"> 35</span>
+<span id="36"> 36</span>
+<span id="37"> 37</span>
+<span id="38"> 38</span>
+<span id="39"> 39</span>
+<span id="40"> 40</span>
+<span id="41"> 41</span>
+<span id="42"> 42</span>
+<span id="43"> 43</span>
+<span id="44"> 44</span>
+<span id="45"> 45</span>
+<span id="46"> 46</span>
+<span id="47"> 47</span>
+<span id="48"> 48</span>
+<span id="49"> 49</span>
+<span id="50"> 50</span>
+<span id="51"> 51</span>
+<span id="52"> 52</span>
+<span id="53"> 53</span>
+<span id="54"> 54</span>
+<span id="55"> 55</span>
+<span id="56"> 56</span>
+<span id="57"> 57</span>
+<span id="58"> 58</span>
+<span id="59"> 59</span>
+<span id="60"> 60</span>
+<span id="61"> 61</span>
+<span id="62"> 62</span>
+<span id="63"> 63</span>
+<span id="64"> 64</span>
+<span id="65"> 65</span>
+<span id="66"> 66</span>
+<span id="67"> 67</span>
+<span id="68"> 68</span>
+<span id="69"> 69</span>
+<span id="70"> 70</span>
+<span id="71"> 71</span>
+<span id="72"> 72</span>
+<span id="73"> 73</span>
+<span id="74"> 74</span>
+<span id="75"> 75</span>
+<span id="76"> 76</span>
+<span id="77"> 77</span>
+<span id="78"> 78</span>
+<span id="79"> 79</span>
+<span id="80"> 80</span>
+<span id="81"> 81</span>
+<span id="82"> 82</span>
+<span id="83"> 83</span>
+<span id="84"> 84</span>
+<span id="85"> 85</span>
+<span id="86"> 86</span>
+<span id="87"> 87</span>
+<span id="88"> 88</span>
+<span id="89"> 89</span>
+<span id="90"> 90</span>
+<span id="91"> 91</span>
+<span id="92"> 92</span>
+<span id="93"> 93</span>
+<span id="94"> 94</span>
+<span id="95"> 95</span>
+<span id="96"> 96</span>
+<span id="97"> 97</span>
+<span id="98"> 98</span>
+<span id="99"> 99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+<span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+</pre><div class="example-wrap"><pre class="rust ">
+<span class="doccomment">//! Erasable web type stand-ins used as callback parameters.</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! `struct`s in this module are only inhabited with the `&quot;callbacks&quot;` feature enabled.  </span>
+<span class="doccomment">//! Without it, they become [uninhabited](https://doc.rust-lang.org/nomicon/exotic-sizes.html#empty-types) and are erased entirely at compile-time, so any code paths that depend on them can in turn be removed too.</span>
+<span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">inline_always</span>)]</span>
+
+<span class="doccomment">/// Used as DOM reference callback parameter. (Expand for implementation contract!)</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// When you receive a [`DomRef`] containing a stand-in type, use [`Materialize::materialize`] to convert it to the actual value.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Implementation Contract</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// &gt; **This is not a soundness contract**. Code using this type must not rely on it for soundness. However, it is free to panic when encountering an incorrect implementation.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## For VDOM-to-DOM renderers:</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// If a renderer invoked a callback with the [`Added`](`DomRef::Added`) variant, it **must** invoke it with the [`Removing`](`DomRef::Removing`) variant before destroying or reusing the relevant part of the DOM.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// This includes cases where the identity of the `CallbackRef` or DOM node changes, in which case the new reference is [`Added`](`DomRef::Added`) after, in this order, [`Removing`](`DomRef::Removing`) the old reference and updating the relevant part(s) of the DOM.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## For apps/VDOM renderers:</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Tearing down and reconstructing the child DOM according to the current child VDOM must be possible at any time.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// &lt;!-- The above is a fairly strict constraint. It&#39;s here so that renderers aren&#39;t forced to (partially) double-buffer the VDOM, even if the current &quot;default&quot; renderer `lignin-dom` does so. --&gt;</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Please refer to the variant documentation for more information.</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">PartialOrd</span>, <span class="ident">Ord</span>, <span class="ident">Hash</span>)]</span>
+<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">DomRef</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+	<span class="doccomment">/// When constructing the DOM, this variant is passed **after** all child elements have been processed and, if applicable, the element has been added to the document tree.</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// In particular, this means:</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// - Manipulating child elements is possible (but this can cause panics to occur later on if an incompatible child diff occurs).</span>
+	<span class="doccomment">/// - Traversing ancestors and their attributes should work.</span>
+	<span class="doccomment">/// - Scrolling the node into view and grabbing focus should work.</span>
+	<span class="doccomment">/// - **Any siblings and ancestor siblings may be in an indeterminate state at this point!**</span>
+	<span class="ident">Added</span>(<span class="ident">T</span>),
+	<span class="doccomment">/// When tearing down the DOM, this variant is passed **before** any child elements are processed and, if applicable, the element is removed from to the document tree.</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// In particular, this means:</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// - **Child elements must be restored to a clean state compatible with their VDOM here!**</span>
+	<span class="doccomment">/// - Traversing ancestors and their attributes should still work.</span>
+	<span class="doccomment">/// - **Any siblings and ancestor siblings may be in an indeterminate state at this point!**</span>
+	<span class="ident">Removing</span>(<span class="ident">T</span>),
+}
+
+<span class="macro">macro_rules</span><span class="macro">!</span> <span class="ident">web_types</span> {
+	{$(
+		$(<span class="attribute">#[$(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">attrs</span>:<span class="ident">tt</span>)<span class="kw-2">*</span>]</span>)<span class="op">*</span>
+		(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">container</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">container_str</span>:<span class="ident">literal</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">contents</span>:<span class="ident">ty</span>
+	),<span class="kw-2">*</span>$(,)<span class="question-mark">?</span>} <span class="op">=</span><span class="op">&gt;</span> {$(
+		<span class="comment">// It&#39;s unfortunately not possible to puzzle the first line together like below, since it ends up cut off in the overview.</span>
+		$(<span class="attribute">#[$(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">attrs</span>)<span class="kw-2">*</span>]</span>)<span class="op">*</span>
+		<span class="doccomment">///</span>
+		<span class="doccomment">/// Use [`Materialize::materialize`] to convert it to the actual value.</span>
+		<span class="comment">// #[cfg_attr(feature = &quot;callbacks&quot;, repr(transparent))]</span>
+		<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
+		<span class="kw">pub</span> <span class="kw">struct</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">container</span>(
+			<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;callbacks&quot;</span>)]</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">contents</span>,
+			<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;callbacks&quot;</span>))]</span> <span class="ident">FeatureNeeded</span>,
+		);
+		<span class="kw">impl</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">container</span> {
+			<span class="doccomment">/// Creates a new [`</span>
+			<span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">container_str</span>]</span>
+			<span class="doccomment">/// `] instance. The `&quot;callbacks&quot;` feature is required to use this function.</span>
+			<span class="attribute">#[<span class="ident">cfg_attr</span>(
+				<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;callbacks&quot;</span>),
+				<span class="ident">deprecated</span> <span class="op">=</span> <span class="string">&quot;The `\&quot;callbacks\&quot;` feature is required to use this function.&quot;</span>
+			)]</span>
+			<span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
+			<span class="attribute">#[<span class="ident">must_use</span>]</span>
+			<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(
+				<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;callbacks&quot;</span>)]</span> <span class="ident">value</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">contents</span>,
+				<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;callbacks&quot;</span>))]</span> <span class="ident">value</span>: <span class="ident">FeatureNeeded</span>,
+			) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+				<span class="self">Self</span>(<span class="ident">value</span>)
+			}
+		}
+	)<span class="question-mark">?</span>};
+}
+
+<span class="macro">web_types</span><span class="macro">!</span> {
+	<span class="doccomment">/// Erasable stand-in for [`web_sys::Comment`](https://docs.rs/web-sys/0.3/web_sys/struct.Comment.html) used as callback parameter.</span>
+	(<span class="ident">Comment</span>, <span class="string">&quot;Comment&quot;</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">web_sys</span>::<span class="ident">Comment</span>,
+
+	<span class="doccomment">/// Erasable stand-in for [`web_sys::Event`](https://docs.rs/web-sys/0.3/web_sys/struct.Event.html) used as callback parameter.</span>
+	(<span class="ident">Event</span>, <span class="string">&quot;Event&quot;</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">web_sys</span>::<span class="ident">Event</span>,
+
+	<span class="doccomment">/// Erasable stand-in for [`web_sys::HtmlElement`](https://docs.rs/web-sys/0.3/web_sys/struct.HtmlElement.html) used as callback parameter.</span>
+	(<span class="ident">HtmlElement</span>, <span class="string">&quot;HtmlElement&quot;</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">web_sys</span>::<span class="ident">HtmlElement</span>,
+
+	<span class="doccomment">/// Erasable stand-in for [`web_sys::Text`](https://docs.rs/web-sys/0.3/web_sys/struct.Text.html) used as callback parameter.</span>
+	(<span class="ident">Text</span>, <span class="string">&quot;Text&quot;</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">web_sys</span>::<span class="ident">Text</span>,
+}
+
+<span class="macro">macro_rules</span><span class="macro">!</span> <span class="ident">conversions</span> {
+	{$(
+		<span class="macro-nonterminal">$</span><span class="macro-nonterminal">container</span>:<span class="ident">ty</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">contents</span>:<span class="ident">ty</span>
+	),<span class="kw-2">*</span>$(,)<span class="question-mark">?</span>} <span class="op">=</span><span class="op">&gt;</span> {$(
+		<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;callbacks&quot;</span>)]</span>
+		<span class="kw">impl</span> <span class="ident">Materialize</span><span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">contents</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">container</span> {
+			<span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span> <span class="comment">// No-op.</span>
+			<span class="kw">fn</span> <span class="ident">materialize</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">contents</span> {
+				<span class="self">self</span>.<span class="number">0</span>
+			}
+		}
+
+		<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;callbacks&quot;</span>))]</span>
+		<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">AnyType</span><span class="op">&gt;</span> <span class="ident">Materialize</span><span class="op">&lt;</span><span class="ident">AnyType</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">container</span> {
+			<span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
+			<span class="kw">fn</span> <span class="ident">materialize</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">AnyType</span> {
+				<span class="macro">unreachable</span><span class="macro">!</span>()
+			}
+		}
+	)<span class="kw-2">*</span>};
+}
+
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Materialize</span><span class="op">&lt;</span><span class="ident">U</span><span class="op">&gt;</span>, <span class="ident">U</span><span class="op">&gt;</span> <span class="ident">Materialize</span><span class="op">&lt;</span><span class="ident">DomRef</span><span class="op">&lt;</span><span class="ident">U</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">DomRef</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+	<span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
+	<span class="kw">fn</span> <span class="ident">materialize</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DomRef</span><span class="op">&lt;</span><span class="ident">U</span><span class="op">&gt;</span> {
+		<span class="kw">match</span> <span class="self">self</span> {
+			<span class="self">Self</span>::<span class="ident">Added</span>(<span class="ident">added</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">DomRef</span>::<span class="ident">Added</span>(<span class="ident">added</span>.<span class="ident">materialize</span>()),
+			<span class="self">Self</span>::<span class="ident">Removing</span>(<span class="ident">removing</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">DomRef</span>::<span class="ident">Removing</span>(<span class="ident">removing</span>.<span class="ident">materialize</span>()),
+		}
+	}
+}
+
+<span class="macro">conversions</span><span class="macro">!</span> {
+	<span class="ident">Comment</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">web_sys</span>::<span class="ident">Comment</span>,
+	<span class="ident">Event</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">web_sys</span>::<span class="ident">Event</span>,
+	<span class="ident">HtmlElement</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">web_sys</span>::<span class="ident">HtmlElement</span>,
+	<span class="ident">Text</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">web_sys</span>::<span class="ident">Text</span>,
+}
+
+<span class="doccomment">/// Empty. Replaces erasable values in this module if the `&quot;callbacks&quot;` feature is not active.</span>
+<span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
+<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">empty_enum</span>)]</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
+<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">FeatureNeeded</span> {}
+<span class="kw">impl</span> <span class="ident">FeatureNeeded</span> {
+	<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span>
+	<span class="kw">fn</span> <span class="ident">map</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">U</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="ident">T</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">U</span><span class="op">&gt;</span> {
+		<span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="self">self</span>;
+		<span class="macro">unreachable</span><span class="macro">!</span>()
+	}
+}
+
+<span class="doccomment">/// Convert a DOM stand-in to its web type value. This is a no-op with the `&quot;callbacks&quot;` feature and unreachable otherwise.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// The extra trait is necessary because `Into` conflicts on `T: From&lt;T&gt;` and `Option&lt;T&gt;: From&lt;T&gt;`.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// **Warning**:</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Without the `&quot;callbacks&quot;` feature, the stand-ins in this module implement [`Materialize`] for any target type!  </span>
+<span class="doccomment">/// Make sure to check if your package compiles with this feature enables, most easily by requiring it in the `[dev-dependencies]` section of your *Cargo.toml*.</span>
+<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Materialize</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+	<span class="doccomment">/// Convert a DOM stand-in to its web type value. This is a no-op with the `&quot;callbacks&quot;` feature and unreachable otherwise.</span>
+	<span class="kw">fn</span> <span class="ident">materialize</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">T</span>;
+}
+</pre></div>
+</section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../";window.currentCrate = "lignin";</script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>
