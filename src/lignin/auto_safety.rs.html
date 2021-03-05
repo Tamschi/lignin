@@ -820,23 +820,27 @@
 <span id="817">817</span>
 <span id="818">818</span>
 <span id="819">819</span>
+<span id="820">820</span>
+<span id="821">821</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Transitive (across function boundaries) [`ThreadSafety`] inference, mainly for use by frameworks.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! All methods in this module are always-inlined no-ops, meaning that there is zero runtime cost to them.</span>
 <span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">inline_always</span>)]</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! &gt; This feature relies on opaque return types (`-&gt; impl Trait`) leaking [`Send`] and [`Sync`], so the theoretical limit here, even after specialization lands, are four distinct &#39;real&#39; types with restrictions on conversion incompatibilities.</span>
-<span class="doccomment">//! &gt; Fortunately, `lignin` only needs two of these slots with straightforward compatibility, the `!Send + !Sync` and the `Send + Sync` one.</span>
-<span class="doccomment">//! &gt;</span>
-<span class="doccomment">//! &gt; Please refer to the item documentation for implementation details.</span>
-<span class="doccomment">//!</span>
 <span class="doccomment">//! **The following is a long explanation that you probably don&#39;t have to read.**  </span>
 <span class="doccomment">//! In hand-written code, you can always use [`From`] or [`Into`] to cast a [`…&lt;ThreadSafe&gt;`](`ThreadSafe`) type to the matching [`…&lt;ThreadBound&gt;`](`ThreadBound`) type where necessary.  </span>
 <span class="doccomment">//! If you receive an opaque type, `use lignin::auto_safety::{AutoSafe as _, Deanonymize as _};` and call `.deanonymize()` on it, then **politely** ask the author to consider being more specific.</span>
 <span class="doccomment">//!</span>
+<span class="doccomment">//! - - -</span>
+<span class="doccomment">//!</span>
 <span class="doccomment">//! If you do intend to use this module, please still declare [`ThreadSafe`] explicitly at crate boundaries, or encourage developers using your library to do so.</span>
 <span class="doccomment">//! [You can find more information on this near the end of this page.](#limiting-autosafe-exposure)</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! &gt; This feature relies on opaque return types (`-&gt; impl Trait`) leaking [`Send`] and [`Sync`], so the theoretical limit here, even after specialization lands, are four distinct &#39;real&#39; types with restrictions on conversion incompatibilities.</span>
+<span class="doccomment">//! &gt; Fortunately, `lignin` only needs two of these slots with straightforward compatibility, the `!Send + !Sync` and the `Send + Sync` one.</span>
+<span class="doccomment">//! &gt;</span>
+<span class="doccomment">//! &gt; Please refer to the item documentation for implementation details.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! # Examples / Usage</span>
 <span class="doccomment">//!</span>
