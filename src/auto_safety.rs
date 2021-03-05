@@ -382,7 +382,7 @@
 //!   inferred_safe().deanonymize(),
 //! ]));
 //! # assert_safe(safe_to_inferred);
-//! 
+//!
 //! let inferred_to_bound = Node::Multi(allocate([
 //!   bound(),
 //!   inferred_safe().deanonymize().align(),
