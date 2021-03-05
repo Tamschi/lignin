@@ -17,7 +17,12 @@
 //!
 //! ## Security
 //!
-//! See the implementation contract on [`Node::Text::text`] and [`Node::Comment::comment`].
+//! See also the implementation contracts on [`Node::Text::text`], [`Node::Comment::comment`] and [`Attribute::name`].
+//!
+//! When rendering the VDOM as HTML text, extra care **must** be taken to syntactically validate everything according to [the specification](https://html.spec.whatwg.org/multipage/syntax.html)!
+//!
+//! HTML renderers should error rather than panic when encountering a VDOM that they can't guarantee will be parsed as intended (assuming any syntax errors potentially cause undefined behavior *somewhere*).  
+//! However, renderers are free to be lenient in this regard by adjusting their output to be syntactically valid in a way that's unlikely to cause a changed user experience. (That is: Feel free to substitute illegal character sequences in comments and such.)
 //!
 //! ## Correctness
 //!
@@ -68,7 +73,7 @@
 //!
 //! # Limitations
 //!
-//! As `lignin` targets HTML and DOM rather than XML, it does not support [processing instructions](https://developer.mozilla.org/en-US/docs/Web/API/ProcessingInstruction).
+//! As `lignin` targets HTML and DOM rather than XML, it does not support [***processing instructions***](https://developer.mozilla.org/en-US/docs/Web/API/ProcessingInstruction) or [***CDATA sections***](https://developer.mozilla.org/en-US/docs/Web/API/CDATASection).
 //!
 //! For the same reason, there is formally no information about VDOM identity, which could be used to render self-referential XML documents.
 //!
@@ -284,9 +289,20 @@ pub struct EventBinding<'a, S: ThreadSafety> {
 /// [`Vdom`] Represents a single HTML [***Attr***](https://developer.mozilla.org/en-US/docs/Web/API/Attr) with `name` and `value`.
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Hash)]
 pub struct Attribute<'a> {
-	/// The unescaped [***name***](https://developer.mozilla.org/en-US/docs/Web/API/Attr#properties).
+	/// The [***name***](https://developer.mozilla.org/en-US/docs/Web/API/Attr#properties).
 	///
-	///TODO?: Forbidden characters.
+	/// # Implementation Contract
+	///
+	/// ## Security
+	///
+	/// While applications should generally avoid it, [`Attribute::name`] may contain [characters that are unexpected in this position](https://html.spec.whatwg.org/multipage/syntax.html#attributes-2).
+	///
+	/// Renderers may only process these verbatim iff they can expect this to not cause security issues.
+	///
+	/// > For example: Passing an invalid attribute name to a DOM API *isolated in a dedicated parameter* is *probably* okay,
+	/// > as long as something along the way validates it doesn't contain `'\0'`.
+	/// >
+	/// > Serializing an invalid attribute name to HTML is a **very** bad idea, so renderers must never do so.
 	pub name: &'a str,
 	/// The unescaped [***value***](https://developer.mozilla.org/en-US/docs/Web/API/Attr#properties).
 	pub value: &'a str,

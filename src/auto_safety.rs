@@ -41,7 +41,7 @@
 //! >
 //! > I recommend using [`bumpalo`](https://github.com/fitzgen/bumpalo) as VDOM allocator since it is fast and versatile, but `lignin` itself has no preference in this regard.
 //!
-//! > In all examples and the above, [`Node`] can be replaced by any other [`Vdom`] type.
+//! > In all examples and the above, except for those in the [More lenient conversions with `From` and `Into`](#more-lenient-conversions-with-from-and-into) section below, [`Node`] can be replaced by any other [`Vdom`] type.
 //!
 //! ## Basic Forwarding
 //!
@@ -350,17 +350,110 @@
 //!
 //! # Alignment
 //!
-//! TODO
+//! The [`Align`] trait behaves a lot like [`Into`], so identity conversions are possible.
+//! However, unlike [`Into`], it's implemented so that it can change only a type's [`ThreadSafety`] and isn't warned about by Clippy on identity conversion.
 //!
-//! ## More lenient conversion with [`Into`]
+//! This makes it ideal to combine [`Node`] instances with different or unknown [`ThreadSafety`] into a single VDOM:
 //!
-//! TODO
+//! ```rust
+//! # use lignin::{
+//! #   auto_safety::{Align as _, AutoSafe, Deanonymize as _},
+//! #   Node, ThreadBound, ThreadSafe,
+//! # };
+//! #
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
+//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! #
+//! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
+//! #
+//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
+//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! #
+//! let safe_to_bound = Node::Multi(allocate([
+//!   safe().align(),
+//!   bound(),
+//! ]));
+//! # assert_bound(safe_to_bound);
+//!
+//! let safe_to_inferred = Node::Multi(allocate([
+//!   safe().align(),
+//!   inferred_safe().deanonymize(),
+//! ]));
+//! # assert_safe(safe_to_inferred);
+//! 
+//! let inferred_to_bound = Node::Multi(allocate([
+//!   bound(),
+//!   inferred_safe().deanonymize().align(),
+//! ]));
+//! # assert_bound(inferred_to_bound);
+//! ```
+//!
+//! ## More lenient conversions with [`From`] and [`Into`]
+//!
+//! [`From`] and [`Into`] can both be used to change the [`ThreadSafety`] of [`Vdom`] values from [`ThreadSafe`] to [`ThreadBound`]:
+//!
+//! ```rust
+//! # use lignin::{
+//! #   auto_safety::{Align as _, AutoSafe, Deanonymize as _},
+//! #   Node, ThreadBound, ThreadSafe,
+//! # };
+//! #
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
+//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! #
+//! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
+//! #
+//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
+//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! #
+//! let safe_to_bound: Node<ThreadBound> = safe().into();
+//! ```
+//!
+//! Direct [`Node`] conversions, which can also adjust [`ThreadSafety`], are additionally available for **references** to
+//! [`Element`] (into [`Node::Element`]), [`[Node]`](https://doc.rust-lang.org/stable/core/slice/index.html) (into [`Node::Multi`]) and [`str`] (into [`Node::Text`]):
+//!
+//! ```rust
+//! # use lignin::{
+//! #   auto_safety::{Align as _, AutoSafe, Deanonymize as _},
+//! #   Node, ThreadBound, ThreadSafe,
+//! # };
+//! #
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
+//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! #
+//! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
+//! #
+//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
+//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! #
+//! let element_node: Node<ThreadBound> = allocate(lignin::Element::<ThreadSafe> {
+//!   name: "DIV",
+//!   attributes: &[],
+//!   content: Node::Multi(&[]),
+//!   event_bindings: &[],
+//! }).into();
+//!
+//! let empty: &[Node<ThreadSafe>] = &[];
+//! let empty_node: Node<ThreadSafe> = empty.into();
+//!
+//! let text_node: Node<ThreadSafe> = "Hello VDOM!".into();
+//! ```
+//!
+//! [`ThreadSafety`] alignment is possible at the same time, but this also means relevant annotations or at least nudges (see below) are often necessary.
+//!
+//! <!-- TODO: Collect opinions on whether including alignment here is a good idea. -->
 //!
 //! # [`ThreadSafe`] Preference
 //!
 //! The Rust compiler can usually infer the correct [`ThreadSafety`] without annotations if valid choices are in any way limited in this regard.
 //!
-//! However, this isn't the case for most [`Vdom`] expressions without inputs…:
+//! However, this isn't the case for most [`Vdom`] expressions without inputs with definite [`ThreadSafety`]…:
 //!
 //! ```compile_fail
 //! # use lignin::{
