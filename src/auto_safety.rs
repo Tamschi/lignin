@@ -3,17 +3,19 @@
 //! All methods in this module are always-inlined no-ops, meaning that there is zero runtime cost to them.
 #![allow(clippy::inline_always)]
 //!
-//! > This feature relies on opaque return types (`-> impl Trait`) leaking [`Send`] and [`Sync`], so the theoretical limit here, even after specialization lands, are four distinct 'real' types with restrictions on conversion incompatibilities.
-//! > Fortunately, `lignin` only needs two of these slots with straightforward compatibility, the `!Send + !Sync` and the `Send + Sync` one.
-//! >
-//! > Please refer to the item documentation for implementation details.
-//!
 //! **The following is a long explanation that you probably don't have to read.**  
 //! In hand-written code, you can always use [`From`] or [`Into`] to cast a [`…<ThreadSafe>`](`ThreadSafe`) type to the matching [`…<ThreadBound>`](`ThreadBound`) type where necessary.  
 //! If you receive an opaque type, `use lignin::auto_safety::{AutoSafe as _, Deanonymize as _};` and call `.deanonymize()` on it, then **politely** ask the author to consider being more specific.
 //!
+//! - - -
+//!
 //! If you do intend to use this module, please still declare [`ThreadSafe`] explicitly at crate boundaries, or encourage developers using your library to do so.
 //! [You can find more information on this near the end of this page.](#limiting-autosafe-exposure)
+//!
+//! > This feature relies on opaque return types (`-> impl Trait`) leaking [`Send`] and [`Sync`], so the theoretical limit here, even after specialization lands, are four distinct 'real' types with restrictions on conversion incompatibilities.
+//! > Fortunately, `lignin` only needs two of these slots with straightforward compatibility, the `!Send + !Sync` and the `Send + Sync` one.
+//! >
+//! > Please refer to the item documentation for implementation details.
 //!
 //! # Examples / Usage
 //!
