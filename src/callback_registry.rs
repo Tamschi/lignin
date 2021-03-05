@@ -242,7 +242,10 @@ impl<R, T> CallbackRegistration<R, T> {
 	#[inline(always)]
 	#[must_use]
 	pub fn to_ref_thread_bound(&self) -> CallbackRef<ThreadBound, T> {
-		self.to_ref() // Actually resolves to `ToRefThreadBoundFallback::to_ref`.
+		CallbackRef {
+			key: self.key,
+			phantom: PhantomData,
+		}
 	}
 }
 impl<R, T> CallbackRegistration<R, T>
