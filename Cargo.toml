@@ -28,7 +28,7 @@ is-it-maintained-open-issues = { repository = "Tamschi/lignin" }
 maintenance = { status = "experimental" }
 
 [features]
-"callbacks" = ["lazy_static", "web-sys"]
+"callbacks" = ["lazy_static", "web-sys"] # Enables DOM callback support. Requires `std`.
 
 [dependencies]
 lazy_static = { version = "1.4.0", optional = true }

@@ -13,7 +13,9 @@
 [![open pull requests](https://img.shields.io/github/issues-pr-raw/Tamschi/lignin)](https://github.com/Tamschi/lignin/pulls)
 [![crev reviews](https://web.crev.dev/rust-reviews/badge/crev_count/lignin.svg)](https://web.crev.dev/rust-reviews/crate/lignin/)
 
-A virtual DOM structure, primarily for web use.
+A lightweight but featureful virtual DOM library, primarily for web use.
+
+`no_std` and no dependencies without the `"callbacks"` feature.
 
 ## Installation
 
@@ -33,11 +35,39 @@ cargo add lignin --features callbacks
 
 to always enable the feature.
 
+## Features
+
+### `"callbacks"`
+
+Enables DOM callback support. Off by default. Requires `std`.
+
+Apps or components can be written against the callback API without enabling this feature, in which case those code paths can be erased at compile-time.
+
 ## Example
 
 ```rust
-// TODO_EXAMPLE
+use lignin::{Node, Element};
+
+// Please bring your own allocator where necessary.
+let _ = &Node::Element {
+  element: &Element {
+    name: "DIV", // Use all-caps for more efficient DOM interactions.¹
+    attributes: &[],
+    content: Node::Multi(&[
+      "Hello! ".into(), // Some convenience included.
+      Node::Comment {
+        comment: "--> Be mindful of HTML pitfalls. <!--", // Renderers must validate.
+        dom_binding: None,
+      }
+    ]),
+    event_bindings: &[], // Strongly typed using `web-sys`.
+  },
+  dom_binding: None, // For JS interop.
+}
+.prefer_thread_safe(); // Thread-safety can be inferred from bindings!
 ```
+
+¹ See [Element.tagName (MDN)](https://developer.mozilla.org/en-US/docs/Web/API/Element/tagName). This avoids case-insensitive comparisons.
 
 ## Prior Art
 

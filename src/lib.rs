@@ -254,7 +254,7 @@ pub struct Element<'a, S: ThreadSafety> {
 	///
 	/// Unlike in the browser, this is generally treated case-*sensitively*, meaning for example `"div"` doesn't equal `"DIV"`.
 	///
-	/// Since browsers will generally return the canonical uppercase name, it's recommended to generate the VDOM this way also, to avoid unnecessary mismatches.
+	/// Since browsers will generally return the canonical uppercase name, it's recommended to generate the VDOM all-uppercase too, to avoid unnecessary mismatches.
 	pub name: &'a str,
 	/// The [***Element.attributes***](https://developer.mozilla.org/en-US/docs/Web/API/Element/attributes).
 	///
