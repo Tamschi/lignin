@@ -60,7 +60,7 @@
 //!
 //! [`Clone`] is always implemented via [`Copy`] in this crate, since none of the instances provide heap storage.
 //!
-//! ## Hashing
+//! ## Comparisons and Hashing
 //!
 //! As shallow hashes would easily collide for most applications where VDOM hashing comes up,
 //! [`Hash`](`core::hash::Hash`) is implemented recursively in this crate and is potentially expensive.
