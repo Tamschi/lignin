@@ -4,8 +4,6 @@
 //! Without it, they become [uninhabited](https://doc.rust-lang.org/nomicon/exotic-sizes.html#empty-types) and are erased entirely at compile-time, so any code paths that depend on them can in turn be removed too.
 #![allow(clippy::inline_always)]
 
-use crate::sealed::Sealed;
-
 /// Used as DOM reference callback parameter. (Expand for implementation contract!)
 ///
 /// When you receive a [`DomRef`] containing a stand-in type, use [`Materialize::materialize`] to convert it to the actual value.
@@ -47,15 +45,6 @@ pub enum DomRef<T> {
 	/// - **Any siblings and ancestor siblings may be in an indeterminate state at this point!**
 	Removing(T),
 }
-impl<T> DomRef<T> {
-	/// Projects a [`DomRef`] reference inwards, which can then be [`Materialize`]d where applicable.
-	pub fn as_ref(&self) -> DomRef<&T> {
-		match self {
-			DomRef::Added(added) => DomRef::Added(added),
-			DomRef::Removing(removing) => DomRef::Removing(removing),
-		}
-	}
-}
 
 macro_rules! web_types {
 	{$(
@@ -68,7 +57,6 @@ macro_rules! web_types {
 		/// Use [`Materialize::materialize`] to convert it to the actual value.
 		// #[cfg_attr(feature = "callbacks", repr(transparent))]
 		#[derive(Debug, Clone)]
-		#[cfg_attr(feature = "callbacks", repr(transparent))]
 		pub struct $container(
 			#[cfg(feature = "callbacks")] $contents,
 			#[cfg(not(feature = "callbacks"))] FeatureNeeded,
@@ -84,17 +72,12 @@ macro_rules! web_types {
 			#[inline(always)]
 			#[must_use]
 			pub fn new(
-				#[cfg(feature = "callbacks")] value: &$contents,
-				#[cfg(not(feature = "callbacks"))] value: &FeatureNeeded,
-			) -> &Self {
-				unsafe {
-					//SAFETY: #[repr(transparent)] or vacant.
-					&*(value as *const _ as *const _)
-				}
+				#[cfg(feature = "callbacks")] value: $contents,
+				#[cfg(not(feature = "callbacks"))] value: FeatureNeeded,
+			) -> Self {
+				Self(value)
 			}
 		}
-
-		impl Sealed for $container {}
 	)?};
 }
 
@@ -117,11 +100,31 @@ macro_rules! conversions {
 		$container:ty => $contents:ty
 	),*$(,)?} => {$(
 		#[cfg(feature = "callbacks")]
-		impl Materialize<$contents> for $container {}
+		impl Materialize<$contents> for $container {
+			#[inline(always)] // No-op.
+			fn materialize(self) -> $contents {
+				self.0
+			}
+		}
 
 		#[cfg(not(feature = "callbacks"))]
-		impl<AnyType> Materialize<AnyType> for $container {}
+		impl<AnyType> Materialize<AnyType> for $container {
+			#[inline(always)]
+			fn materialize(self) -> AnyType {
+				unreachable!()
+			}
+		}
 	)*};
+}
+
+impl<T: Materialize<U>, U> Materialize<DomRef<U>> for DomRef<T> {
+	#[inline(always)]
+	fn materialize(self) -> DomRef<U> {
+		match self {
+			Self::Added(added) => DomRef::Added(added.materialize()),
+			Self::Removing(removing) => DomRef::Removing(removing.materialize()),
+		}
+	}
 }
 
 conversions! {
@@ -152,17 +155,7 @@ impl FeatureNeeded {
 ///
 /// Without the `"callbacks"` feature, the stand-ins in this module implement [`Materialize`] for any target type!  
 /// Make sure to check if your package compiles with this feature enables, most easily by requiring it in the `[dev-dependencies]` section of your *Cargo.toml*.
-pub trait Materialize<T>: Sealed {
+pub trait Materialize<T> {
 	/// Convert a DOM stand-in to its web type value. This is a no-op with the `"callbacks"` feature and unreachable otherwise.
-	#[inline(always)]
-	fn materialize(&self) -> &T {
-		if cfg!(feature = "callbacks") {
-			unsafe {
-				//SAFETY: Self is either directly #[repr(transparent)] or the reinterpretation is over a generic type parameter that is.
-				&*(self as *const _ as *const _)
-			}
-		} else {
-			unreachable!()
-		}
-	}
+	fn materialize(self) -> T;
 }

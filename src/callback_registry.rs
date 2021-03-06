@@ -53,18 +53,18 @@ mod callbacks_on {
 	#[must_use]
 	pub fn register<R, T>(
 		receiver: Pin<&'_ R>,
-		handler: fn(*const R, &T),
+		handler: fn(*const R, T),
 	) -> CallbackRegistration<R, T> {
 		let mut registry = REGISTRY.write().unwrap();
 		if registry.key_count == u32::MAX {
 			drop(registry);
 			panic!("[lignin] Callback registry keys exhausted")
 		} else {
-			fn invoke_typed<R, T>(receiver_address: usize, handler_address: usize, parameter: &T) {
+			fn invoke_typed<R, T>(receiver_address: usize, handler_address: usize, parameter: T) {
 				let receiver = receiver_address as *const R;
 				let handler = unsafe {
 					// SAFETY: The pointer to invoke_typed is taken with matching monomorphization just below.
-					mem::transmute::<usize, fn(*const R, &T)>(handler_address)
+					mem::transmute::<usize, fn(*const R, T)>(handler_address)
 				};
 				handler(receiver, parameter)
 			}
@@ -99,12 +99,12 @@ mod callbacks_on {
 			.expect("`CallbackRegistration` double-drop");
 	}
 
-	pub fn invoke<T>(key: NonZeroU32, parameter: &T) {
+	pub fn invoke<T>(key: NonZeroU32, parameter: T) {
 		let registry = REGISTRY.read().unwrap();
 		if let Some(entry) = registry.entries.get(&key) {
 			let invoke_typed = unsafe {
 				// SAFETY: Same type as above.
-				mem::transmute::<usize, fn(usize, usize, &T)>(entry.invoke_typed_address)
+				mem::transmute::<usize, fn(usize, usize, T)>(entry.invoke_typed_address)
 			};
 			invoke_typed(entry.receiver_address, entry.handler_address, parameter)
 		}
@@ -155,7 +155,7 @@ mod callbacks_off {
 	#[must_use]
 	pub fn register<R, T>(
 		receiver: Pin<&'_ R>,
-		handler: fn(*const R, &T),
+		handler: fn(*const R, T),
 	) -> CallbackRegistration<R, T> {
 		let _ = receiver;
 		let _ = handler;
@@ -172,7 +172,7 @@ mod callbacks_off {
 	}
 
 	#[inline(always)]
-	pub fn invoke<T>(key: NonZeroU32, parameter: &T) {
+	pub fn invoke<T>(key: NonZeroU32, parameter: T) {
 		let _ = key;
 		let _ = parameter;
 	}
@@ -234,7 +234,7 @@ impl<R, T> CallbackRegistration<R, T> {
 	/// Dropping the [`CallbackRegistration`] instance prevents any further calls to `handler` through it.
 	#[inline(always)] // Proxy function.
 	#[must_use]
-	pub fn new(receiver: Pin<&'_ R>, handler: fn(receiver: *const R, parameter: &T)) -> Self {
+	pub fn new(receiver: Pin<&'_ R>, handler: fn(receiver: *const R, parameter: T)) -> Self {
 		callbacks::register(receiver, handler)
 	}
 
@@ -307,7 +307,7 @@ impl<S: ThreadSafety, T> CallbackRef<S, T> {
 	/// provided that the original [`CallbackRegistration`] hasn't been dropped yet.
 	#[allow(clippy::inline_always)]
 	#[inline(always)] // Proxy function.
-	pub fn call(self, parameter: &T) {
+	pub fn call(self, parameter: T) {
 		callbacks::invoke(self.key, parameter)
 	}
 }
