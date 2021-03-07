@@ -416,7 +416,7 @@
 //! ```
 //!
 //! Direct [`Node`] conversions, which can also adjust [`ThreadSafety`], are additionally available for **references** to
-//! [`Element`] (into [`Node::Element`]), [`[Node]`](https://doc.rust-lang.org/stable/core/slice/index.html) (into [`Node::Multi`]) and [`str`] (into [`Node::Text`]):
+//! [`[Node]`](https://doc.rust-lang.org/stable/core/slice/index.html) (into [`Node::Multi`]) and [`str`] (into [`Node::Text`]):
 //!
 //! ```rust
 //! # use lignin::{
@@ -434,13 +434,6 @@
 //! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
 //! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
 //! #
-//! let element_node: Node<ThreadBound> = allocate(lignin::Element::<ThreadSafe> {
-//!   name: "DIV",
-//!   attributes: &[],
-//!   content: Node::Multi(&[]),
-//!   event_bindings: &[],
-//! }).into();
-//!
 //! let empty: &[Node<ThreadSafe>] = &[];
 //! let empty_node: Node<ThreadSafe> = empty.into();
 //!

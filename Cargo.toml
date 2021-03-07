@@ -32,7 +32,7 @@ maintenance = { status = "experimental" }
 
 [dependencies]
 lazy_static = { version = "1.4.0", optional = true }
-web-sys = { version = "0.3.47", optional = true, features = ["Comment", "Event", "HtmlElement", "Text"] }
+web-sys = { version = "0.3.47", optional = true, features = ["Comment", "Event", "HtmlElement", "SvgElement", "Text"] }
 
 [dev-dependencies]
 cargo-husky = "1.5.0"

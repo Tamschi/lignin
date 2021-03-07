@@ -91,6 +91,9 @@ web_types! {
 	/// Erasable stand-in for [`web_sys::HtmlElement`](https://docs.rs/web-sys/0.3/web_sys/struct.HtmlElement.html) used as callback parameter.
 	(HtmlElement, "HtmlElement") => web_sys::HtmlElement,
 
+	/// Erasable stand-in for [`web_sys::SvgElement`](https://docs.rs/web-sys/0.3/web_sys/struct.SvgElement.html) used as callback parameter.
+	(SvgElement, "HtmlElement") => web_sys::SvgElement,
+
 	/// Erasable stand-in for [`web_sys::Text`](https://docs.rs/web-sys/0.3/web_sys/struct.Text.html) used as callback parameter.
 	(Text, "Text") => web_sys::Text,
 }
@@ -139,6 +142,7 @@ conversions! {
 	Comment => web_sys::Comment,
 	Event => web_sys::Event,
 	HtmlElement => web_sys::HtmlElement,
+	SvgElement => web_sys::SvgElement,
 	Text => web_sys::Text,
 }
 

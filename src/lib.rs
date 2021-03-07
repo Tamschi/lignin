@@ -150,13 +150,22 @@ pub enum Node<'a, S: ThreadSafety> {
 		dom_binding: Option<CallbackRef<S, DomRef<web::Comment>>>,
 	},
 	/// Represents a single [***HTMLElement***](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement).
-	Element {
+	HtmlElement {
 		/// The [`Element`] to render.
 		element: &'a Element<'a, S>,
 		/// Registers for [***HTMLElement***](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement) reference updates.
 		///
 		/// See [`DomRef`] for more information.
 		dom_binding: Option<CallbackRef<S, DomRef<web::HtmlElement>>>,
+	},
+	/// Represents a single [***SVGElement***](https://developer.mozilla.org/en-US/docs/Web/API/SVGElement).
+	SvgElement {
+		/// The [`Element`] to render.
+		element: &'a Element<'a, S>,
+		/// Registers for [***SVGElement***](https://developer.mozilla.org/en-US/docs/Web/API/SVGElement) reference updates.
+		///
+		/// See [`DomRef`] for more information.
+		dom_binding: Option<CallbackRef<S, DomRef<web::SvgElement>>>,
 	},
 	/// DOM-transparent. This variant uses shallow comparison and hashes based on its `state_key` only.
 	///
@@ -222,7 +231,7 @@ pub enum Node<'a, S: ThreadSafety> {
 		///
 		/// In order to support e.g. formatting instructions, apps should (carefully) parse user-generated content and translate it into a matching VDOM graph.
 		///
-		/// Live components also have the option of using for example [`Node::Element::dom_binding`] to set [***Element.innerHTML***](https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML),
+		/// Live components also have the option of using for example [`Node::HtmlElement::dom_binding`] to set [***Element.innerHTML***](https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML),
 		/// but this is not recommended due to the difficulty of implementing allow-listing with such an approach.
 		text: &'a str,
 		/// Registers for [***Text***](https://developer.mozilla.org/en-US/docs/Web/API/Text) reference updates.

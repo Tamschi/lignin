@@ -220,11 +220,19 @@ vdom_ergonomics!([
 				.field("comment", comment)
 				.field("dom_binding", dom_binding)
 				.finish(),
-			Node::Element {
+			Node::HtmlElement {
 				element,
 				dom_binding,
 			} => f
-				.debug_struct("Node::Element")
+				.debug_struct("Node::HtmlElement")
+				.field("element", element)
+				.field("dom_binding", dom_binding)
+				.finish(),
+			Node::SvgElement {
+				element,
+				dom_binding,
+			} => f
+				.debug_struct("Node::SvgElement")
 				.field("element", element)
 				.field("dom_binding", dom_binding)
 				.finish(),
@@ -264,11 +272,11 @@ vdom_ergonomics!([
 					},
 			(Node::Comment { .. }, _) => false,
 			(
-				Node::Element {
+				Node::HtmlElement {
 					element: e_1,
 					dom_binding: db_1,
 				},
-				Node::Element {
+				Node::HtmlElement {
 					element: e_2,
 					dom_binding: db_2,
 				},
@@ -279,7 +287,24 @@ vdom_ergonomics!([
 						(Some(db_1), Some(db_2)) => db_1 == db_2,
 						(_, _) => false,
 					},
-			(Node::Element { .. }, _) => false,
+			(Node::HtmlElement { .. }, _) => false,
+			(
+				Node::SvgElement {
+					element: e_1,
+					dom_binding: db_1,
+				},
+				Node::SvgElement {
+					element: e_2,
+					dom_binding: db_2,
+				},
+			) =>
+				e_1 == e_2
+					&& match (db_1, db_2) {
+						(None, None) => true,
+						(Some(db_1), Some(db_2)) => db_1 == db_2,
+						(_, _) => false,
+					},
+			(Node::SvgElement { .. }, _) => false,
 			(
 				Node::Memoized {
 					state_key: sk_1, ..
@@ -321,7 +346,14 @@ vdom_ergonomics!([
 				comment.hash(state);
 				dom_binding.hash(state);
 			}
-			Node::Element {
+			Node::HtmlElement {
+				element,
+				dom_binding,
+			} => {
+				dom_binding.hash(state);
+				element.hash(state); // Recursion.
+			}
+			Node::SvgElement {
 				element,
 				dom_binding,
 			} => {
@@ -354,11 +386,24 @@ vdom_ergonomics!([
 				db_1.cmp(db_2)
 			}
 			(
-				Node::Element {
+				Node::HtmlElement {
 					element: e_1,
 					dom_binding: db_1,
 				},
-				Node::Element {
+				Node::HtmlElement {
+					element: e_2,
+					dom_binding: db_2,
+				},
+			) => {
+				cmp!(db_1, db_2);
+				e_1.cmp(e_2) // Recursion.
+			}
+			(
+				Node::SvgElement {
+					element: e_1,
+					dom_binding: db_1,
+				},
+				Node::SvgElement {
 					element: e_2,
 					dom_binding: db_2,
 				},
@@ -403,8 +448,10 @@ vdom_ergonomics!([
 			}
 			(Node::Comment { .. }, _) => Ordering::Less,
 			(_, Node::Comment { .. }) => Ordering::Greater,
-			(Node::Element { .. }, _) => Ordering::Less,
-			(_, Node::Element { .. }) => Ordering::Greater,
+			(Node::HtmlElement { .. }, _) => Ordering::Less,
+			(_, Node::HtmlElement { .. }) => Ordering::Greater,
+			(Node::SvgElement { .. }, _) => Ordering::Less,
+			(_, Node::SvgElement { .. }) => Ordering::Greater,
 			(Node::Memoized { .. }, _) => Ordering::Less,
 			(_, Node::Memoized { .. }) => Ordering::Greater,
 			(Node::Multi(_), _) => Ordering::Less,
@@ -434,32 +481,6 @@ vdom_ergonomics!([
 ]);
 
 // Conversions between distinct types //
-
-impl<'a, S1, S2> From<&'a Element<'a, S1>> for Node<'a, S2>
-where
-	S1: ThreadSafety + Into<S2>,
-	S2: ThreadSafety,
-{
-	fn from(element: &'a Element<'a, S1>) -> Self {
-		Self::Element {
-			element: element.align_ref(),
-			dom_binding: None,
-		}
-	}
-}
-
-impl<'a, S1, S2> From<&'a mut Element<'a, S1>> for Node<'a, S2>
-where
-	S1: ThreadSafety + Into<S2>,
-	S2: ThreadSafety,
-{
-	fn from(element: &'a mut Element<'a, S1>) -> Self {
-		Self::Element {
-			element: element.align_ref(),
-			dom_binding: None,
-		}
-	}
-}
 
 impl<'a, S1, S2> From<&'a [Node<'a, S1>]> for Node<'a, S2>
 where
@@ -512,7 +533,10 @@ impl<'a, S: ThreadSafety> Node<'a, S> {
 	#[must_use]
 	pub fn dom_len(&self) -> usize {
 		match self {
-			Node::Comment { .. } | Node::Element { .. } | Node::Text { .. } => 1,
+			Node::Comment { .. }
+			| Node::HtmlElement { .. }
+			| Node::SvgElement { .. }
+			| Node::Text { .. } => 1,
 			Node::Memoized { content: node, .. } => node.dom_len(),
 			Node::Multi(nodes) => nodes.iter().map(Node::dom_len).sum(),
 			Node::Keyed(pairs) => pairs.iter().map(|pair| pair.content.dom_len()).sum(),
@@ -528,7 +552,10 @@ impl<'a, S: ThreadSafety> Node<'a, S> {
 	#[must_use]
 	pub fn dom_empty(&self) -> bool {
 		match self {
-			Node::Comment { .. } | Node::Element { .. } | Node::Text { .. } => false,
+			Node::Comment { .. }
+			| Node::HtmlElement { .. }
+			| Node::SvgElement { .. }
+			| Node::Text { .. } => false,
 			Node::Memoized { content, .. } => content.dom_empty(),
 			Node::Multi(nodes) => nodes.iter().all(Node::dom_empty),
 			Node::Keyed(pairs) => pairs.iter().all(|pair| pair.content.dom_empty()),

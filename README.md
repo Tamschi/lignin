@@ -49,7 +49,7 @@ Apps or components can be written against the callback API without enabling this
 use lignin::{Node, Element};
 
 // Please bring your own allocator where necessary.
-let _ = &Node::Element {
+let _ = &Node::HtmlElement {
   element: &Element {
     name: "DIV", // Use all-caps for more efficient DOM interactions.¹
     attributes: &[],
