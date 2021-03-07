@@ -388,6 +388,26 @@
 <span id="385">385</span>
 <span id="386">386</span>
 <span id="387">387</span>
+<span id="388">388</span>
+<span id="389">389</span>
+<span id="390">390</span>
+<span id="391">391</span>
+<span id="392">392</span>
+<span id="393">393</span>
+<span id="394">394</span>
+<span id="395">395</span>
+<span id="396">396</span>
+<span id="397">397</span>
+<span id="398">398</span>
+<span id="399">399</span>
+<span id="400">400</span>
+<span id="401">401</span>
+<span id="402">402</span>
+<span id="403">403</span>
+<span id="404">404</span>
+<span id="405">405</span>
+<span id="406">406</span>
+<span id="407">407</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="attribute">#![<span class="ident">doc</span>(<span class="ident">html_root_url</span> <span class="op">=</span> <span class="string">&quot;https://docs.rs/lignin/0.0.5&quot;</span>)]</span>
 <span class="attribute">#![<span class="ident">no_std</span>]</span>
@@ -451,7 +471,7 @@
 <span class="doccomment">//!</span>
 <span class="doccomment">//! [`Clone`] is always implemented via [`Copy`] in this crate, since none of the instances provide heap storage.</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! ## Hashing</span>
+<span class="doccomment">//! ## Comparisons and Hashing</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! As shallow hashes would easily collide for most applications where VDOM hashing comes up,</span>
 <span class="doccomment">//! [`Hash`](`core::hash::Hash`) is implemented recursively in this crate and is potentially expensive.</span>
@@ -488,6 +508,7 @@
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">remnants</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">web</span>;
 
+<span class="kw">use</span> <span class="ident">callback_registry</span>::<span class="ident">CallbackSignature</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">callback_registry</span>::{<span class="ident">CallbackRef</span>, <span class="ident">CallbackRegistration</span>};
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">web</span>::{<span class="ident">DomRef</span>, <span class="ident">Materialize</span>};
 
@@ -513,6 +534,7 @@
 <span class="doccomment">///   assert!(size_of::&lt;Node&lt;ThreadSafe&gt;&gt;() &lt;= 16);</span>
 <span class="doccomment">/// }</span>
 <span class="doccomment">/// ```</span>
+<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">clippy</span>::<span class="ident">type_complexity</span>)]</span> <span class="comment">// `Option&lt;CallbackRef&lt;S, fn(DomRef&lt;&amp;&#39;_ …&gt;)&gt;&gt;` appears to be a little much.</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Node</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">S</span>: <span class="ident">ThreadSafety</span><span class="op">&gt;</span> {
 	<span class="doccomment">/// Represents a [***Comment***](https://developer.mozilla.org/en-US/docs/Web/API/Comment) node.</span>
 	<span class="ident">Comment</span> {
@@ -538,16 +560,27 @@
 		<span class="doccomment">/// Registers for [***Comment***](https://developer.mozilla.org/en-US/docs/Web/API/Comment) reference updates.</span>
 		<span class="doccomment">///</span>
 		<span class="doccomment">/// See [`DomRef`] for more information.</span>
-		<span class="ident">dom_binding</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">DomRef</span><span class="op">&lt;</span><span class="ident">web</span>::<span class="ident">Comment</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+		<span class="ident">dom_binding</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="kw">fn</span>(<span class="ident">DomRef</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;_</span> <span class="ident">web</span>::<span class="ident">Comment</span><span class="op">&gt;</span>)<span class="op">&gt;</span><span class="op">&gt;</span>,
 	},
 	<span class="doccomment">/// Represents a single [***HTMLElement***](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement).</span>
-	<span class="ident">Element</span> {
+	<span class="ident">HtmlElement</span> {
 		<span class="doccomment">/// The [`Element`] to render.</span>
 		<span class="ident">element</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Element</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">S</span><span class="op">&gt;</span>,
 		<span class="doccomment">/// Registers for [***HTMLElement***](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement) reference updates.</span>
 		<span class="doccomment">///</span>
 		<span class="doccomment">/// See [`DomRef`] for more information.</span>
-		<span class="ident">dom_binding</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">DomRef</span><span class="op">&lt;</span><span class="ident">web</span>::<span class="ident">HtmlElement</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+		<span class="ident">dom_binding</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="kw">fn</span>(<span class="ident">DomRef</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;_</span> <span class="ident">web</span>::<span class="ident">HtmlElement</span><span class="op">&gt;</span>)<span class="op">&gt;</span><span class="op">&gt;</span>,
+	},
+	<span class="doccomment">/// Represents a single [***SVGElement***](https://developer.mozilla.org/en-US/docs/Web/API/SVGElement).</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// Note that even outermost `&lt;SVG&gt;` elements are [***SVGElement***](https://developer.mozilla.org/en-US/docs/Web/API/SVGElement)s!</span>
+	<span class="ident">SvgElement</span> {
+		<span class="doccomment">/// The [`Element`] to render.</span>
+		<span class="ident">element</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Element</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">S</span><span class="op">&gt;</span>,
+		<span class="doccomment">/// Registers for [***SVGElement***](https://developer.mozilla.org/en-US/docs/Web/API/SVGElement) reference updates.</span>
+		<span class="doccomment">///</span>
+		<span class="doccomment">/// See [`DomRef`] for more information.</span>
+		<span class="ident">dom_binding</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="kw">fn</span>(<span class="ident">DomRef</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;_</span> <span class="ident">web</span>::<span class="ident">SvgElement</span><span class="op">&gt;</span>)<span class="op">&gt;</span><span class="op">&gt;</span>,
 	},
 	<span class="doccomment">/// DOM-transparent. This variant uses shallow comparison and hashes based on its `state_key` only.</span>
 	<span class="doccomment">///</span>
@@ -613,13 +646,13 @@
 		<span class="doccomment">///</span>
 		<span class="doccomment">/// In order to support e.g. formatting instructions, apps should (carefully) parse user-generated content and translate it into a matching VDOM graph.</span>
 		<span class="doccomment">///</span>
-		<span class="doccomment">/// Live components also have the option of using for example [`Node::Element::dom_binding`] to set [***Element.innerHTML***](https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML),</span>
+		<span class="doccomment">/// Live components also have the option of using for example [`Node::HtmlElement::dom_binding`] to set [***Element.innerHTML***](https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML),</span>
 		<span class="doccomment">/// but this is not recommended due to the difficulty of implementing allow-listing with such an approach.</span>
 		<span class="ident">text</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>,
 		<span class="doccomment">/// Registers for [***Text***](https://developer.mozilla.org/en-US/docs/Web/API/Text) reference updates.</span>
 		<span class="doccomment">///</span>
 		<span class="doccomment">/// See [`DomRef`] for more information.</span>
-		<span class="ident">dom_binding</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">DomRef</span><span class="op">&lt;</span><span class="ident">web</span>::<span class="ident">Text</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+		<span class="ident">dom_binding</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="kw">fn</span>(<span class="ident">DomRef</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;_</span> <span class="ident">web</span>::<span class="ident">Text</span><span class="op">&gt;</span>)<span class="op">&gt;</span><span class="op">&gt;</span>,
 	},
 	<span class="doccomment">/// Currently unused.</span>
 	<span class="doccomment">///</span>
@@ -674,7 +707,7 @@
 	<span class="doccomment">/// The event name.</span>
 	<span class="kw">pub</span> <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>,
 	<span class="doccomment">/// A callback reference created via [`CallbackRegistration`].</span>
-	<span class="kw">pub</span> <span class="ident">callback</span>: <span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">web</span>::<span class="ident">Event</span><span class="op">&gt;</span>,
+	<span class="kw">pub</span> <span class="ident">callback</span>: <span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="kw">fn</span>(<span class="ident">web</span>::<span class="ident">Event</span>)<span class="op">&gt;</span>,
 }
 
 <span class="doccomment">/// [`Vdom`] Represents a single HTML [***Attr***](https://developer.mozilla.org/en-US/docs/Web/API/Attr) with `name` and `value`.</span>
@@ -702,16 +735,19 @@
 <span class="kw">mod</span> <span class="ident">sealed</span> {
 	<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">ThreadBound</span>, <span class="ident">ThreadSafe</span>};
 	<span class="kw">use</span> <span class="kw">crate</span>::{
-		<span class="ident">remnants</span>::<span class="ident">RemnantSite</span>, <span class="ident">Attribute</span>, <span class="ident">CallbackRef</span>, <span class="ident">CallbackRegistration</span>, <span class="ident">Element</span>, <span class="ident">EventBinding</span>,
-		<span class="ident">Node</span>, <span class="ident">ReorderableFragment</span>, <span class="ident">ThreadSafety</span>,
+		<span class="ident">callback_registry</span>::<span class="ident">CallbackSignature</span>, <span class="ident">remnants</span>::<span class="ident">RemnantSite</span>, <span class="ident">web</span>, <span class="ident">Attribute</span>, <span class="ident">CallbackRef</span>,
+		<span class="ident">CallbackRegistration</span>, <span class="ident">DomRef</span>, <span class="ident">Element</span>, <span class="ident">EventBinding</span>, <span class="ident">Node</span>, <span class="ident">ReorderableFragment</span>,
+		<span class="ident">ThreadSafety</span>,
 	};
 
 	<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Sealed</span> {}
+	<span class="kw">impl</span> <span class="ident">Sealed</span> <span class="kw">for</span> <span class="kw">fn</span>(<span class="ident">web</span>::<span class="ident">Event</span>) {}
+	<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Sealed</span> <span class="kw">for</span> <span class="kw">fn</span>(<span class="ident">DomRef</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;_</span> <span class="ident">T</span><span class="op">&gt;</span>) {}
 	<span class="kw">impl</span> <span class="ident">Sealed</span> <span class="kw">for</span> <span class="ident">ThreadBound</span> {}
 	<span class="kw">impl</span> <span class="ident">Sealed</span> <span class="kw">for</span> <span class="ident">ThreadSafe</span> {}
 	<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Sealed</span> <span class="kw">for</span> <span class="ident">Attribute</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {}
-	<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Sealed</span> <span class="kw">for</span> <span class="ident">CallbackRegistration</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">T</span><span class="op">&gt;</span> {}
-	<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">S</span>: <span class="ident">ThreadSafety</span>, <span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Sealed</span> <span class="kw">for</span> <span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">T</span><span class="op">&gt;</span> {}
+	<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">C</span>: <span class="ident">CallbackSignature</span><span class="op">&gt;</span> <span class="ident">Sealed</span> <span class="kw">for</span> <span class="ident">CallbackRegistration</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span> {}
+	<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">S</span>: <span class="ident">ThreadSafety</span>, <span class="ident">C</span>: <span class="ident">CallbackSignature</span><span class="op">&gt;</span> <span class="ident">Sealed</span> <span class="kw">for</span> <span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">C</span><span class="op">&gt;</span> {}
 	<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">S</span>: <span class="ident">ThreadSafety</span><span class="op">&gt;</span> <span class="ident">Sealed</span> <span class="kw">for</span> <span class="ident">Element</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">S</span><span class="op">&gt;</span> {}
 	<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">S</span>: <span class="ident">ThreadSafety</span><span class="op">&gt;</span> <span class="ident">Sealed</span> <span class="kw">for</span> <span class="ident">EventBinding</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">S</span><span class="op">&gt;</span> {}
 	<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">S</span>: <span class="ident">ThreadSafety</span><span class="op">&gt;</span> <span class="ident">Sealed</span> <span class="kw">for</span> <span class="ident">Node</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">S</span><span class="op">&gt;</span> {}
@@ -773,7 +809,11 @@
 }
 <span class="macro">vdom_impls</span><span class="macro">!</span>(<span class="ident">Element</span>, <span class="ident">EventBinding</span>, <span class="ident">Node</span>, <span class="ident">ReorderableFragment</span>);
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">S</span>: <span class="ident">ThreadSafety</span>, <span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Vdom</span> <span class="kw">for</span> <span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">T</span><span class="op">&gt;</span> {
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">C</span><span class="op">&gt;</span> <span class="ident">Vdom</span> <span class="kw">for</span> <span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">C</span><span class="op">&gt;</span>
+<span class="kw">where</span>
+	<span class="ident">S</span>: <span class="ident">ThreadSafety</span>,
+	<span class="ident">C</span>: <span class="ident">CallbackSignature</span>,
+{
 	<span class="kw">type</span> <span class="ident">ThreadSafety</span> <span class="op">=</span> <span class="ident">S</span>;
 }
 </pre></div>

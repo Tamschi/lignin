@@ -690,6 +690,13 @@
 <span id="687">687</span>
 <span id="688">688</span>
 <span id="689">689</span>
+<span id="690">690</span>
+<span id="691">691</span>
+<span id="692">692</span>
+<span id="693">693</span>
+<span id="694">694</span>
+<span id="695">695</span>
+<span id="696">696</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! An HTML renderer for [`lignin`](https://github.com/Tamschi/lignin) that does *some* syntactic and *no* semantic validation.</span>
 <span class="doccomment">//!</span>
@@ -823,16 +830,21 @@
 		}
 
 		<span class="comment">// See &lt;https://html.spec.whatwg.org/multipage/syntax.html#elements-2&gt;.</span>
-		<span class="ident">Node</span>::<span class="ident">Element</span> {
-			<span class="ident">element</span>:
-				<span class="kw-2">&amp;</span><span class="ident">Element</span> {
-					<span class="ident">name</span>,
-					<span class="ident">attributes</span>,
-					<span class="kw-2">ref</span> <span class="ident">content</span>,
-					<span class="ident">event_bindings</span>: <span class="kw">_</span>,
-				},
+		<span class="ident">Node</span>::<span class="ident">HtmlElement</span> {
+			<span class="ident">element</span>,
+			<span class="ident">dom_binding</span>: <span class="kw">_</span>,
+		}
+		<span class="op">|</span> <span class="ident">Node</span>::<span class="ident">SvgElement</span> {
+			<span class="ident">element</span>,
 			<span class="ident">dom_binding</span>: <span class="kw">_</span>,
 		} <span class="op">=</span><span class="op">&gt;</span> {
+			<span class="kw">let</span> <span class="kw-2">&amp;</span><span class="ident">Element</span> {
+				<span class="ident">name</span>,
+				<span class="ident">attributes</span>,
+				<span class="kw-2">ref</span> <span class="ident">content</span>,
+				<span class="ident">event_bindings</span>: <span class="kw">_</span>,
+			} <span class="op">=</span> <span class="ident">element</span>;
+
 			<span class="doccomment">/// See &lt;https://html.spec.whatwg.org/multipage/syntax.html#syntax-attribute-name&gt;.</span>
 			<span class="kw">fn</span> <span class="ident">validate_attribute_name</span><span class="op">&lt;</span><span class="ident">S</span>: <span class="ident">ThreadSafety</span><span class="op">&gt;</span>(<span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">Error</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span><span class="op">&gt;</span> {
 				<span class="kw">for</span> <span class="ident">c</span> <span class="kw">in</span> <span class="ident">name</span>.<span class="ident">chars</span>() {
@@ -859,6 +871,8 @@
 
 			<span class="kw">let</span> <span class="ident">kind</span> <span class="op">=</span> <span class="ident">ElementKind</span>::<span class="ident">detect</span>(<span class="ident">name</span>)
 				.<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">name</span><span class="op">|</span> <span class="ident">Error</span>(<span class="ident">ErrorKind</span>::<span class="ident">InvalidElementName</span>(<span class="ident">name</span>)))<span class="question-mark">?</span>;
+
+			<span class="comment">//TODO: Validate distinction between HTML and SVG elements.</span>
 
 			<span class="comment">// Opening tag:</span>
 			<span class="macro">write</span><span class="macro">!</span>(<span class="ident">target</span>, <span class="string">&quot;&lt;{}&quot;</span>, <span class="ident">name</span>)<span class="question-mark">?</span>;
@@ -1015,7 +1029,7 @@
 	}
 
 	<span class="kw">match</span> <span class="ident">vdom</span> {
-		<span class="ident">Node</span>::<span class="ident">Comment</span> { .. } <span class="op">|</span> <span class="ident">Node</span>::<span class="ident">Element</span> { .. } <span class="op">=</span><span class="op">&gt;</span> {
+		<span class="ident">Node</span>::<span class="ident">Comment</span> { .. } <span class="op">|</span> <span class="ident">Node</span>::<span class="ident">HtmlElement</span> { .. } <span class="op">|</span> <span class="ident">Node</span>::<span class="ident">SvgElement</span> { .. } <span class="op">=</span><span class="op">&gt;</span> {
 			<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>(<span class="ident">ErrorKind</span>::<span class="ident">NonTextDomNodeInRawTextPosition</span>(<span class="ident">vdom</span>)))
 		}
 		<span class="ident">Node</span>::<span class="ident">Memoized</span> {
@@ -1114,7 +1128,7 @@
 		<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>(<span class="ident">ErrorKind</span>::<span class="ident">DepthLimitExceeded</span>(<span class="ident">vdom</span>)));
 	}
 	<span class="kw">match</span> <span class="ident">vdom</span> {
-		<span class="ident">Node</span>::<span class="ident">Comment</span> { .. } <span class="op">|</span> <span class="ident">Node</span>::<span class="ident">Element</span> { .. } <span class="op">=</span><span class="op">&gt;</span> {
+		<span class="ident">Node</span>::<span class="ident">Comment</span> { .. } <span class="op">|</span> <span class="ident">Node</span>::<span class="ident">HtmlElement</span> { .. } <span class="op">|</span> <span class="ident">Node</span>::<span class="ident">SvgElement</span> { .. } <span class="op">=</span><span class="op">&gt;</span> {
 			<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>(<span class="ident">ErrorKind</span>::<span class="ident">NonTextDomNodeInEscapableRawTextPosition</span>(
 				<span class="ident">vdom</span>,
 			)))

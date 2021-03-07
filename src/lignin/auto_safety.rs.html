@@ -822,6 +822,11 @@
 <span id="819">819</span>
 <span id="820">820</span>
 <span id="821">821</span>
+<span id="822">822</span>
+<span id="823">823</span>
+<span id="824">824</span>
+<span id="825">825</span>
+<span id="826">826</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Transitive (across function boundaries) [`ThreadSafety`] inference, mainly for use by frameworks.</span>
 <span class="doccomment">//!</span>
@@ -1241,7 +1246,7 @@
 <span class="doccomment">//! ```</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! Direct [`Node`] conversions, which can also adjust [`ThreadSafety`], are additionally available for **references** to</span>
-<span class="doccomment">//! [`Element`] (into [`Node::Element`]), [`[Node]`](https://doc.rust-lang.org/stable/core/slice/index.html) (into [`Node::Multi`]) and [`str`] (into [`Node::Text`]):</span>
+<span class="doccomment">//! [`[Node]`](https://doc.rust-lang.org/stable/core/slice/index.html) (into [`Node::Multi`]) and [`str`] (into [`Node::Text`]):</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! ```rust</span>
 <span class="doccomment">//! # use lignin::{</span>
@@ -1259,13 +1264,6 @@
 <span class="doccomment">//! # fn assert_safe&lt;&#39;a&gt;(value: Node&lt;&#39;a, ThreadSafe&gt;) { }</span>
 <span class="doccomment">//! # fn assert_bound&lt;&#39;a&gt;(value: Node&lt;&#39;a, ThreadBound&gt;) { }</span>
 <span class="doccomment">//! #</span>
-<span class="doccomment">//! let element_node: Node&lt;ThreadBound&gt; = allocate(lignin::Element::&lt;ThreadSafe&gt; {</span>
-<span class="doccomment">//!   name: &quot;DIV&quot;,</span>
-<span class="doccomment">//!   attributes: &amp;[],</span>
-<span class="doccomment">//!   content: Node::Multi(&amp;[]),</span>
-<span class="doccomment">//!   event_bindings: &amp;[],</span>
-<span class="doccomment">//! }).into();</span>
-<span class="doccomment">//!</span>
 <span class="doccomment">//! let empty: &amp;[Node&lt;ThreadSafe&gt;] = &amp;[];</span>
 <span class="doccomment">//! let empty_node: Node&lt;ThreadSafe&gt; = empty.into();</span>
 <span class="doccomment">//!</span>
@@ -1404,8 +1402,8 @@
 <span class="doccomment">//! as long as [`AutoSafe`] and [`Deanonymize`] are in scope.</span>
 
 <span class="kw">use</span> <span class="kw">crate</span>::{
-	<span class="ident">Attribute</span>, <span class="ident">CallbackRef</span>, <span class="ident">Element</span>, <span class="ident">EventBinding</span>, <span class="ident">Node</span>, <span class="ident">ReorderableFragment</span>, <span class="ident">ThreadBound</span>,
-	<span class="ident">ThreadSafe</span>, <span class="ident">ThreadSafety</span>, <span class="ident">Vdom</span>,
+	<span class="ident">callback_registry</span>::<span class="ident">CallbackSignature</span>, <span class="ident">Attribute</span>, <span class="ident">CallbackRef</span>, <span class="ident">Element</span>, <span class="ident">EventBinding</span>, <span class="ident">Node</span>,
+	<span class="ident">ReorderableFragment</span>, <span class="ident">ThreadBound</span>, <span class="ident">ThreadSafe</span>, <span class="ident">ThreadSafety</span>, <span class="ident">Vdom</span>,
 };
 
 <span class="doccomment">/// Deanonymize towards the general ([`ThreadBound`]) case. Used as `-&gt; impl AutoSafe&lt;…&gt;`.</span>
@@ -1602,21 +1600,33 @@
 
 <span class="macro">impl_auto_safety</span><span class="macro">!</span>(<span class="ident">Element</span>, <span class="ident">EventBinding</span>, <span class="ident">Node</span>, <span class="ident">ReorderableFragment</span>);
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">S</span>: <span class="ident">ThreadSafety</span>, <span class="ident">T</span><span class="op">&gt;</span> <span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">T</span><span class="op">&gt;</span> {
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">S</span>: <span class="ident">ThreadSafety</span>, <span class="ident">C</span><span class="op">&gt;</span> <span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">C</span><span class="op">&gt;</span>
+<span class="kw">where</span>
+	<span class="ident">C</span>: <span class="ident">CallbackSignature</span>,
+{
 	<span class="macro">deanonymize_on_named</span><span class="macro">!</span>();
 }
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">ThreadSafe</span>, <span class="ident">T</span><span class="op">&gt;</span> {
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">C</span><span class="op">&gt;</span> <span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">ThreadSafe</span>, <span class="ident">C</span><span class="op">&gt;</span>
+<span class="kw">where</span>
+	<span class="ident">C</span>: <span class="ident">CallbackSignature</span>,
+{
 	<span class="macro">prefer_thread_safe_safe</span><span class="macro">!</span>();
 }
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">ThreadBound</span>, <span class="ident">T</span><span class="op">&gt;</span> {
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">C</span><span class="op">&gt;</span> <span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">ThreadBound</span>, <span class="ident">C</span><span class="op">&gt;</span>
+<span class="kw">where</span>
+	<span class="ident">C</span>: <span class="ident">CallbackSignature</span>,
+{
 	<span class="macro">prefer_thread_safe_bound</span><span class="macro">!</span>();
 }
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">O</span><span class="op">&gt;</span> <span class="ident">Deanonymize</span><span class="op">&lt;</span><span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">ThreadSafe</span>, <span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">O</span> <span class="kw">where</span>
-	<span class="ident">O</span>: <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">AutoSafe</span><span class="op">&lt;</span><span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">ThreadBound</span>, <span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">C</span>, <span class="ident">O</span><span class="op">&gt;</span> <span class="ident">Deanonymize</span><span class="op">&lt;</span><span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">ThreadSafe</span>, <span class="ident">C</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">O</span>
+<span class="kw">where</span>
+	<span class="ident">C</span>: <span class="ident">CallbackSignature</span>,
+	<span class="ident">O</span>: <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">AutoSafe</span><span class="op">&lt;</span><span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">ThreadBound</span>, <span class="ident">C</span><span class="op">&gt;</span><span class="op">&gt;</span>,
 {
 }
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">S1</span>, <span class="ident">S2</span>, <span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Align</span><span class="op">&lt;</span><span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">S2</span>, <span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">S1</span>, <span class="ident">T</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">S1</span>, <span class="ident">S2</span>, <span class="ident">C</span><span class="op">&gt;</span> <span class="ident">Align</span><span class="op">&lt;</span><span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">S2</span>, <span class="ident">C</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">CallbackRef</span><span class="op">&lt;</span><span class="ident">S1</span>, <span class="ident">C</span><span class="op">&gt;</span>
 <span class="kw">where</span>
+	<span class="ident">C</span>: <span class="ident">CallbackSignature</span>,
 	<span class="ident">S1</span>: <span class="ident">ThreadSafety</span> <span class="op">+</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">S2</span><span class="op">&gt;</span>,
 	<span class="ident">S2</span>: <span class="ident">ThreadSafety</span>,
 {
