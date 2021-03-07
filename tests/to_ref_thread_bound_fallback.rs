@@ -1,16 +1,16 @@
 use lignin::{
-	callback_registry::ToRefThreadBoundFallback, CallbackRef, CallbackRegistration, ThreadBound,
-	ThreadSafe,
+	callback_registry::ToRefThreadBoundFallback, web::Event, CallbackRef, CallbackRegistration,
+	ThreadBound, ThreadSafe,
 };
 
 pub fn it_compiles_safe(
-	registration: &CallbackRegistration<(), ()>,
-) -> CallbackRef<ThreadSafe, ()> {
+	registration: &CallbackRegistration<(), fn(Event)>,
+) -> CallbackRef<ThreadSafe, fn(Event)> {
 	registration.to_ref()
 }
 
 pub fn it_compiles_bound(
-	registration: &CallbackRegistration<*mut (), ()>,
-) -> CallbackRef<ThreadBound, ()> {
+	registration: &CallbackRegistration<*mut (), fn(Event)>,
+) -> CallbackRef<ThreadBound, fn(Event)> {
 	registration.to_ref()
 }

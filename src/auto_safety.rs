@@ -572,8 +572,8 @@
 //! as long as [`AutoSafe`] and [`Deanonymize`] are in scope.
 
 use crate::{
-	Attribute, CallbackRef, Element, EventBinding, Node, ReorderableFragment, ThreadBound,
-	ThreadSafe, ThreadSafety, Vdom,
+	callback_registry::CallbackSignature, Attribute, CallbackRef, Element, EventBinding, Node,
+	ReorderableFragment, ThreadBound, ThreadSafe, ThreadSafety, Vdom,
 };
 
 /// Deanonymize towards the general ([`ThreadBound`]) case. Used as `-> impl AutoSafe<…>`.
@@ -770,21 +770,33 @@ macro_rules! impl_auto_safety {
 
 impl_auto_safety!(Element, EventBinding, Node, ReorderableFragment);
 
-impl<S: ThreadSafety, T> CallbackRef<S, T> {
+impl<S: ThreadSafety, C> CallbackRef<S, C>
+where
+	C: CallbackSignature,
+{
 	deanonymize_on_named!();
 }
-impl<T> CallbackRef<ThreadSafe, T> {
+impl<C> CallbackRef<ThreadSafe, C>
+where
+	C: CallbackSignature,
+{
 	prefer_thread_safe_safe!();
 }
-impl<T> CallbackRef<ThreadBound, T> {
+impl<C> CallbackRef<ThreadBound, C>
+where
+	C: CallbackSignature,
+{
 	prefer_thread_safe_bound!();
 }
-impl<T, O> Deanonymize<CallbackRef<ThreadSafe, T>> for O where
-	O: Send + Sync + AutoSafe<CallbackRef<ThreadBound, T>>
+impl<C, O> Deanonymize<CallbackRef<ThreadSafe, C>> for O
+where
+	C: CallbackSignature,
+	O: Send + Sync + AutoSafe<CallbackRef<ThreadBound, C>>,
 {
 }
-impl<S1, S2, T> Align<CallbackRef<S2, T>> for CallbackRef<S1, T>
+impl<S1, S2, C> Align<CallbackRef<S2, C>> for CallbackRef<S1, C>
 where
+	C: CallbackSignature,
 	S1: ThreadSafety + Into<S2>,
 	S2: ThreadSafety,
 {

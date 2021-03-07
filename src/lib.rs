@@ -97,6 +97,7 @@ pub mod callback_registry;
 pub mod remnants;
 pub mod web;
 
+use callback_registry::CallbackSignature;
 pub use callback_registry::{CallbackRef, CallbackRegistration};
 pub use web::{DomRef, Materialize};
 
@@ -122,6 +123,7 @@ use sealed::Sealed;
 ///   assert!(size_of::<Node<ThreadSafe>>() <= 16);
 /// }
 /// ```
+#[allow(clippy::clippy::type_complexity)] // `Option<CallbackRef<S, fn(DomRef<&'_ …>)>>` appears to be a little much.
 pub enum Node<'a, S: ThreadSafety> {
 	/// Represents a [***Comment***](https://developer.mozilla.org/en-US/docs/Web/API/Comment) node.
 	Comment {
@@ -147,7 +149,7 @@ pub enum Node<'a, S: ThreadSafety> {
 		/// Registers for [***Comment***](https://developer.mozilla.org/en-US/docs/Web/API/Comment) reference updates.
 		///
 		/// See [`DomRef`] for more information.
-		dom_binding: Option<CallbackRef<S, DomRef<web::Comment>>>,
+		dom_binding: Option<CallbackRef<S, fn(DomRef<&'_ web::Comment>)>>,
 	},
 	/// Represents a single [***HTMLElement***](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement).
 	HtmlElement {
@@ -156,7 +158,7 @@ pub enum Node<'a, S: ThreadSafety> {
 		/// Registers for [***HTMLElement***](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement) reference updates.
 		///
 		/// See [`DomRef`] for more information.
-		dom_binding: Option<CallbackRef<S, DomRef<web::HtmlElement>>>,
+		dom_binding: Option<CallbackRef<S, fn(DomRef<&'_ web::HtmlElement>)>>,
 	},
 	/// Represents a single [***SVGElement***](https://developer.mozilla.org/en-US/docs/Web/API/SVGElement).
 	///
@@ -167,7 +169,7 @@ pub enum Node<'a, S: ThreadSafety> {
 		/// Registers for [***SVGElement***](https://developer.mozilla.org/en-US/docs/Web/API/SVGElement) reference updates.
 		///
 		/// See [`DomRef`] for more information.
-		dom_binding: Option<CallbackRef<S, DomRef<web::SvgElement>>>,
+		dom_binding: Option<CallbackRef<S, fn(DomRef<&'_ web::SvgElement>)>>,
 	},
 	/// DOM-transparent. This variant uses shallow comparison and hashes based on its `state_key` only.
 	///
@@ -239,7 +241,7 @@ pub enum Node<'a, S: ThreadSafety> {
 		/// Registers for [***Text***](https://developer.mozilla.org/en-US/docs/Web/API/Text) reference updates.
 		///
 		/// See [`DomRef`] for more information.
-		dom_binding: Option<CallbackRef<S, DomRef<web::Text>>>,
+		dom_binding: Option<CallbackRef<S, fn(DomRef<&'_ web::Text>)>>,
 	},
 	/// Currently unused.
 	///
@@ -294,7 +296,7 @@ pub struct EventBinding<'a, S: ThreadSafety> {
 	/// The event name.
 	pub name: &'a str,
 	/// A callback reference created via [`CallbackRegistration`].
-	pub callback: CallbackRef<S, web::Event>,
+	pub callback: CallbackRef<S, fn(web::Event)>,
 }
 
 /// [`Vdom`] Represents a single HTML [***Attr***](https://developer.mozilla.org/en-US/docs/Web/API/Attr) with `name` and `value`.
@@ -322,16 +324,19 @@ pub struct Attribute<'a> {
 mod sealed {
 	use super::{ThreadBound, ThreadSafe};
 	use crate::{
-		remnants::RemnantSite, Attribute, CallbackRef, CallbackRegistration, Element, EventBinding,
-		Node, ReorderableFragment, ThreadSafety,
+		callback_registry::CallbackSignature, remnants::RemnantSite, web, Attribute, CallbackRef,
+		CallbackRegistration, DomRef, Element, EventBinding, Node, ReorderableFragment,
+		ThreadSafety,
 	};
 
 	pub trait Sealed {}
+	impl Sealed for fn(web::Event) {}
+	impl<T> Sealed for fn(DomRef<&'_ T>) {}
 	impl Sealed for ThreadBound {}
 	impl Sealed for ThreadSafe {}
 	impl<'a> Sealed for Attribute<'a> {}
-	impl<R, T> Sealed for CallbackRegistration<R, T> {}
-	impl<S: ThreadSafety, T> Sealed for CallbackRef<S, T> {}
+	impl<R, C: CallbackSignature> Sealed for CallbackRegistration<R, C> {}
+	impl<S: ThreadSafety, C: CallbackSignature> Sealed for CallbackRef<S, C> {}
 	impl<'a, S: ThreadSafety> Sealed for Element<'a, S> {}
 	impl<'a, S: ThreadSafety> Sealed for EventBinding<'a, S> {}
 	impl<'a, S: ThreadSafety> Sealed for Node<'a, S> {}
@@ -393,6 +398,10 @@ macro_rules! vdom_impls {
 }
 vdom_impls!(Element, EventBinding, Node, ReorderableFragment);
 
-impl<S: ThreadSafety, T> Vdom for CallbackRef<S, T> {
+impl<S, C> Vdom for CallbackRef<S, C>
+where
+	S: ThreadSafety,
+	C: CallbackSignature,
+{
 	type ThreadSafety = S;
 }

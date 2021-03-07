@@ -2,8 +2,9 @@
 //!
 //! When not using this module directly, apps, if they enable the `"callbacks"` feature, run out of unique callback IDs after more than four billion total [`CallbackRegistration::new`] calls across all threads in a single run of the program.
 //! As such, you *probably* don't need to access this module, but if you do then it's available.
+#![allow(clippy::inline_always)] // Most functions here are either extremely simple or proxies to the inner module.
 
-use crate::{sealed::Sealed, ThreadBound, ThreadSafe, ThreadSafety};
+use crate::{sealed::Sealed, web, DomRef, ThreadBound, ThreadSafe, ThreadSafety};
 use core::{
 	fmt::Debug,
 	marker::{PhantomData, PhantomPinned},
@@ -15,7 +16,9 @@ use core::{
 mod callbacks_on {
 	extern crate std;
 
-	use super::CallbackRegistration;
+	use crate::DomRef;
+
+	use super::{CallbackRegistration, CallbackSignature};
 	use core::{
 		convert::TryInto,
 		marker::{PhantomData, PhantomPinned},
@@ -54,7 +57,10 @@ mod callbacks_on {
 	pub fn register<R, T>(
 		receiver: Pin<&'_ R>,
 		handler: fn(*const R, T),
-	) -> CallbackRegistration<R, T> {
+	) -> CallbackRegistration<R, fn(T)>
+	where
+		fn(T): CallbackSignature,
+	{
 		let mut registry = REGISTRY.write().unwrap();
 		if registry.key_count == u32::MAX {
 			drop(registry);
@@ -90,7 +96,53 @@ mod callbacks_on {
 		}
 	}
 
-	pub fn deregister<R, T>(registration: &CallbackRegistration<R, T>) {
+	#[must_use]
+	pub fn register_by_ref<R, T>(
+		receiver: Pin<&'_ R>,
+		handler: fn(*const R, DomRef<&'_ T>),
+	) -> CallbackRegistration<R, fn(DomRef<&'_ T>)>
+	where
+		fn(DomRef<&'_ T>): CallbackSignature,
+	{
+		let mut registry = REGISTRY.write().unwrap();
+		if registry.key_count == u32::MAX {
+			drop(registry);
+			panic!("[lignin] Callback registry keys exhausted")
+		} else {
+			fn invoke_typed<R, T>(receiver_address: usize, handler_address: usize, parameter: T) {
+				let receiver = receiver_address as *const R;
+				let handler = unsafe {
+					// SAFETY: The pointer to invoke_typed is taken with matching monomorphization just below.
+					mem::transmute::<usize, fn(*const R, T)>(handler_address)
+				};
+				handler(receiver, parameter)
+			}
+
+			registry.key_count += 1;
+			let key = NonZeroU32::new(registry.key_count).unwrap();
+			assert!(registry
+				.entries
+				.insert(
+					key,
+					Entry {
+						receiver_address: receiver.get_ref() as *const R as usize,
+						invoke_typed_address: invoke_typed::<R, T> as usize,
+						handler_address: handler as usize,
+					},
+				)
+				.is_none());
+			CallbackRegistration {
+				key,
+				phantom: PhantomData,
+				pinned: PhantomPinned,
+			}
+		}
+	}
+
+	pub fn deregister<R, C>(registration: &CallbackRegistration<R, C>)
+	where
+		C: CallbackSignature,
+	{
 		REGISTRY
 			.write()
 			.unwrap()
@@ -99,12 +151,29 @@ mod callbacks_on {
 			.expect("`CallbackRegistration` double-drop");
 	}
 
-	pub fn invoke<T>(key: NonZeroU32, parameter: T) {
+	pub fn invoke<T>(key: NonZeroU32, parameter: T)
+	where
+		fn(T): CallbackSignature,
+	{
 		let registry = REGISTRY.read().unwrap();
 		if let Some(entry) = registry.entries.get(&key) {
 			let invoke_typed = unsafe {
 				// SAFETY: Same type as above.
 				mem::transmute::<usize, fn(usize, usize, T)>(entry.invoke_typed_address)
+			};
+			invoke_typed(entry.receiver_address, entry.handler_address, parameter)
+		}
+	}
+
+	pub fn invoke_with_ref<T>(key: NonZeroU32, parameter: DomRef<&T>)
+	where
+		fn(DomRef<&'_ T>): CallbackSignature,
+	{
+		let registry = REGISTRY.read().unwrap();
+		if let Some(entry) = registry.entries.get(&key) {
+			let invoke_typed = unsafe {
+				// SAFETY: Pretty much same type as above, just specified.
+				mem::transmute::<usize, fn(usize, usize, DomRef<&T>)>(entry.invoke_typed_address)
 			};
 			invoke_typed(entry.receiver_address, entry.handler_address, parameter)
 		}
@@ -149,14 +218,19 @@ mod callbacks_off {
 		pin::Pin,
 	};
 
-	use super::CallbackRegistration;
+	use crate::DomRef;
+
+	use super::{CallbackRegistration, CallbackSignature};
 
 	#[inline(always)]
 	#[must_use]
 	pub fn register<R, T>(
 		receiver: Pin<&'_ R>,
 		handler: fn(*const R, T),
-	) -> CallbackRegistration<R, T> {
+	) -> CallbackRegistration<R, fn(T)>
+	where
+		fn(T): CallbackSignature,
+	{
 		let _ = receiver;
 		let _ = handler;
 		CallbackRegistration {
@@ -167,12 +241,39 @@ mod callbacks_off {
 	}
 
 	#[inline(always)]
-	pub const fn deregister<R, T>(registration: &CallbackRegistration<R, T>) {
+	#[must_use]
+	pub fn register_by_ref<R, T>(
+		receiver: Pin<&'_ R>,
+		handler: fn(*const R, DomRef<&'_ T>),
+	) -> CallbackRegistration<R, fn(DomRef<&'_ T>)>
+	where
+		fn(DomRef<&'_ T>): CallbackSignature,
+	{
+		let _ = receiver;
+		let _ = handler;
+		CallbackRegistration {
+			key: NonZeroU32::new(u32::MAX).unwrap(),
+			phantom: PhantomData,
+			pinned: PhantomPinned,
+		}
+	}
+
+	#[inline(always)]
+	pub fn deregister<R, C>(registration: &CallbackRegistration<R, C>)
+	where
+		C: CallbackSignature,
+	{
 		let _ = registration;
 	}
 
 	#[inline(always)]
 	pub fn invoke<T>(key: NonZeroU32, parameter: T) {
+		let _ = key;
+		let _ = parameter;
+	}
+
+	#[inline(always)]
+	pub fn invoke_with_ref<T>(key: NonZeroU32, parameter: DomRef<&T>) {
 		let _ = key;
 		let _ = parameter;
 	}
@@ -209,20 +310,32 @@ use callbacks_off as callbacks;
 /// 2. [`impl<T> Unpin for Option<T> where T: Unpin`](`core::option::Option`#impl-Unpin)
 #[allow(clippy::type_complexity)]
 #[derive(Debug)]
-pub struct CallbackRegistration<R, T> {
+pub struct CallbackRegistration<R, C>
+where
+	C: CallbackSignature,
+{
 	key: NonZeroU32,
 	///FIXME: Can this be written with `&R` (removing the manual `Send` and `Sync` impls below)?
-	phantom: PhantomData<(*const R, fn(T))>,
+	phantom: PhantomData<(*const R, C)>,
 	pinned: PhantomPinned,
 }
 // SAFETY: `CallbackRegistration<R, T>` only refers to a `*const R`, so it acts like `&R` for thread-safety.
 //
 // Without the `"callbacks"` feature, that pointer is actually unreachable, so this type *could* be more generally `Send` and `Sync`.
 // However, since a CallbackRegistration is intended to be primarily handled by the matching `R` instance, this isn't done in order to retain consistency.
-unsafe impl<R, T> Send for CallbackRegistration<R, T> where R: Sync {}
-unsafe impl<R, T> Sync for CallbackRegistration<R, T> where R: Sync {}
-#[allow(clippy::inline_always)] // All functions are very simple.
-impl<R, T> CallbackRegistration<R, T> {
+unsafe impl<R, C> Send for CallbackRegistration<R, C>
+where
+	R: Sync,
+	C: CallbackSignature,
+{
+}
+unsafe impl<R, C> Sync for CallbackRegistration<R, C>
+where
+	R: Sync,
+	C: CallbackSignature,
+{
+}
+impl<R> CallbackRegistration<R, fn(web::Event)> {
 	/// Creates a new [`CallbackRegistration<R, T>`] with the given `receiver` and `handler`.
 	///
 	/// # Safety
@@ -234,23 +347,54 @@ impl<R, T> CallbackRegistration<R, T> {
 	/// Dropping the [`CallbackRegistration`] instance prevents any further calls to `handler` through it.
 	#[inline(always)] // Proxy function.
 	#[must_use]
-	pub fn new(receiver: Pin<&'_ R>, handler: fn(receiver: *const R, parameter: T)) -> Self {
+	pub fn new(
+		receiver: Pin<&'_ R>,
+		handler: fn(receiver: *const R, parameter: web::Event),
+	) -> Self {
 		callbacks::register(receiver, handler)
 	}
-
+}
+impl<R, T> CallbackRegistration<R, fn(DomRef<&'_ T>)>
+where
+	fn(DomRef<&'_ T>): CallbackSignature,
+{
+	/// Creates a new [`CallbackRegistration<R, T>`] with the given `receiver` and `handler`.
+	///
+	/// # Safety
+	///
+	/// **The `receiver` pointer given to `handler` may dangle unless `receiver` remains pinned until the created [`CallbackRegistration`] is dropped.**
+	///
+	/// You can ensure this most easily by storing the latter in for example a `Cell<Option<CallbackRegistration>>` embedded in the `receiver`.
+	///
+	/// Dropping the [`CallbackRegistration`] instance prevents any further calls to `handler` through it.
+	#[inline(always)] // Proxy function.
+	#[must_use]
+	pub fn new_by_ref(
+		receiver: Pin<&'_ R>,
+		handler: fn(receiver: *const R, parameter: DomRef<&'_ T>),
+	) -> Self {
+		callbacks::register_by_ref(receiver, handler)
+	}
+}
+#[allow(clippy::inline_always)] // All functions are very simple.
+impl<R, C> CallbackRegistration<R, C>
+where
+	C: CallbackSignature,
+{
 	/// Creates a [`ThreadBound`] [`CallbackRef`] from this [`CallbackRegistration`].
 	#[inline(always)]
 	#[must_use]
-	pub fn to_ref_thread_bound(&self) -> CallbackRef<ThreadBound, T> {
+	pub fn to_ref_thread_bound(&self) -> CallbackRef<ThreadBound, C> {
 		CallbackRef {
 			key: self.key,
 			phantom: PhantomData,
 		}
 	}
 }
-impl<R, T> CallbackRegistration<R, T>
+impl<R, C> CallbackRegistration<R, C>
 where
 	R: Sync,
+	C: CallbackSignature,
 {
 	// Using a separate `impl` block instead of a `where` clause on the method means it outright doesn't exist if `R: !Sync`.
 	// This lets it be resolved on the trait instead even without qualification.
@@ -264,7 +408,7 @@ where
 	#[allow(clippy::inline_always)]
 	#[inline(always)] // Basically just a deref-copy.
 	#[must_use]
-	pub fn to_ref(&self) -> CallbackRef<ThreadSafe, T> {
+	pub fn to_ref(&self) -> CallbackRef<ThreadSafe, C> {
 		CallbackRef {
 			key: self.key,
 			phantom: PhantomData,
@@ -278,18 +422,27 @@ where
 /// > **Warning:** Using this trait can unhelpfully mask the source of [`ThreadBound`] in a larger application.
 /// >
 /// > If your framework supports optional [`Sync`]ness annotations, consider requiring them on originally thread-bound components.
-pub trait ToRefThreadBoundFallback<T>: Sealed + Sized {
+pub trait ToRefThreadBoundFallback<C>: Sealed + Sized
+where
+	C: CallbackSignature,
+{
 	/// See [`CallbackRegistration::to_ref`], except that this method is unconstrained and that the resulting [`CallbackRef`] is [`ThreadBound`].
-	fn to_ref(&self) -> CallbackRef<ThreadBound, T>;
+	fn to_ref(&self) -> CallbackRef<ThreadBound, C>;
 }
-impl<R, T> ToRefThreadBoundFallback<T> for CallbackRegistration<R, T> {
+impl<R, C> ToRefThreadBoundFallback<C> for CallbackRegistration<R, C>
+where
+	C: CallbackSignature,
+{
 	#[allow(clippy::inline_always)]
 	#[inline(always)] // Proxy function.
-	fn to_ref(&self) -> CallbackRef<ThreadBound, T> {
+	fn to_ref(&self) -> CallbackRef<ThreadBound, C> {
 		self.to_ref_thread_bound()
 	}
 }
-impl<R, T> Drop for CallbackRegistration<R, T> {
+impl<R, C> Drop for CallbackRegistration<R, C>
+where
+	C: CallbackSignature,
+{
 	#[allow(clippy::inline_always)]
 	#[inline(always)] // Proxy function.
 	fn drop(&mut self) {
@@ -298,17 +451,37 @@ impl<R, T> Drop for CallbackRegistration<R, T> {
 }
 
 /// [`Vdom`](`crate::Vdom`) A callback reference linked to a [`CallbackRegistration`].
-pub struct CallbackRef<S: ThreadSafety, T> {
+pub struct CallbackRef<S, C>
+where
+	S: ThreadSafety,
+	C: CallbackSignature,
+{
 	pub(crate) key: NonZeroU32,
-	phantom: PhantomData<(S, fn(T))>,
+	phantom: PhantomData<(S, C)>,
 }
-impl<S: ThreadSafety, T> CallbackRef<S, T> {
+impl<S> CallbackRef<S, fn(web::Event)>
+where
+	S: ThreadSafety,
+{
 	/// Invokes the stored handler with the stored receiver and `parameter`,
 	/// provided that the original [`CallbackRegistration`] hasn't been dropped yet.
 	#[allow(clippy::inline_always)]
 	#[inline(always)] // Proxy function.
-	pub fn call(self, parameter: T) {
+	pub fn call(self, parameter: web::Event) {
 		callbacks::invoke(self.key, parameter)
+	}
+}
+impl<S, T> CallbackRef<S, fn(DomRef<&'_ T>)>
+where
+	S: ThreadSafety,
+	fn(DomRef<&'_ T>): CallbackSignature,
+{
+	/// Invokes the stored handler with the stored receiver and `parameter`,
+	/// provided that the original [`CallbackRegistration`] hasn't been dropped yet.
+	#[allow(clippy::inline_always)]
+	#[inline(always)] // Proxy function.
+	pub fn call(self, parameter: DomRef<&T>) {
+		callbacks::invoke_with_ref(self.key, parameter)
 	}
 }
 
@@ -353,3 +526,10 @@ pub unsafe fn reset_callback_registry() -> Result<(), ()> {
 pub unsafe fn yet_more_unsafe_force_clear_callback_registry() {
 	callbacks::yet_more_unsafe_force_clear_callback_registry()
 }
+
+/// Marks function pointers for which callbacks are implemented.
+///
+/// > This not being a blanket implementation over [`fn(T)`](https://doc.rust-lang.org/stable/std/primitive.fn.html) is largely related to [Rust#56105](https://github.com/rust-lang/rust/issues/56105).
+pub trait CallbackSignature: Sealed + Sized + Copy {}
+impl CallbackSignature for fn(web::Event) {}
+impl<T> CallbackSignature for fn(web::DomRef<&'_ T>) {}

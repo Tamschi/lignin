@@ -2,8 +2,8 @@
 #![allow(clippy::match_same_arms)]
 
 use crate::{
-	auto_safety::Align, CallbackRef, CallbackRegistration, Element, EventBinding, Node,
-	ReorderableFragment, ThreadBound, ThreadSafe, ThreadSafety,
+	auto_safety::Align, callback_registry::CallbackSignature, CallbackRef, CallbackRegistration,
+	Element, EventBinding, Node, ReorderableFragment, ThreadBound, ThreadSafe, ThreadSafety,
 };
 use core::{
 	any::type_name,
@@ -20,15 +20,22 @@ impl From<ThreadSafe> for ThreadBound {
 	}
 }
 
-impl<T> From<CallbackRef<ThreadSafe, T>> for CallbackRef<ThreadBound, T> {
+impl<C> From<CallbackRef<ThreadSafe, C>> for CallbackRef<ThreadBound, C>
+where
+	C: CallbackSignature,
+{
 	#[allow(clippy::inline_always)]
 	#[inline(always)] // No-op.
-	fn from(thread_safe: CallbackRef<ThreadSafe, T>) -> Self {
+	fn from(thread_safe: CallbackRef<ThreadSafe, C>) -> Self {
 		thread_safe.align()
 	}
 }
 
-impl<S: ThreadSafety, T> Debug for CallbackRef<S, T> {
+impl<S, C> Debug for CallbackRef<S, C>
+where
+	S: ThreadSafety,
+	C: CallbackSignature,
+{
 	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 		f.debug_struct(type_name::<Self>())
 			.field("key", &self.key)
@@ -36,45 +43,81 @@ impl<S: ThreadSafety, T> Debug for CallbackRef<S, T> {
 	}
 }
 
-impl<S: ThreadSafety, T> Clone for CallbackRef<S, T> {
+impl<S, C> Clone for CallbackRef<S, C>
+where
+	S: ThreadSafety,
+	C: CallbackSignature,
+{
 	fn clone(&self) -> Self {
 		*self
 	}
 }
-impl<S: ThreadSafety, T> Copy for CallbackRef<S, T> {}
-impl<S1: ThreadSafety, S2: ThreadSafety, T> PartialEq<CallbackRef<S2, T>> for CallbackRef<S1, T> {
-	fn eq(&self, other: &CallbackRef<S2, T>) -> bool {
+impl<S, C> Copy for CallbackRef<S, C>
+where
+	S: ThreadSafety,
+	C: CallbackSignature,
+{
+}
+impl<S1, S2, C> PartialEq<CallbackRef<S2, C>> for CallbackRef<S1, C>
+where
+	S1: ThreadSafety,
+	S2: ThreadSafety,
+	C: CallbackSignature,
+{
+	fn eq(&self, other: &CallbackRef<S2, C>) -> bool {
 		self.key == other.key
 	}
 }
-impl<S: ThreadSafety, T> Eq for CallbackRef<S, T> {}
-impl<S: ThreadSafety, T> Hash for CallbackRef<S, T> {
+impl<S, C> Eq for CallbackRef<S, C>
+where
+	S: ThreadSafety,
+	C: CallbackSignature,
+{
+}
+impl<S, C> Hash for CallbackRef<S, C>
+where
+	S: ThreadSafety,
+	C: CallbackSignature,
+{
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		self.key.hash(state)
 	}
 }
-impl<S1: ThreadSafety, S2: ThreadSafety, T> PartialOrd<CallbackRef<S2, T>> for CallbackRef<S1, T> {
-	fn partial_cmp(&self, other: &CallbackRef<S2, T>) -> Option<Ordering> {
+impl<S1, S2, C> PartialOrd<CallbackRef<S2, C>> for CallbackRef<S1, C>
+where
+	S1: ThreadSafety,
+	S2: ThreadSafety,
+	C: CallbackSignature,
+{
+	fn partial_cmp(&self, other: &CallbackRef<S2, C>) -> Option<Ordering> {
 		self.key.partial_cmp(&other.key)
 	}
 }
-impl<S: ThreadSafety, T> Ord for CallbackRef<S, T> {
+impl<S, C> Ord for CallbackRef<S, C>
+where
+	S: ThreadSafety,
+	C: CallbackSignature,
+{
 	fn cmp(&self, other: &Self) -> Ordering {
 		self.key.cmp(&other.key)
 	}
 }
 
-impl<R, T> From<&CallbackRegistration<R, T>> for CallbackRef<ThreadSafe, T>
+impl<R, C> From<&CallbackRegistration<R, C>> for CallbackRef<ThreadSafe, C>
 where
 	R: Sync,
+	C: CallbackSignature,
 {
-	fn from(registration: &CallbackRegistration<R, T>) -> Self {
+	fn from(registration: &CallbackRegistration<R, C>) -> Self {
 		registration.to_ref()
 	}
 }
 
-impl<R, T> From<&CallbackRegistration<R, T>> for CallbackRef<ThreadBound, T> {
-	fn from(registration: &CallbackRegistration<R, T>) -> Self {
+impl<R, C> From<&CallbackRegistration<R, C>> for CallbackRef<ThreadBound, C>
+where
+	C: CallbackSignature,
+{
+	fn from(registration: &CallbackRegistration<R, C>) -> Self {
 		registration.to_ref_thread_bound()
 	}
 }
