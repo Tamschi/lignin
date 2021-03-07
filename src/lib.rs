@@ -159,6 +159,8 @@ pub enum Node<'a, S: ThreadSafety> {
 		dom_binding: Option<CallbackRef<S, DomRef<web::HtmlElement>>>,
 	},
 	/// Represents a single [***SVGElement***](https://developer.mozilla.org/en-US/docs/Web/API/SVGElement).
+	///
+	/// Note that even outermost `<SVG>` elements are [***SVGElement***](https://developer.mozilla.org/en-US/docs/Web/API/SVGElement)s!
 	SvgElement {
 		/// The [`Element`] to render.
 		element: &'a Element<'a, S>,

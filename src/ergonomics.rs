@@ -482,6 +482,65 @@ vdom_ergonomics!([
 
 // Conversions between distinct types //
 
+impl<'a, S> Element<'a, S>
+where
+	S: ThreadSafety,
+{
+	/// Wraps a reference to this [`Element`] inside a [`Node::HtmlElement`] without [`dom_binding`](`Node::HtmlElement::dom_binding`).
+	///
+	/// # Example
+	///
+	/// ```rust
+	/// use lignin::{Node, ThreadSafe};
+	///
+	/// fn allocate<'a, T>(value: T) -> &'a T {
+	///   // […]
+	///   # Box::leak(Box::new(value))
+	/// }
+	///
+	/// let html_node: Node<ThreadSafe> = allocate(lignin::Element {
+	///   name: "DIV",
+	///   attributes: &[],
+	///   content: Node::Multi(&[]),
+	///   event_bindings: &[],
+	/// }).as_html();
+	/// ```
+	#[must_use]
+	pub fn as_html(&'a self) -> Node<'a, S> {
+		Node::HtmlElement {
+			element: self,
+			dom_binding: None,
+		}
+	}
+
+	/// Wraps a reference to this [`Element`] inside a [`Node::SvgElement`] without [`dom_binding`](`Node::SvgElement::dom_binding`).
+	///
+	/// # Example
+	///
+	/// ```rust
+	/// use lignin::{Node, ThreadSafe};
+	///
+	/// fn allocate<'a, T>(value: T) -> &'a T {
+	///   // […]
+	///   # Box::leak(Box::new(value))
+	/// }
+	///
+	/// let svg_node: Node<ThreadSafe> = allocate(lignin::Element {
+	///   name: "SVG",
+	///   attributes: &[],
+	///   content: Node::Multi(&[]),
+	///   event_bindings: &[],
+	/// }).as_svg();
+	/// ```
+	#[must_use]
+	pub fn as_svg(&'a self) -> Node<'a, S> {
+		Node::SvgElement {
+			element: self,
+			dom_binding: None,
+		}
+	}
+}
+
 impl<'a, S1, S2> From<&'a [Node<'a, S1>]> for Node<'a, S2>
 where
 	S1: ThreadSafety + Into<S2>,
