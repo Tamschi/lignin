@@ -369,7 +369,7 @@ where
 	/// Dropping the [`CallbackRegistration`] instance prevents any further calls to `handler` through it.
 	#[inline(always)] // Proxy function.
 	#[must_use]
-	pub fn new_by_ref(
+	pub fn new(
 		receiver: Pin<&'_ R>,
 		handler: fn(receiver: *const R, parameter: DomRef<&'_ T>),
 	) -> Self {
