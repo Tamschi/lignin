@@ -114,6 +114,14 @@ macro_rules! conversions {
 				unreachable!()
 			}
 		}
+
+		#[cfg(feature = "callbacks")]
+		impl From<$contents> for $container {
+			#[inline(always)] // No-op.
+			fn from(contents: $contents) -> Self {
+				Self(contents)
+			}
+		}
 	)*};
 }
 
