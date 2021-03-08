@@ -297,6 +297,137 @@ pub struct EventBinding<'a, S: ThreadSafety> {
 	pub name: &'a str,
 	/// A callback reference created via [`CallbackRegistration`].
 	pub callback: CallbackRef<S, fn(web::Event)>,
+	/// Controls the ***options*** parameter of [***EventTarget.addEventListener()***](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener).
+	///
+	/// Note that [`EventBindingOptions`] is created with the [`EventBindingOptions.passive()`] flag already enabled!
+	pub options: EventBindingOptions,
+}
+
+/// [`Vdom`] Maps to ***options*** parameter values of [***EventTarget.addEventListener()***](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener).
+///
+/// Note that all constructors initialize instances with [`.passive()`](`EventBindingOptions::passive()`) set to true.
+///
+/// Also note that these flags aren't part of any soundness contract! Don't rely on them for memory safety.
+///
+/// # Flags
+///
+/// ## `capture`
+///
+/// Controls whether a [`web::Event`] should be dispatched while bubbling down rather than up along the DOM.
+///
+/// ## `once`
+///
+/// Controls whether an associated [`CallbackRef`] should be invoked at most once for this [`EventBinding`].
+///
+/// This carries over for as long as the [`EventBinding`]'s VDOM identity doesn't change.
+///
+/// ## `passive` (default)
+///
+/// Controls whether a callback is disallowed from calling [`web_sys::Event::prevent_default()`](https://docs.rs/web-sys/0.3.48/web_sys/struct.Event.html#method.prevent_default).
+///
+/// Calling that method while this flag is enabled shouldn't produce any effects other than printing a warning to a browser's JavaScript console.
+///
+/// [This flag can significantly improve performance when applied to certain events.](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener#improving_scrolling_performance_with_passive_listeners)
+///
+/// > ***passive: true*** isn't always the default in web browsers for backwards compatibility reasons.
+/// >
+/// > As `lignin` is a new framework, it's able to break with that tradition for more consistency and a better default.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct EventBindingOptions(u8);
+mod event_bindings_impl {
+	#![allow(clippy::inline_always)] // Trivial bit manipulation.
+	#![allow(clippy::trivially_copy_pass_by_ref)] // Erased by inlining.
+
+	#[allow(unused_imports)] // Largely for documentation.
+	use crate::{web, CallbackRef, EventBinding, EventBindingOptions};
+
+	pub const CAPTURE: u8 = 0b_0001;
+	pub const ONCE: u8 = 0b_0010;
+	pub const PASSIVE: u8 = 0b_0100;
+
+	impl Default for EventBindingOptions {
+		/// Creates a new [`EventBindingOptions`] instance with [`.passive()`] already set to `true`. [See more.](`Default::default`)
+		#[inline(always)]
+		fn default() -> Self {
+			Self::new()
+		}
+	}
+
+	#[allow(clippy::match_bool)]
+	impl EventBindingOptions {
+		/// Creates a new [`EventBindingOptions`] instance with [`.passive()`] already set to `true`.
+		#[inline(always)]
+		#[must_use]
+		pub const fn new() -> Self {
+			Self(PASSIVE)
+		}
+
+		/// Indicates whether a [`web::Event`] should be dispatched while bubbling down rather than up along the DOM.
+		#[inline(always)]
+		#[must_use]
+		pub const fn capture(&self) -> bool {
+			self.0 & CAPTURE == CAPTURE
+		}
+		/// Sets whether a [`web::Event`] should be dispatched while bubbling down rather than up along the DOM.
+		#[inline(always)]
+		pub fn set_capture(&mut self, capture: bool) {
+			*self = self.with_capture(capture)
+		}
+		/// Sets whether a [`web::Event`] should be dispatched while bubbling down rather than up along the DOM.
+		#[inline(always)]
+		#[must_use]
+		pub const fn with_capture(self, capture: bool) -> Self {
+			Self(match capture {
+				true => self.0 | CAPTURE,
+				false => self.0 & !CAPTURE,
+			})
+		}
+
+		/// Indicates whether an associated [`CallbackRef`] should be invoked at most once for this [`EventBinding`]. [See more.](#once)
+		#[inline(always)]
+		#[must_use]
+		pub const fn once(&self) -> bool {
+			self.0 & ONCE == ONCE
+		}
+		/// Sets whether an associated [`CallbackRef`] should be invoked at most once for this [`EventBinding`]. [See more.](#once)
+		#[inline(always)]
+		pub fn set_once(&mut self, once: bool) {
+			*self = self.with_once(once)
+		}
+		/// Sets whether an associated [`CallbackRef`] should be invoked at most once for this [`EventBinding`]. [See more.](#once)
+		#[inline(always)]
+		#[must_use]
+		pub const fn with_once(self, once: bool) -> Self {
+			Self(match once {
+				true => self.0 | ONCE,
+				false => self.0 & !ONCE,
+			})
+		}
+
+		/// `(default)` Indicates whether a callback is disallowed from calling [`web_sys::Event::prevent_default()`](https://docs.rs/web-sys/0.3.48/web_sys/struct.Event.html#method.prevent_default).
+		/// [See more.](#passive)
+		#[inline(always)]
+		#[must_use]
+		pub const fn passive(&self) -> bool {
+			self.0 & PASSIVE == PASSIVE
+		}
+		/// `(default)` Sets whether a callback is disallowed from calling [`web_sys::Event::prevent_default()`](https://docs.rs/web-sys/0.3.48/web_sys/struct.Event.html#method.prevent_default).
+		/// [See more.](#passive)
+		#[inline(always)]
+		pub fn set_passive(&mut self, passive: bool) {
+			*self = self.with_passive(passive)
+		}
+		/// `(default)` Sets whether a callback is disallowed from calling [`web_sys::Event::prevent_default()`](https://docs.rs/web-sys/0.3.48/web_sys/struct.Event.html#method.prevent_default).
+		/// [See more.](#passive)
+		#[inline(always)]
+		#[must_use]
+		pub const fn with_passive(self, passive: bool) -> Self {
+			Self(match passive {
+				true => self.0 | PASSIVE,
+				false => self.0 & !PASSIVE,
+			})
+		}
+	}
 }
 
 /// [`Vdom`] Represents a single HTML [***Attr***](https://developer.mozilla.org/en-US/docs/Web/API/Attr) with `name` and `value`.
@@ -325,8 +456,8 @@ mod sealed {
 	use super::{ThreadBound, ThreadSafe};
 	use crate::{
 		callback_registry::CallbackSignature, remnants::RemnantSite, web, Attribute, CallbackRef,
-		CallbackRegistration, DomRef, Element, EventBinding, Node, ReorderableFragment,
-		ThreadSafety,
+		CallbackRegistration, DomRef, Element, EventBinding, EventBindingOptions, Node,
+		ReorderableFragment, ThreadSafety,
 	};
 
 	pub trait Sealed {}
@@ -335,6 +466,7 @@ mod sealed {
 	impl Sealed for ThreadBound {}
 	impl Sealed for ThreadSafe {}
 	impl<'a> Sealed for Attribute<'a> {}
+	impl Sealed for EventBindingOptions {}
 	impl<R, C: CallbackSignature> Sealed for CallbackRegistration<R, C> {}
 	impl<S: ThreadSafety, C: CallbackSignature> Sealed for CallbackRef<S, C> {}
 	impl<'a, S: ThreadSafety> Sealed for Element<'a, S> {}
@@ -372,18 +504,22 @@ impl ThreadSafety for ThreadSafe {}
 
 /// Marker trait for VDOM data types, which (almost) all vary by [`ThreadSafety`].
 ///
-/// Somewhat uselessly implemented on [`Attribute`], which is always [`ThreadSafe`].
+/// Somewhat uselessly implemented on [`Attribute`] and [`EventBindingOptions`], which are always [`ThreadSafe`].
 pub trait Vdom: Sealed
 where
 	Self: Sized + Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord + Hash,
 {
 	/// The [`ThreadSafety`] of the [`Vdom`] type, either [`ThreadSafe`] or [`ThreadBound`].
 	///
-	/// This comes from a generic type argument `S`, but [`Attribute`] is always [`ThreadSafe`].
+	/// This comes from a generic type argument `S`, but [`Attribute`] and [`EventBindingOptions`] are always [`ThreadSafe`].
 	type ThreadSafety: ThreadSafety;
 }
 
 impl<'a> Vdom for Attribute<'a> {
+	type ThreadSafety = ThreadSafe;
+}
+
+impl Vdom for EventBindingOptions {
 	type ThreadSafety = ThreadSafe;
 }
 
