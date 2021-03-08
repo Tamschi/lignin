@@ -501,6 +501,9 @@
 <span id="498">498</span>
 <span id="499">499</span>
 <span id="500">500</span>
+<span id="501">501</span>
+<span id="502">502</span>
+<span id="503">503</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">core</span>::<span class="ident">slice</span>;
 
@@ -796,7 +799,10 @@
 				<span class="ident">svg_element</span>.<span class="ident">remove</span>()
 			}
 
-			<span class="ident">lignin</span>::<span class="ident">Node</span>::<span class="ident">Memoized</span> { <span class="ident">state_key</span>, <span class="ident">content</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">diff_splice_node_list</span>(
+			<span class="ident">lignin</span>::<span class="ident">Node</span>::<span class="ident">Memoized</span> {
+				<span class="ident">state_key</span>: <span class="kw">_</span>,
+				<span class="ident">content</span>,
+			} <span class="op">=</span><span class="op">&gt;</span> <span class="ident">diff_splice_node_list</span>(
 				<span class="ident">document</span>,
 				<span class="ident">slice</span>::<span class="ident">from_ref</span>(<span class="ident">content</span>),
 				<span class="kw-2">&amp;</span>[],
