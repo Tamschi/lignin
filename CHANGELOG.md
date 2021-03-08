@@ -27,6 +27,8 @@ TODO: Date
     > Any other consumers of this library should test with the feature, but not require it.
   * Event bindings are now both leak-safe and sound
   * VDOM producers can now subscribe to DOM Node reference updates
+  * Increased minimum Rust version from 1.44 to 1.46
+    > in order to use `match` expressions in `const fn` functions.
 
 * Revisions
   * Run CI against Rust 1.44 instead of Rust 1.44.0 specifically
