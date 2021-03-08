@@ -69,9 +69,17 @@ let _ = &Node::HtmlElement {
 
 ¹ See [Element.tagName (MDN)](https://developer.mozilla.org/en-US/docs/Web/API/Element/tagName). This avoids case-insensitive comparisons.
 
+## Implementation Contract
+
+There are a few ecosystem compatibility rules that aren't covered by Rust's type system or the `unsafe` keyword. Please see [the main module documentation](https://docs.rs/lignin/0.0.5/lignin/#implementation-contract) for more information.
+
 ## Prior Art
 
 * Dodrio, which didn't quite satisfy my requirements but generally inspired this approach.
+
+## Thanks
+
+To [Dronaroid](https://twitter.com/artdron) for finding a great name for this library, [@platy](https://github.com/platy) for criticism and pushing me towards a better implementation, and everyone on the Rust Programming Language Community Server discord who answered my questions that came up during the rewrite.
 
 ## License
 

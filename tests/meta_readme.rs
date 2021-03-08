@@ -16,3 +16,11 @@ fn versioning() {
 		r"^`{name}` strictly follows \[Semantic Versioning 2\.0\.0\]"
 	);
 }
+
+#[test]
+fn implementation_contract() {
+	version_sync::assert_contains_regex!(
+		"README.md",
+		r"https://docs\.rs/lignin/{version}/{name}/#implementation-contract"
+	);
+}
