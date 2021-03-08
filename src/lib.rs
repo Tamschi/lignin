@@ -141,7 +141,7 @@ pub enum Node<'a, S: ThreadSafety> {
 		/// This field may contain arbitrary character sequences, some of which are illegal in [***Comment***](https://developer.mozilla.org/en-US/docs/Web/API/Comment)s at least when serialized as HTML.
 		/// See <https://html.spec.whatwg.org/multipage/syntax.html#comments> for more information.
 		///
-		/// Renderers **must** either refuse or replace illegal-for-target comments which ones that are inert.
+		/// Renderers **must** either refuse or replace illegal-for-target comments with ones that are inert.
 		///
 		/// Not doing so opens the door for [XSS](https://developer.mozilla.org/en-US/docs/Glossary/Cross-site_scripting)
 		/// and/or format confusion vulnerabilities.
