@@ -335,6 +335,8 @@ where
 	C: CallbackSignature,
 {
 }
+
+/// Separate `impl`s due to Rust language limitation. See [`CallbackSignature`] and expect future broadening.
 impl<R> CallbackRegistration<R, fn(web::Event)> {
 	/// Creates a new [`CallbackRegistration<R, T>`] with the given `receiver` and `handler`.
 	///
@@ -354,6 +356,7 @@ impl<R> CallbackRegistration<R, fn(web::Event)> {
 		callbacks::register(receiver, handler)
 	}
 }
+/// Separate `impl`s due to Rust language limitation. See [`CallbackSignature`] and expect future broadening.
 impl<R, T> CallbackRegistration<R, fn(DomRef<&'_ T>)>
 where
 	fn(DomRef<&'_ T>): CallbackSignature,
@@ -459,6 +462,7 @@ where
 	pub(crate) key: NonZeroU32,
 	phantom: PhantomData<(S, C)>,
 }
+/// Separate `impl`s due to Rust language limitation. See [`CallbackSignature`] and expect future broadening.
 impl<S> CallbackRef<S, fn(web::Event)>
 where
 	S: ThreadSafety,
@@ -471,6 +475,7 @@ where
 		callbacks::invoke(self.key, parameter)
 	}
 }
+/// Separate `impl`s due to Rust language limitation. See [`CallbackSignature`] and expect future broadening.
 impl<S, T> CallbackRef<S, fn(DomRef<&'_ T>)>
 where
 	S: ThreadSafety,
@@ -530,6 +535,8 @@ pub unsafe fn yet_more_unsafe_force_clear_callback_registry() {
 /// Marks function pointers for which callbacks are implemented.
 ///
 /// > This not being a blanket implementation over [`fn(T)`](https://doc.rust-lang.org/stable/std/primitive.fn.html) is largely related to [Rust#56105](https://github.com/rust-lang/rust/issues/56105).
+/// >
+/// > In short, an `impl <T> CallbackSignature for fn(T) {}` currently does not cover for example `fn(web::DomRef<&'_ T>)`, but their collision will become a hard error in the future (as of March 2021/Rust 1.50.0).
 pub trait CallbackSignature: Sealed + Sized + Copy {}
 impl CallbackSignature for fn(web::Event) {}
 impl<T> CallbackSignature for fn(web::DomRef<&'_ T>) {}
