@@ -304,6 +304,8 @@ use callbacks_off as callbacks;
 ///
 /// [`CallbackRegistration`] is [`!Unpin`](`Unpin`) for convenience: A receiver correctly becomes [`!Unpin`](`Unpin`) if it contains for example a `Cell<Option<CallbackRegistration<R, T>>`¹⁻².
 ///
+/// To hold onto a [`CallbackRegistration`] without boxing or pinning, use a newtype wrapper with explicit [`Unpin`] implementation.
+///
 /// - - -
 ///
 /// 1. [`impl<T: ?Sized> Unpin for Cell<T> where T: Unpin`](`core::cell::Cell`#impl-Unpin)
@@ -337,7 +339,7 @@ where
 }
 
 /// Separate `impl`s due to Rust language limitation. See [`CallbackSignature`] and expect future broadening.
-impl<R> CallbackRegistration<R, fn(web::Event)> {
+impl<R> CallbackRegistration<R, fn(event: web::Event)> {
 	/// Creates a new [`CallbackRegistration<R, T>`] with the given `receiver` and `handler`.
 	///
 	/// # Safety
@@ -349,18 +351,12 @@ impl<R> CallbackRegistration<R, fn(web::Event)> {
 	/// Dropping the [`CallbackRegistration`] instance prevents any further calls to `handler` through it.
 	#[inline(always)] // Proxy function.
 	#[must_use]
-	pub fn new(
-		receiver: Pin<&'_ R>,
-		handler: fn(receiver: *const R, parameter: web::Event),
-	) -> Self {
+	pub fn new(receiver: Pin<&'_ R>, handler: fn(receiver: *const R, event: web::Event)) -> Self {
 		callbacks::register(receiver, handler)
 	}
 }
 /// Separate `impl`s due to Rust language limitation. See [`CallbackSignature`] and expect future broadening.
-impl<R, T> CallbackRegistration<R, fn(DomRef<&'_ T>)>
-where
-	fn(DomRef<&'_ T>): CallbackSignature,
-{
+impl<R, T> CallbackRegistration<R, fn(dom_ref: DomRef<&'_ T>)> {
 	/// Creates a new [`CallbackRegistration<R, T>`] with the given `receiver` and `handler`.
 	///
 	/// # Safety
@@ -374,7 +370,7 @@ where
 	#[must_use]
 	pub fn new(
 		receiver: Pin<&'_ R>,
-		handler: fn(receiver: *const R, parameter: DomRef<&'_ T>),
+		handler: fn(receiver: *const R, dom_ref: DomRef<&'_ T>),
 	) -> Self {
 		callbacks::register_by_ref(receiver, handler)
 	}
@@ -463,7 +459,7 @@ where
 	phantom: PhantomData<(S, C)>,
 }
 /// Separate `impl`s due to Rust language limitation. See [`CallbackSignature`] and expect future broadening.
-impl<S> CallbackRef<S, fn(web::Event)>
+impl<S> CallbackRef<S, fn(event: web::Event)>
 where
 	S: ThreadSafety,
 {
@@ -472,20 +468,21 @@ where
 	#[allow(clippy::inline_always)]
 	#[inline(always)] // Proxy function.
 	pub fn call(self, parameter: web::Event) {
+		// `parameter` is name-matched between implementations, to still allow later unification if Rust gains named parameters.
 		callbacks::invoke(self.key, parameter)
 	}
 }
 /// Separate `impl`s due to Rust language limitation. See [`CallbackSignature`] and expect future broadening.
-impl<S, T> CallbackRef<S, fn(DomRef<&'_ T>)>
+impl<S, T> CallbackRef<S, fn(dom_ref: DomRef<&'_ T>)>
 where
 	S: ThreadSafety,
-	fn(DomRef<&'_ T>): CallbackSignature,
 {
 	/// Invokes the stored handler with the stored receiver and `parameter`,
 	/// provided that the original [`CallbackRegistration`] hasn't been dropped yet.
 	#[allow(clippy::inline_always)]
 	#[inline(always)] // Proxy function.
 	pub fn call(self, parameter: DomRef<&T>) {
+		// `parameter` is name-matched between implementations, to still allow later unification if Rust gains named parameters.
 		callbacks::invoke_with_ref(self.key, parameter)
 	}
 }
@@ -538,5 +535,5 @@ pub unsafe fn yet_more_unsafe_force_clear_callback_registry() {
 /// >
 /// > In short, an `impl <T> CallbackSignature for fn(T) {}` currently does not cover for example `fn(web::DomRef<&'_ T>)`, but their collision will become a hard error in the future (as of March 2021/Rust 1.50.0).
 pub trait CallbackSignature: Sealed + Sized + Copy {}
-impl CallbackSignature for fn(web::Event) {}
-impl<T> CallbackSignature for fn(web::DomRef<&'_ T>) {}
+impl CallbackSignature for fn(event: web::Event) {}
+impl<T> CallbackSignature for fn(dom_ref: web::DomRef<&'_ T>) {}

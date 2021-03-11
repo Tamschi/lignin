@@ -149,7 +149,7 @@ pub enum Node<'a, S: ThreadSafety> {
 		/// Registers for [***Comment***](https://developer.mozilla.org/en-US/docs/Web/API/Comment) reference updates.
 		///
 		/// See [`DomRef`] for more information.
-		dom_binding: Option<CallbackRef<S, fn(DomRef<&'_ web::Comment>)>>,
+		dom_binding: Option<CallbackRef<S, fn(dom_ref: DomRef<&'_ web::Comment>)>>,
 	},
 	/// Represents a single [***HTMLElement***](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement).
 	HtmlElement {
@@ -158,7 +158,7 @@ pub enum Node<'a, S: ThreadSafety> {
 		/// Registers for [***HTMLElement***](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement) reference updates.
 		///
 		/// See [`DomRef`] for more information.
-		dom_binding: Option<CallbackRef<S, fn(DomRef<&'_ web::HtmlElement>)>>,
+		dom_binding: Option<CallbackRef<S, fn(dom_ref: DomRef<&'_ web::HtmlElement>)>>,
 	},
 	/// Represents a single [***SVGElement***](https://developer.mozilla.org/en-US/docs/Web/API/SVGElement).
 	///
@@ -169,7 +169,7 @@ pub enum Node<'a, S: ThreadSafety> {
 		/// Registers for [***SVGElement***](https://developer.mozilla.org/en-US/docs/Web/API/SVGElement) reference updates.
 		///
 		/// See [`DomRef`] for more information.
-		dom_binding: Option<CallbackRef<S, fn(DomRef<&'_ web::SvgElement>)>>,
+		dom_binding: Option<CallbackRef<S, fn(dom_ref: DomRef<&'_ web::SvgElement>)>>,
 	},
 	/// DOM-transparent. This variant uses shallow comparison and hashes based on its `state_key` only.
 	///
@@ -241,7 +241,7 @@ pub enum Node<'a, S: ThreadSafety> {
 		/// Registers for [***Text***](https://developer.mozilla.org/en-US/docs/Web/API/Text) reference updates.
 		///
 		/// See [`DomRef`] for more information.
-		dom_binding: Option<CallbackRef<S, fn(DomRef<&'_ web::Text>)>>,
+		dom_binding: Option<CallbackRef<S, fn(dom_ref: DomRef<&'_ web::Text>)>>,
 	},
 	/// Currently unused.
 	///
@@ -296,7 +296,7 @@ pub struct EventBinding<'a, S: ThreadSafety> {
 	/// The event name.
 	pub name: &'a str,
 	/// A callback reference created via [`CallbackRegistration`].
-	pub callback: CallbackRef<S, fn(web::Event)>,
+	pub callback: CallbackRef<S, fn(event: web::Event)>,
 	/// Controls the ***options*** parameter of [***EventTarget.addEventListener()***](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener).
 	///
 	/// Note that [`EventBindingOptions`] is created with the [`EventBindingOptions.passive()`] flag already enabled!
