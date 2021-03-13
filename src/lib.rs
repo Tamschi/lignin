@@ -95,8 +95,7 @@ pub mod readme {
 
 pub mod auto_safety;
 pub mod callback_registry;
-#[doc(hidden)]
-pub mod remnants;
+mod remnants;
 pub mod web;
 
 use callback_registry::CallbackSignature;
