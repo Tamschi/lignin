@@ -455,6 +455,7 @@ where
 	S: ThreadSafety,
 	C: CallbackSignature,
 {
+	//SAFETY: This type must be unchanged after a roundtrip through JavaScript via the `CallbackRef::into_js` and `CallbackRef::from_js` methods.
 	pub(crate) key: NonZeroU32,
 	phantom: PhantomData<(S, C)>,
 }
@@ -493,6 +494,77 @@ where
 #[must_use]
 pub fn registry_exhaustion() -> u8 {
 	callbacks::registry_exhaustion()
+}
+
+/// These functions are intended as storage optimization for in-browser renderers.
+///
+/// The [`CallbackRef`]'s raw numerical value can be passed through JavaScript directly,
+/// rather than adding another layer of indirection.
+///
+/// Only available with the `"callbacks"` feature.
+///
+/// > Most DOM renderers will still require an [***event listener***](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener)
+/// > table in order to unsubscribe from events.
+#[cfg(feature = "callbacks")]
+impl<S, C> CallbackRef<S, C>
+where
+	S: ThreadSafety,
+	C: ?Sized + CallbackSignature,
+{
+	/// Returns this [`CallbackRef`]'s identity as [`JsValue`](`wasm_bindgen::JsValue`),
+	/// which can then for example be [bound](https://docs.rs/js-sys/0.3/js_sys/struct.Function.html#method.bind1)
+	/// to a generic event handler shim.
+	///
+	/// # Implementation Contract
+	///
+	/// The return value of this function must be treated as opaque handle.
+	///
+	/// # Example
+	//TODO: Example event handler and binding.
+	#[must_use]
+	pub fn into_js(self) -> wasm_bindgen::JsValue {
+		let key: f64 = self.key.get().into();
+		debug_assert_eq!(unsafe { key.to_int_unchecked::<u32>() }, self.key.get());
+		wasm_bindgen::JsValue::from_f64(key)
+	}
+
+	/// Reconstructs a [`CallbackRef`] that was previously converted into a [`JsValue`](`wasm_bindgen::JsValue`).
+	///
+	/// # Safety
+	///
+	/// - `key` must have been retrieved verbatim from [`.into_js`],
+	/// - `S` must be compatible (i.e. the same or [`ThreadBound`]),
+	/// - if the original `S` was [`ThreadBound`], the [`CallbackRef`] must be reconstructed on the same thread and
+	/// - `C` must be the same except for lifetime changes that would be okay in an assignment.
+	#[must_use]
+	pub unsafe fn from_js(key: &wasm_bindgen::JsValue) -> Option<Self> {
+		let key = key.as_f64()?;
+
+		#[allow(clippy::clippy::float_cmp)]
+		if key.trunc() != key || key > u32::MAX.into() || key < 1.0 {
+			None
+		} else {
+			Some(Self {
+				key: NonZeroU32::new(key.to_int_unchecked())?,
+				phantom: PhantomData,
+			})
+		}
+	}
+}
+
+#[cfg(test)]
+#[test]
+fn assert_no_quantization() {
+	// Assert field type.
+	let _ = CallbackRef::<ThreadSafe, fn(web::Event)> {
+		key: NonZeroU32::new(u32::MAX).unwrap(),
+		phantom: PhantomData,
+	};
+
+	for x in u32::MAX - 1000..u32::MAX {
+		let f: f64 = x.into();
+		assert_eq!(unsafe { f.to_int_unchecked::<u32>() }, x);
+	}
 }
 
 /// Tries to rewind the total callback registration counter to zero.
