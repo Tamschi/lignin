@@ -271,6 +271,14 @@ vdom_ergonomics!([
 				.field("element", element)
 				.field("dom_binding", dom_binding)
 				.finish(),
+			Node::MathMlElement {
+				element,
+				dom_binding,
+			} => f
+				.debug_struct("Node::HtmlElement")
+				.field("element", element)
+				.field("dom_binding", dom_binding)
+				.finish(),
 			Node::SvgElement {
 				element,
 				dom_binding,
@@ -331,6 +339,23 @@ vdom_ergonomics!([
 						(_, _) => false,
 					},
 			(Node::HtmlElement { .. }, _) => false,
+			(
+				Node::MathMlElement {
+					element: e_1,
+					dom_binding: db_1,
+				},
+				Node::MathMlElement {
+					element: e_2,
+					dom_binding: db_2,
+				},
+			) =>
+				e_1 == e_2
+					&& match (db_1, db_2) {
+						(None, None) => true,
+						(Some(db_1), Some(db_2)) => db_1 == db_2,
+						(_, _) => false,
+					},
+			(Node::MathMlElement { .. }, _) => false,
 			(
 				Node::SvgElement {
 					element: e_1,
@@ -396,6 +421,13 @@ vdom_ergonomics!([
 				dom_binding.hash(state);
 				element.hash(state); // Recursion.
 			}
+			Node::MathMlElement {
+				element,
+				dom_binding,
+			} => {
+				dom_binding.hash(state);
+				element.hash(state); // Recursion.
+			}
 			Node::SvgElement {
 				element,
 				dom_binding,
@@ -434,6 +466,19 @@ vdom_ergonomics!([
 					dom_binding: db_1,
 				},
 				Node::HtmlElement {
+					element: e_2,
+					dom_binding: db_2,
+				},
+			) => {
+				cmp!(db_1, db_2);
+				e_1.cmp(e_2) // Recursion.
+			}
+			(
+				Node::MathMlElement {
+					element: e_1,
+					dom_binding: db_1,
+				},
+				Node::MathMlElement {
 					element: e_2,
 					dom_binding: db_2,
 				},
@@ -493,6 +538,8 @@ vdom_ergonomics!([
 			(_, Node::Comment { .. }) => Ordering::Greater,
 			(Node::HtmlElement { .. }, _) => Ordering::Less,
 			(_, Node::HtmlElement { .. }) => Ordering::Greater,
+			(Node::MathMlElement { .. }, _) => Ordering::Less,
+			(_, Node::MathMlElement { .. }) => Ordering::Greater,
 			(Node::SvgElement { .. }, _) => Ordering::Less,
 			(_, Node::SvgElement { .. }) => Ordering::Greater,
 			(Node::Memoized { .. }, _) => Ordering::Less,
@@ -637,6 +684,7 @@ impl<'a, S: ThreadSafety> Node<'a, S> {
 		match self {
 			Node::Comment { .. }
 			| Node::HtmlElement { .. }
+			| Node::MathMlElement { .. }
 			| Node::SvgElement { .. }
 			| Node::Text { .. } => 1,
 			Node::Memoized { content: node, .. } => node.dom_len(),
@@ -656,6 +704,7 @@ impl<'a, S: ThreadSafety> Node<'a, S> {
 		match self {
 			Node::Comment { .. }
 			| Node::HtmlElement { .. }
+			| Node::MathMlElement { .. }
 			| Node::SvgElement { .. }
 			| Node::Text { .. } => false,
 			Node::Memoized { content, .. } => content.dom_empty(),

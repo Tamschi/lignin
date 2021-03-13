@@ -86,6 +86,8 @@
 //!
 //! While the `"callbacks"` feature is disabled, all callback management is erased.
 //! This makes `lignin` faster and removes usage limits, but removes unique identities from [`CallbackRegistration`] and [`CallbackRef`], which affects comparisons and hashing.
+//!
+//! [MathML](https://developer.mozilla.org/en-US/docs/Web/MathML) support is rudimentary due lack of direct support in web-sys.
 #[cfg(doctest)]
 pub mod readme {
 	doc_comment::doctest!("../README.md");
@@ -159,6 +161,20 @@ pub enum Node<'a, S: ThreadSafety> {
 		///
 		/// See [`DomRef`] for more information.
 		dom_binding: Option<CallbackRef<S, fn(dom_ref: DomRef<&'_ web::HtmlElement>)>>,
+	},
+	/// Represents a single [***MathMLElement***](https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement).
+	///
+	/// Note that [distinct browser support for these is really quite bad](https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement#browser_compatibility)
+	/// and [correct styling isn't much more available](https://developer.mozilla.org/en-US/docs/Web/MathML#browser_compatibility).
+	///
+	/// However, [MathML *is* part of the HTML standard](https://html.spec.whatwg.org/multipage/embedded-content-other.html#mathml), so browsers should at least parse it correctly, and styling can be polyfilled.
+	MathMlElement {
+		/// The [`Element`] to render.
+		element: &'a Element<'a, S>,
+		/// Registers for [***Element***](https://developer.mozilla.org/en-US/docs/Web/API/Element) reference updates.
+		///
+		/// See [`DomRef`] for more information.
+		dom_binding: Option<CallbackRef<S, fn(dom_ref: DomRef<&'_ web::Element>)>>,
 	},
 	/// Represents a single [***SVGElement***](https://developer.mozilla.org/en-US/docs/Web/API/SVGElement).
 	///

@@ -90,6 +90,9 @@ web_types! {
 	/// Erasable stand-in for [`web_sys::Comment`](https://docs.rs/web-sys/0.3/web_sys/struct.Comment.html) used as callback parameter.
 	(Comment, "Comment") => web_sys::Comment,
 
+	/// Erasable stand-in for [`web_sys::Element`](https://docs.rs/web-sys/0.3/web_sys/struct.Element.html) used as callback parameter.
+	(Element, "Element") => web_sys::Element,
+
 	/// Erasable stand-in for [`web_sys::Event`](https://docs.rs/web-sys/0.3/web_sys/struct.Event.html) used as callback parameter.
 	(Event, "Event") => web_sys::Event,
 
