@@ -174,6 +174,7 @@ impl<T: Materialize<U>, U> Materialize<DomRef<U>> for DomRef<T> {
 
 conversions! {
 	Comment => web_sys::Comment,
+	Element => web_sys::Element,
 	Event => web_sys::Event,
 	HtmlElement => web_sys::HtmlElement,
 	SvgElement => web_sys::SvgElement,
