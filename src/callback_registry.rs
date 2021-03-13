@@ -8,6 +8,7 @@ use crate::{sealed::Sealed, web, DomRef, ThreadBound, ThreadSafe, ThreadSafety};
 use core::{
 	fmt::Debug,
 	marker::{PhantomData, PhantomPinned},
+	mem,
 	num::NonZeroU32,
 	pin::Pin,
 };
@@ -348,7 +349,7 @@ impl<R> CallbackRegistration<R, fn(event: web::Event)> {
 	///
 	/// You can ensure this most easily by storing the latter in for example a `Cell<Option<CallbackRegistration>>` embedded in the `receiver`.
 	///
-	/// Dropping the [`CallbackRegistration`] instance prevents any further calls to `handler` through it.
+	/// Dropping the [`CallbackRegistration`] instance prevents any further calls to `handler` derived from it.
 	#[inline(always)] // Proxy function.
 	#[must_use]
 	pub fn new(receiver: Pin<&'_ R>, handler: fn(receiver: *const R, event: web::Event)) -> Self {
@@ -365,7 +366,7 @@ impl<R, T> CallbackRegistration<R, fn(dom_ref: DomRef<&'_ T>)> {
 	///
 	/// You can ensure this most easily by storing the latter in for example a `Cell<Option<CallbackRegistration>>` embedded in the `receiver`.
 	///
-	/// Dropping the [`CallbackRegistration`] instance prevents any further calls to `handler` through it.
+	/// Dropping the [`CallbackRegistration`] instance prevents any further calls to `handler` derived from it.
 	#[inline(always)] // Proxy function.
 	#[must_use]
 	pub fn new(
@@ -412,6 +413,17 @@ where
 			key: self.key,
 			phantom: PhantomData,
 		}
+	}
+
+	/// Destroys a [`CallbackRegistration`] instance without running its destructor.
+	///
+	/// # Safety
+	///
+	/// Calling this method is technically always sound due to the soundness requirements on [`CallbackRegistration::new`].
+	///
+	/// It is still marked as `unsafe` since it has far-reaching implications regarding the validity guarantees of the `receiver` pointers given to [`CallbackRegistration::new`]'s `handler` parameter.
+	pub unsafe fn leak(self) {
+		mem::forget(self)
 	}
 }
 /// Provides a fallback alternative implementation to [`CallbackRegistration::to_ref`] for use in macro frameworks.
