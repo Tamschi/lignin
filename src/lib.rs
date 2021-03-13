@@ -42,7 +42,7 @@
 //!
 //! When adding or removing [`Node`]s dynamically between updates, components should wrap lists in [`Node::Multi`] and otherwise insert an empty [`Node::Multi([&[])`](`Node::Multi`) as placeholder for an absent element.
 //!
-//! > This both together allows better and easier diff optimization in renderers, but otherwise mustn't be a strict requirement for compatibility.
+//! > Each of these suggestions allows better and easier diff optimization in renderers, but otherwise mustn't be a strict requirement for compatibility.
 //!
 //! # Deep Comparisons
 //!
