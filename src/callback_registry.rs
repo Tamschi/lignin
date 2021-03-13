@@ -54,12 +54,12 @@ mod callbacks_on {
 	}
 
 	#[must_use]
-	pub fn register<R, T>(
+	pub fn register<'b, R, T>(
 		receiver: Pin<&'_ R>,
 		handler: fn(*const R, T),
-	) -> CallbackRegistration<R, fn(T)>
+	) -> CallbackRegistration<R, dyn 'b + Fn(T)>
 	where
-		fn(T): CallbackSignature,
+		dyn 'b + Fn(T): CallbackSignature,
 	{
 		let mut registry = REGISTRY.write().unwrap();
 		if registry.key_count == u32::MAX {
@@ -97,12 +97,12 @@ mod callbacks_on {
 	}
 
 	#[must_use]
-	pub fn register_by_ref<R, T>(
+	pub fn register_by_ref<'b, R, T>(
 		receiver: Pin<&'_ R>,
 		handler: fn(*const R, DomRef<&'_ T>),
-	) -> CallbackRegistration<R, fn(DomRef<&'_ T>)>
+	) -> CallbackRegistration<R, dyn 'b + Fn(DomRef<&'_ T>)>
 	where
-		fn(DomRef<&'_ T>): CallbackSignature,
+		dyn 'b + Fn(DomRef<&'_ T>): CallbackSignature,
 	{
 		let mut registry = REGISTRY.write().unwrap();
 		if registry.key_count == u32::MAX {
@@ -141,7 +141,7 @@ mod callbacks_on {
 
 	pub fn deregister<R, C>(registration: &CallbackRegistration<R, C>)
 	where
-		C: CallbackSignature,
+		C: ?Sized + CallbackSignature,
 	{
 		REGISTRY
 			.write()
@@ -151,9 +151,9 @@ mod callbacks_on {
 			.expect("`CallbackRegistration` double-drop");
 	}
 
-	pub fn invoke<T>(key: NonZeroU32, parameter: T)
+	pub fn invoke<'b, T>(key: NonZeroU32, parameter: T)
 	where
-		fn(T): CallbackSignature,
+		dyn 'b + Fn(T): CallbackSignature,
 	{
 		let registry = REGISTRY.read().unwrap();
 		if let Some(entry) = registry.entries.get(&key) {
@@ -165,9 +165,9 @@ mod callbacks_on {
 		}
 	}
 
-	pub fn invoke_with_ref<T>(key: NonZeroU32, parameter: DomRef<&T>)
+	pub fn invoke_with_ref<'b, T>(key: NonZeroU32, parameter: DomRef<&T>)
 	where
-		fn(DomRef<&'_ T>): CallbackSignature,
+		dyn 'b + Fn(DomRef<&'_ T>): CallbackSignature,
 	{
 		let registry = REGISTRY.read().unwrap();
 		if let Some(entry) = registry.entries.get(&key) {
@@ -224,12 +224,12 @@ mod callbacks_off {
 
 	#[inline(always)]
 	#[must_use]
-	pub fn register<R, T>(
+	pub fn register<'b, R, T>(
 		receiver: Pin<&'_ R>,
 		handler: fn(*const R, T),
-	) -> CallbackRegistration<R, fn(T)>
+	) -> CallbackRegistration<R, dyn 'b + Fn(T)>
 	where
-		fn(T): CallbackSignature,
+		dyn 'b + Fn(T): CallbackSignature,
 	{
 		let _ = receiver;
 		let _ = handler;
@@ -242,12 +242,12 @@ mod callbacks_off {
 
 	#[inline(always)]
 	#[must_use]
-	pub fn register_by_ref<R, T>(
+	pub fn register_by_ref<'b, R, T>(
 		receiver: Pin<&'_ R>,
 		handler: fn(*const R, DomRef<&'_ T>),
-	) -> CallbackRegistration<R, fn(DomRef<&'_ T>)>
+	) -> CallbackRegistration<R, dyn 'b + Fn(DomRef<&'_ T>)>
 	where
-		fn(DomRef<&'_ T>): CallbackSignature,
+		dyn 'b + Fn(DomRef<&'_ T>): CallbackSignature,
 	{
 		let _ = receiver;
 		let _ = handler;
@@ -261,19 +261,25 @@ mod callbacks_off {
 	#[inline(always)]
 	pub fn deregister<R, C>(registration: &CallbackRegistration<R, C>)
 	where
-		C: CallbackSignature,
+		C: ?Sized + CallbackSignature,
 	{
 		let _ = registration;
 	}
 
 	#[inline(always)]
-	pub fn invoke<T>(key: NonZeroU32, parameter: T) {
+	pub fn invoke<'b, T>(key: NonZeroU32, parameter: T)
+	where
+		dyn 'b + Fn(T): CallbackSignature,
+	{
 		let _ = key;
 		let _ = parameter;
 	}
 
 	#[inline(always)]
-	pub fn invoke_with_ref<T>(key: NonZeroU32, parameter: DomRef<&T>) {
+	pub fn invoke_with_ref<'b, T>(key: NonZeroU32, parameter: DomRef<&T>)
+	where
+		dyn 'b + Fn(DomRef<&'_ T>): CallbackSignature,
+	{
 		let _ = key;
 		let _ = parameter;
 	}
@@ -314,11 +320,11 @@ use callbacks_off as callbacks;
 #[derive(Debug)]
 pub struct CallbackRegistration<R, C>
 where
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 {
 	key: NonZeroU32,
 	///FIXME: Can this be written with `&R` (removing the manual `Send` and `Sync` impls below)?
-	phantom: PhantomData<(*const R, C)>,
+	phantom: PhantomData<(*const R, *const C)>,
 	pinned: PhantomPinned,
 }
 // SAFETY: `CallbackRegistration<R, T>` only refers to a `*const R`, so it acts like `&R` for thread-safety.
@@ -328,18 +334,18 @@ where
 unsafe impl<R, C> Send for CallbackRegistration<R, C>
 where
 	R: Sync,
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 {
 }
 unsafe impl<R, C> Sync for CallbackRegistration<R, C>
 where
 	R: Sync,
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 {
 }
 
 /// Separate `impl`s due to Rust language limitation. See [`CallbackSignature`] and expect future broadening.
-impl<R> CallbackRegistration<R, fn(event: web::Event)> {
+impl<'b, R> CallbackRegistration<R, dyn 'b + Fn(web::Event)> {
 	/// Creates a new [`CallbackRegistration<R, T>`] with the given `receiver` and `handler`.
 	///
 	/// # Safety
@@ -356,7 +362,7 @@ impl<R> CallbackRegistration<R, fn(event: web::Event)> {
 	}
 }
 /// Separate `impl`s due to Rust language limitation. See [`CallbackSignature`] and expect future broadening.
-impl<R, T> CallbackRegistration<R, fn(dom_ref: DomRef<&'_ T>)> {
+impl<'b, R, T> CallbackRegistration<R, dyn 'b + Fn(DomRef<&'_ T>)> {
 	/// Creates a new [`CallbackRegistration<R, T>`] with the given `receiver` and `handler`.
 	///
 	/// # Safety
@@ -378,7 +384,7 @@ impl<R, T> CallbackRegistration<R, fn(dom_ref: DomRef<&'_ T>)> {
 #[allow(clippy::inline_always)] // All functions are very simple.
 impl<R, C> CallbackRegistration<R, C>
 where
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 {
 	/// Creates a [`ThreadBound`] [`CallbackRef`] from this [`CallbackRegistration`].
 	#[inline(always)]
@@ -393,7 +399,7 @@ where
 impl<R, C> CallbackRegistration<R, C>
 where
 	R: Sync,
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 {
 	// Using a separate `impl` block instead of a `where` clause on the method means it outright doesn't exist if `R: !Sync`.
 	// This lets it be resolved on the trait instead even without qualification.
@@ -423,14 +429,14 @@ where
 /// > If your framework supports optional [`Sync`]ness annotations, consider requiring them on originally thread-bound components.
 pub trait ToRefThreadBoundFallback<C>: Sealed + Sized
 where
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 {
 	/// See [`CallbackRegistration::to_ref`], except that this method is unconstrained and that the resulting [`CallbackRef`] is [`ThreadBound`].
 	fn to_ref(&self) -> CallbackRef<ThreadBound, C>;
 }
 impl<R, C> ToRefThreadBoundFallback<C> for CallbackRegistration<R, C>
 where
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 {
 	#[allow(clippy::inline_always)]
 	#[inline(always)] // Proxy function.
@@ -440,7 +446,7 @@ where
 }
 impl<R, C> Drop for CallbackRegistration<R, C>
 where
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 {
 	#[allow(clippy::inline_always)]
 	#[inline(always)] // Proxy function.
@@ -453,13 +459,19 @@ where
 pub struct CallbackRef<S, C>
 where
 	S: ThreadSafety,
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 {
 	pub(crate) key: NonZeroU32,
-	phantom: PhantomData<(S, C)>,
+	phantom: PhantomData<(S, *const C)>,
 }
+// SAFETY: `CallbackRef<ThreadSafe, C>` only refers to a `*const R`, where `&R` is fully thread-safe.
+//
+// Without the `"callbacks"` feature, that pointer is actually unreachable, so this type *could* be more generally `Send` and `Sync`.
+// However, this would introduce inconsistencies and make it much more inconvenient to develop components without the "callbacks" feature enabled.
+unsafe impl<C> Send for CallbackRef<ThreadSafe, C> where C: ?Sized + CallbackSignature {}
+unsafe impl<C> Sync for CallbackRef<ThreadSafe, C> where C: ?Sized + CallbackSignature {}
 /// Separate `impl`s due to Rust language limitation. See [`CallbackSignature`] and expect future broadening.
-impl<S> CallbackRef<S, fn(event: web::Event)>
+impl<'b, S> CallbackRef<S, dyn 'b + Fn(web::Event)>
 where
 	S: ThreadSafety,
 {
@@ -473,7 +485,7 @@ where
 	}
 }
 /// Separate `impl`s due to Rust language limitation. See [`CallbackSignature`] and expect future broadening.
-impl<S, T> CallbackRef<S, fn(dom_ref: DomRef<&'_ T>)>
+impl<'b, S, T> CallbackRef<S, dyn 'b + Fn(DomRef<&'_ T>)>
 where
 	S: ThreadSafety,
 {
@@ -531,9 +543,10 @@ pub unsafe fn yet_more_unsafe_force_clear_callback_registry() {
 
 /// Marks function pointers for which callbacks are implemented.
 ///
+//TODO: Update this comment.
 /// > This not being a blanket implementation over [`fn(T)`](https://doc.rust-lang.org/stable/std/primitive.fn.html) is largely related to [Rust#56105](https://github.com/rust-lang/rust/issues/56105).
 /// >
 /// > In short, an `impl <T> CallbackSignature for fn(T) {}` currently does not cover for example `fn(web::DomRef<&'_ T>)`, but their collision will become a hard error in the future (as of March 2021/Rust 1.50.0).
-pub trait CallbackSignature: Sealed + Sized + Copy {}
-impl CallbackSignature for fn(event: web::Event) {}
-impl<T> CallbackSignature for fn(dom_ref: web::DomRef<&'_ T>) {}
+pub trait CallbackSignature: Sealed {}
+impl<'b> CallbackSignature for dyn 'b + Fn(web::Event) {}
+impl<'b, T> CallbackSignature for dyn 'b + Fn(web::DomRef<&'_ T>) {}

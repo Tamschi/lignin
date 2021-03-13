@@ -27,18 +27,18 @@
 //! >   Node, ThreadBound, ThreadSafe,
 //! > };
 //! >
-//! > fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
-//! > fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
-//! > fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
-//! > fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! > fn safe<'a, 'b>() -> Node<'a, 'b, ThreadSafe> { Node::Multi(&[]) }
+//! > fn bound<'a, 'b>() -> Node<'a, 'b, ThreadBound> { Node::Multi(&[]) }
+//! > fn inferred_safe<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { safe() }
+//! > fn inferred_bound<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { bound() }
 //! >
 //! > fn allocate<'a, T>(value: T) -> &'a T {
 //! >   // …
 //! > #   Box::leak(Box::new(value))
 //! > }
 //! > #
-//! > # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
-//! > # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! > # fn assert_safe<'a, 'b>(value: Node<'a, 'b, ThreadSafe>) { }
+//! > # fn assert_bound<'a, 'b>(value: Node<'a, 'b, ThreadBound>) { }
 //! > ```
 //! >
 //! > I recommend using [`bumpalo`](https://github.com/fitzgen/bumpalo) as VDOM allocator since it is fast and versatile, but `lignin` itself has no preference in this regard.
@@ -57,18 +57,18 @@
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
-//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
-//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! # fn safe<'a, 'b>() -> Node<'a, 'b, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a, 'b>() -> Node<'a, 'b, ThreadBound> { Node::Multi(&[]) }
+//! # fn inferred_safe<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { bound() }
 //! #
 //! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! #
-//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
-//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! # fn assert_safe<'a, 'b>(value: Node<'a, 'b, ThreadSafe>) { }
+//! # fn assert_bound<'a, 'b>(value: Node<'a, 'b, ThreadBound>) { }
 //! #
-//! fn safe_1<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
-//! fn bound_1<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! fn safe_1<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { safe() }
+//! fn bound_1<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { bound() }
 //! #
 //! # assert_safe(safe_1().deanonymize());
 //! # assert_bound(bound_1().deanonymize());
@@ -82,18 +82,18 @@
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
-//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
-//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! # fn safe<'a, 'b>() -> Node<'a, 'b, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a, 'b>() -> Node<'a, 'b, ThreadBound> { Node::Multi(&[]) }
+//! # fn inferred_safe<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { bound() }
 //! #
 //! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! #
-//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
-//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! # fn assert_safe<'a, 'b>(value: Node<'a, 'b, ThreadSafe>) { }
+//! # fn assert_bound<'a, 'b>(value: Node<'a, 'b, ThreadBound>) { }
 //! #
-//! fn safe_2<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { inferred_safe() }
-//! fn bound_2<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { inferred_bound() }
+//! fn safe_2<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { inferred_safe() }
+//! fn bound_2<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { inferred_bound() }
 //! #
 //! # assert_safe(safe_2().deanonymize());
 //! # assert_bound(bound_2().deanonymize());
@@ -109,21 +109,21 @@
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
-//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
-//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! # fn safe<'a, 'b>() -> Node<'a, 'b, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a, 'b>() -> Node<'a, 'b, ThreadBound> { Node::Multi(&[]) }
+//! # fn inferred_safe<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { bound() }
 //! #
 //! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! #
-//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
-//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! # fn assert_safe<'a, 'b>(value: Node<'a, 'b, ThreadSafe>) { }
+//! # fn assert_bound<'a, 'b>(value: Node<'a, 'b, ThreadBound>) { }
 //! #
-//! fn safe_1<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> {
+//! fn safe_1<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> {
 //!   Node::Multi(allocate([safe()]))
 //! }
 //!
-//! fn bound_1<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> {
+//! fn bound_1<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> {
 //!   Node::Multi(allocate([bound()]))
 //! }
 //! #
@@ -139,17 +139,17 @@
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
-//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
-//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! # fn safe<'a, 'b>() -> Node<'a, 'b, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a, 'b>() -> Node<'a, 'b, ThreadBound> { Node::Multi(&[]) }
+//! # fn inferred_safe<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { bound() }
 //! #
 //! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! #
-//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
-//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! # fn assert_safe<'a, 'b>(value: Node<'a, 'b, ThreadSafe>) { }
+//! # fn assert_bound<'a, 'b>(value: Node<'a, 'b, ThreadBound>) { }
 //! #
-//! fn safe_2<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> {
+//! fn safe_2<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> {
 //!   Node::Ref(allocate(inferred_safe()))
 //!   //                 ^^^^^^^^^^^^^^^ expected enum `Node`, found opaque type
 //! }
@@ -161,17 +161,17 @@
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
-//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
-//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! # fn safe<'a, 'b>() -> Node<'a, 'b, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a, 'b>() -> Node<'a, 'b, ThreadBound> { Node::Multi(&[]) }
+//! # fn inferred_safe<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { bound() }
 //! #
 //! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! #
-//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
-//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! # fn assert_safe<'a, 'b>(value: Node<'a, 'b, ThreadSafe>) { }
+//! # fn assert_bound<'a, 'b>(value: Node<'a, 'b, ThreadBound>) { }
 //! #
-//! fn bound_2<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> {
+//! fn bound_2<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> {
 //!   Node::Ref(allocate(inferred_bound()))
 //!   //                 ^^^^^^^^^^^^^^^^ expected enum `Node`, found opaque type
 //! }
@@ -189,21 +189,21 @@
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
-//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
-//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! # fn safe<'a, 'b>() -> Node<'a, 'b, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a, 'b>() -> Node<'a, 'b, ThreadBound> { Node::Multi(&[]) }
+//! # fn inferred_safe<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { bound() }
 //! #
 //! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! #
-//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
-//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! # fn assert_safe<'a, 'b>(value: Node<'a, 'b, ThreadSafe>) { }
+//! # fn assert_bound<'a, 'b>(value: Node<'a, 'b, ThreadBound>) { }
 //! #
-//! fn safe_2<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> {
+//! fn safe_2<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> {
 //!   Node::Multi(allocate([inferred_safe().deanonymize()]))
 //! }
 //!
-//! fn bound_2<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> {
+//! fn bound_2<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> {
 //!   Node::Multi(allocate([inferred_bound().deanonymize()]))
 //! }
 //! #
@@ -219,15 +219,15 @@
 //! > #   Node, ThreadBound, ThreadSafe,
 //! > # };
 //! > #
-//! > # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
-//! > # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
-//! > # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
-//! > # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! > # fn safe<'a, 'b>() -> Node<'a, 'b, ThreadSafe> { Node::Multi(&[]) }
+//! > # fn bound<'a, 'b>() -> Node<'a, 'b, ThreadBound> { Node::Multi(&[]) }
+//! > # fn inferred_safe<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { safe() }
+//! > # fn inferred_bound<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { bound() }
 //! > #
 //! > # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! > #
-//! > # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
-//! > # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! > # fn assert_safe<'a, 'b>(value: Node<'a, 'b, ThreadSafe>) { }
+//! > # fn assert_bound<'a, 'b>(value: Node<'a, 'b, ThreadBound>) { }
 //! > #
 //! > let safe_node: Node<_> = inferred_safe().deanonymize();
 //! > let bound_node: Node<_> = inferred_bound().deanonymize();
@@ -243,21 +243,21 @@
 //! > #   Node, ThreadBound, ThreadSafe,
 //! > # };
 //! > #
-//! > # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
-//! > # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
-//! > # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
-//! > # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! > # fn safe<'a, 'b>() -> Node<'a, 'b, ThreadSafe> { Node::Multi(&[]) }
+//! > # fn bound<'a, 'b>() -> Node<'a, 'b, ThreadBound> { Node::Multi(&[]) }
+//! > # fn inferred_safe<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { safe() }
+//! > # fn inferred_bound<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { bound() }
 //! > #
 //! > # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! > #
-//! > # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
-//! > # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! > # fn assert_safe<'a, 'b>(value: Node<'a, 'b, ThreadSafe>) { }
+//! > # fn assert_bound<'a, 'b>(value: Node<'a, 'b, ThreadBound>) { }
 //! > #
-//! > fn strictly_safe<'a>() -> Node::<'a, ThreadSafe> {
+//! > fn strictly_safe<'a, 'b>() -> Node<'a, 'b, ThreadSafe> {
 //! >   inferred_safe().deanonymize()
 //! > }
 //! >
-//! > fn strictly_bound<'a>() -> Node::<'a, ThreadBound> {
+//! > fn strictly_bound<'a, 'b>() -> Node<'a, 'b, ThreadBound> {
 //! >   inferred_bound().deanonymize()
 //! > }
 //! > ```
@@ -272,15 +272,15 @@
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
-//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
-//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! # fn safe<'a, 'b>() -> Node<'a, 'b, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a, 'b>() -> Node<'a, 'b, ThreadBound> { Node::Multi(&[]) }
+//! # fn inferred_safe<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { bound() }
 //! #
 //! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! #
-//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
-//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! # fn assert_safe<'a, 'b>(value: Node<'a, 'b, ThreadSafe>) { }
+//! # fn assert_bound<'a, 'b>(value: Node<'a, 'b, ThreadBound>) { }
 //! #
 //! let safe_node: Node<ThreadSafe> = safe().deanonymize();
 //! //                                       ^^^^^^^^^^^
@@ -306,15 +306,15 @@
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
-//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
-//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! # fn safe<'a, 'b>() -> Node<'a, 'b, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a, 'b>() -> Node<'a, 'b, ThreadBound> { Node::Multi(&[]) }
+//! # fn inferred_safe<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { bound() }
 //! #
 //! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! #
-//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
-//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! # fn assert_safe<'a, 'b>(value: Node<'a, 'b, ThreadSafe>) { }
+//! # fn assert_bound<'a, 'b>(value: Node<'a, 'b, ThreadBound>) { }
 //! #
 //! let safe_node: Node::<ThreadSafe> = inferred_bound().deanonymize();
 //! //             ------------------   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -331,15 +331,15 @@
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
-//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
-//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! # fn safe<'a, 'b>() -> Node<'a, 'b, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a, 'b>() -> Node<'a, 'b, ThreadBound> { Node::Multi(&[]) }
+//! # fn inferred_safe<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { bound() }
 //! #
 //! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! #
-//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
-//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! # fn assert_safe<'a, 'b>(value: Node<'a, 'b, ThreadSafe>) { }
+//! # fn assert_bound<'a, 'b>(value: Node<'a, 'b, ThreadBound>) { }
 //! #
 //! let bound_node: Node::<ThreadBound> = inferred_safe().deanonymize();
 //! //              -------------------   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -363,15 +363,15 @@
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
-//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
-//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! # fn safe<'a, 'b>() -> Node<'a, 'b, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a, 'b>() -> Node<'a, 'b, ThreadBound> { Node::Multi(&[]) }
+//! # fn inferred_safe<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { bound() }
 //! #
 //! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! #
-//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
-//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! # fn assert_safe<'a, 'b>(value: Node<'a, 'b, ThreadSafe>) { }
+//! # fn assert_bound<'a, 'b>(value: Node<'a, 'b, ThreadBound>) { }
 //! #
 //! let safe_to_bound = Node::Multi(allocate([
 //!   safe().align(),
@@ -402,15 +402,15 @@
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
-//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
-//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! # fn safe<'a, 'b>() -> Node<'a, 'b, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a, 'b>() -> Node<'a, 'b, ThreadBound> { Node::Multi(&[]) }
+//! # fn inferred_safe<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { bound() }
 //! #
 //! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! #
-//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
-//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! # fn assert_safe<'a, 'b>(value: Node<'a, 'b, ThreadSafe>) { }
+//! # fn assert_bound<'a, 'b>(value: Node<'a, 'b, ThreadBound>) { }
 //! #
 //! let safe_to_bound: Node<ThreadBound> = safe().into();
 //! ```
@@ -424,15 +424,15 @@
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
-//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
-//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! # fn safe<'a, 'b>() -> Node<'a, 'b, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a, 'b>() -> Node<'a, 'b, ThreadBound> { Node::Multi(&[]) }
+//! # fn inferred_safe<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { bound() }
 //! #
 //! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! #
-//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
-//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! # fn assert_safe<'a, 'b>(value: Node<'a, 'b, ThreadSafe>) { }
+//! # fn assert_bound<'a, 'b>(value: Node<'a, 'b, ThreadBound>) { }
 //! #
 //! let empty: &[Node<ThreadSafe>] = &[];
 //! let empty_node: Node<ThreadSafe> = empty.into();
@@ -456,15 +456,15 @@
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
-//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
-//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! # fn safe<'a, 'b>() -> Node<'a, 'b, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a, 'b>() -> Node<'a, 'b, ThreadBound> { Node::Multi(&[]) }
+//! # fn inferred_safe<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { bound() }
 //! #
 //! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! #
-//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
-//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! # fn assert_safe<'a, 'b>(value: Node<'a, 'b, ThreadSafe>) { }
+//! # fn assert_bound<'a, 'b>(value: Node<'a, 'b, ThreadBound>) { }
 //! #
 //! let attempt_1 = Node::Multi(&[]);
 //! //  ---------   ^^^^^^^^^^^       // See below.
@@ -478,15 +478,15 @@
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
-//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
-//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! # fn safe<'a, 'b>() -> Node<'a, 'b, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a, 'b>() -> Node<'a, 'b, ThreadBound> { Node::Multi(&[]) }
+//! # fn inferred_safe<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { bound() }
 //! #
 //! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! #
-//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
-//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! # fn assert_safe<'a, 'b>(value: Node<'a, 'b, ThreadSafe>) { }
+//! # fn assert_bound<'a, 'b>(value: Node<'a, 'b, ThreadBound>) { }
 //! #
 //! let attempt_2 = Node::Multi(allocate([safe().align(), inferred_safe().deanonymize().align()]));
 //! //  ---------   ^^^^^^^^^^^ cannot infer type for type parameter `S` declared on the enum `Node`
@@ -504,15 +504,15 @@
 //! #   Node, ThreadBound, ThreadSafe,
 //! # };
 //! #
-//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
-//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
-//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
-//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! # fn safe<'a, 'b>() -> Node<'a, 'b, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a, 'b>() -> Node<'a, 'b, ThreadBound> { Node::Multi(&[]) }
+//! # fn inferred_safe<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a, 'b>() -> impl 'a + AutoSafe<Node<'a, 'b, ThreadBound>> { bound() }
 //! #
 //! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
 //! #
-//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
-//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! # fn assert_safe<'a, 'b>(value: Node<'a, 'b, ThreadSafe>) { }
+//! # fn assert_bound<'a, 'b>(value: Node<'a, 'b, ThreadBound>) { }
 //! #
 //! let safe_1 = Node::Multi(&[]).prefer_thread_safe();
 //!
@@ -530,7 +530,7 @@
 //! # Limiting [`AutoSafe`] Exposure
 //!
 //! Thread-safety inference is powerful, but also dangerous: A change deep in a library could cause a public function return type to shift, breaking compatibility with downstream crates.
-//! For this reason, and because of its worse ergonomics, `-> impl AutoSafe<…>` should not be exposed in a crate's public API.
+//! For this reason, and because of its worse ergonomics, `-> impl 'a + 'b + AutoSafe<…>` should not be exposed in a crate's public API.
 //!
 //! A front-end template language or framework author may still want to avoid requiring explicit threading annotations in most cases.
 //! Even in that case, it's possible to limit this feature to functions not externally visible, by aliasing it with a generated less visible trait:
@@ -546,7 +546,7 @@
 //! //-------------------------------------------
 //! //`InternalAutoSafe<Node<'static, ThreadBound>>` declared as private
 //!
-//! pub fn public() -> impl InternalAutoSafe<Node<'static, ThreadBound>> {
+//! pub fn public() -> impl InternalAutoSafe<Node<'static, 'static, ThreadBound>> {
 //! //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 //! //can't leak private trait
 //!   Node::Multi(&[]).prefer_thread_safe()
@@ -563,7 +563,7 @@
 //!
 //! AutoSafe_alias!(pub(crate) InternalAutoSafe);
 //!
-//! pub(crate) fn less_visible() -> impl InternalAutoSafe<Node<'static, ThreadBound>> {
+//! pub(crate) fn less_visible() -> impl InternalAutoSafe<Node<'static, 'static, ThreadBound>> {
 //!   Node::Multi(&[]).prefer_thread_safe()
 //! }
 //! ```
@@ -576,7 +576,7 @@ use crate::{
 	ReorderableFragment, ThreadBound, ThreadSafe, ThreadSafety, Vdom,
 };
 
-/// Deanonymize towards the general ([`ThreadBound`]) case. Used as `-> impl AutoSafe<…>`.
+/// Deanonymize towards the general ([`ThreadBound`]) case. Used as `-> impl 'a + 'b + AutoSafe<…>`.
 ///
 /// See module documentation for usage.
 pub trait AutoSafe<BoundVariant>
@@ -726,7 +726,7 @@ macro_rules! prefer_thread_safe_bound {
 		/// Note that not all tooling will show the correct overload here, but the compiler knows which to pick.
 		#[must_use]
 		#[inline(always)] // Plain deref.
-		pub fn prefer_thread_safe_ref<'b>(self: &'_ &'b Self) -> &'b Self {
+		pub fn prefer_thread_safe_ref<'a_>(self: &'_ &'a_ Self) -> &'a_ Self {
 			*self
 		}
 	};
@@ -746,21 +746,21 @@ impl<'a> Attribute<'a> {
 
 macro_rules! impl_auto_safety {
 	($($Name:ident),*$(,)?) => {$(
-		impl<'a, S: ThreadSafety> $Name<'a, S> {
+		impl<'a, 'b, S: ThreadSafety> $Name<'a, 'b, S> {
 			deanonymize_on_named!();
 		}
-		impl<'a> $Name<'a, ThreadSafe> {
+		impl<'a, 'b> $Name<'a, 'b, ThreadSafe> {
 			prefer_thread_safe_safe!();
 		}
-		impl<'a> $Name<'a, ThreadBound> {
+		impl<'a, 'b> $Name<'a, 'b, ThreadBound> {
 			prefer_thread_safe_bound!();
 		}
-		impl<'a, V> Deanonymize<$Name<'a, ThreadSafe>> for V where
-			V: Send + Sync + AutoSafe<$Name<'a, ThreadBound>>,
+		impl<'a, 'b, V> Deanonymize<$Name<'a, 'b, ThreadSafe>> for V where
+			V: Send + Sync + AutoSafe<$Name<'a, 'b, ThreadBound>>,
 		{}
 
 		/// Not derived from the [`Into`] constraints on `$Name` directly since those are too broad.
-		impl<'a, S1, S2> Align<$Name<'a, S2>> for $Name<'a, S1>
+		impl<'a, 'b, S1, S2> Align<$Name<'a, 'b, S2>> for $Name<'a, 'b, S1>
 		where
 			S1: ThreadSafety + Into<S2>,
 			S2: ThreadSafety,
@@ -772,31 +772,31 @@ impl_auto_safety!(Element, EventBinding, Node, ReorderableFragment);
 
 impl<S: ThreadSafety, C> CallbackRef<S, C>
 where
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 {
 	deanonymize_on_named!();
 }
 impl<C> CallbackRef<ThreadSafe, C>
 where
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 {
 	prefer_thread_safe_safe!();
 }
 impl<C> CallbackRef<ThreadBound, C>
 where
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 {
 	prefer_thread_safe_bound!();
 }
 impl<C, O> Deanonymize<CallbackRef<ThreadSafe, C>> for O
 where
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 	O: Send + Sync + AutoSafe<CallbackRef<ThreadBound, C>>,
 {
 }
 impl<S1, S2, C> Align<CallbackRef<S2, C>> for CallbackRef<S1, C>
 where
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 	S1: ThreadSafety + Into<S2>,
 	S2: ThreadSafety,
 {

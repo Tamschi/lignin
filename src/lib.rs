@@ -44,6 +44,12 @@
 //!
 //! > This both together allows better and easier diff optimization in renderers, but otherwise mustn't be a strict requirement for compatibility.
 //!
+//! # Lifetimes
+//!
+//! ## `'a` - VDOM lifetime
+//!
+//!
+//!
 //! # Deep Comparisons
 //!
 //! All [`core`] comparison traits ([`PartialEq`], [`Eq`], [`PartialOrd`] and [`Ord`]) are implemented recursively where applicable.
@@ -124,7 +130,7 @@ use sealed::Sealed;
 /// }
 /// ```
 #[allow(clippy::clippy::type_complexity)] // `Option<CallbackRef<S, fn(DomRef<&'_ …>)>>` appears to be a little much.
-pub enum Node<'a, S: ThreadSafety> {
+pub enum Node<'a, 'b, S: ThreadSafety> {
 	/// Represents a [***Comment***](https://developer.mozilla.org/en-US/docs/Web/API/Comment) node.
 	Comment {
 		/// The comment's body, as unescaped plaintext.
@@ -149,27 +155,27 @@ pub enum Node<'a, S: ThreadSafety> {
 		/// Registers for [***Comment***](https://developer.mozilla.org/en-US/docs/Web/API/Comment) reference updates.
 		///
 		/// See [`DomRef`] for more information.
-		dom_binding: Option<CallbackRef<S, fn(dom_ref: DomRef<&'_ web::Comment>)>>,
+		dom_binding: Option<CallbackRef<S, dyn 'b + Fn(DomRef<&'_ web::Comment>)>>,
 	},
 	/// Represents a single [***HTMLElement***](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement).
 	HtmlElement {
 		/// The [`Element`] to render.
-		element: &'a Element<'a, S>,
+		element: &'a Element<'a, 'b, S>,
 		/// Registers for [***HTMLElement***](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement) reference updates.
 		///
 		/// See [`DomRef`] for more information.
-		dom_binding: Option<CallbackRef<S, fn(dom_ref: DomRef<&'_ web::HtmlElement>)>>,
+		dom_binding: Option<CallbackRef<S, dyn 'b + Fn(DomRef<&'_ web::HtmlElement>)>>,
 	},
 	/// Represents a single [***SVGElement***](https://developer.mozilla.org/en-US/docs/Web/API/SVGElement).
 	///
 	/// Note that even outermost `<SVG>` elements are [***SVGElement***](https://developer.mozilla.org/en-US/docs/Web/API/SVGElement)s!
 	SvgElement {
 		/// The [`Element`] to render.
-		element: &'a Element<'a, S>,
+		element: &'a Element<'a, 'b, S>,
 		/// Registers for [***SVGElement***](https://developer.mozilla.org/en-US/docs/Web/API/SVGElement) reference updates.
 		///
 		/// See [`DomRef`] for more information.
-		dom_binding: Option<CallbackRef<S, fn(dom_ref: DomRef<&'_ web::SvgElement>)>>,
+		dom_binding: Option<CallbackRef<S, dyn 'b + Fn(DomRef<&'_ web::SvgElement>)>>,
 	},
 	/// DOM-transparent. This variant uses shallow comparison and hashes based on its `state_key` only.
 	///
@@ -191,12 +197,12 @@ pub enum Node<'a, S: ThreadSafety> {
 		/// Consider using a (good enough) hash of [`content`](`Node::Memoized::content`) for this purpose.
 		state_key: u64,
 		/// The VDOM tree memoized by this [`Node`].
-		content: &'a Node<'a, S>,
+		content: &'a Node<'a, 'b, S>,
 	},
 	/// DOM-transparent. Represents a sequence of VDOM nodes.
 	///
 	/// Used to hint diffs in case of additions and removals.
-	Multi(&'a [Node<'a, S>]),
+	Multi(&'a [Node<'a, 'b, S>]),
 	/// A sequence of VDOM nodes that's transparent at rest, but encodes information on how to reuse and reorder elements when diffing.
 	///
 	/// **List indices are bad [`ReorderableFragment::dom_key`] values** unless reordered along with the items!
@@ -217,7 +223,7 @@ pub enum Node<'a, S: ThreadSafety> {
 	/// > These rules do not apply between distinct [`ReorderableFragment`] slices, even if they overlap in memory or one is reachable from the other.
 	///
 	/// > The recursive diff otherwise proceeds as normal. There are no rules on whether it happens before or after the reordering.
-	Keyed(&'a [ReorderableFragment<'a, S>]),
+	Keyed(&'a [ReorderableFragment<'a, 'b, S>]),
 	/// Represents a [***Text***](https://developer.mozilla.org/en-US/docs/Web/API/Text) node.
 	Text {
 		/// The [`Text`](`Node::Text`)'s [***Node.textContent***](https://developer.mozilla.org/en-US/docs/Web/API/Node/textContent).
@@ -241,7 +247,7 @@ pub enum Node<'a, S: ThreadSafety> {
 		/// Registers for [***Text***](https://developer.mozilla.org/en-US/docs/Web/API/Text) reference updates.
 		///
 		/// See [`DomRef`] for more information.
-		dom_binding: Option<CallbackRef<S, fn(dom_ref: DomRef<&'_ web::Text>)>>,
+		dom_binding: Option<CallbackRef<S, dyn 'b + Fn(DomRef<&'_ web::Text>)>>,
 	},
 	/// Currently unused.
 	///
@@ -253,16 +259,16 @@ pub enum Node<'a, S: ThreadSafety> {
 /// [`Vdom`] A VDOM node that has its DOM identity preserved during DOM updates even after being repositioned within a (path-)matching [`Node::Keyed`].
 ///
 /// For more information, see [`Node::Keyed`].
-pub struct ReorderableFragment<'a, S: ThreadSafety> {
+pub struct ReorderableFragment<'a, 'b, S: ThreadSafety> {
 	/// A key uniquely identifying a [`ReorderableFragment`] within any directly spanning [`Node::Keyed`].
 	pub dom_key: usize,
 	/// The [`Node`] to render from this [`ReorderableFragment`].
-	pub content: Node<'a, S>,
+	pub content: Node<'a, 'b, S>,
 }
 
 #[allow(clippy::doc_markdown)]
 /// [`Vdom`] Represents a single [***HTMLElement***](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement) as `name`, `attributes`, `content` and `event_bindings`.
-pub struct Element<'a, S: ThreadSafety> {
+pub struct Element<'a, 'b, S: ThreadSafety> {
 	/// The [***Element.tag_name***](https://developer.mozilla.org/en-US/docs/Web/API/Element/tagName).
 	///
 	/// Unlike in the browser, this is generally treated case-*sensitively*, meaning for example `"div"` doesn't equal `"DIV"`.
@@ -274,11 +280,11 @@ pub struct Element<'a, S: ThreadSafety> {
 	/// Note that while this collection is unordered in the browser, reordering attributes will generally affect diffing performance.
 	pub attributes: &'a [Attribute<'a>],
 	/// Maps to [***Node.childNodes***](https://developer.mozilla.org/en-US/docs/Web/API/Node/childNodes).
-	pub content: Node<'a, S>,
+	pub content: Node<'a, 'b, S>,
 	/// DOM event bindings requested by a component.
 	///
 	/// See [`EventBinding`] for more information.
-	pub event_bindings: &'a [EventBinding<'a, S>],
+	pub event_bindings: &'a [EventBinding<'a, 'b, S>],
 }
 
 /// [`Vdom`] Represents a single DOM event binding with `name` and `callback`.
@@ -292,11 +298,11 @@ pub struct Element<'a, S: ThreadSafety> {
 ///
 /// While this limit is likely hard to hit, economizing registrations a little will still (indirectly) improve app performance.
 /// Lazily registering callbacks for events only when rendering is also the easiest way for framework developers to use [pinning](core::pin) to avoid heap allocations.
-pub struct EventBinding<'a, S: ThreadSafety> {
+pub struct EventBinding<'a, 'b, S: ThreadSafety> {
 	/// The event name.
 	pub name: &'a str,
 	/// A callback reference created via [`CallbackRegistration`].
-	pub callback: CallbackRef<S, fn(event: web::Event)>,
+	pub callback: CallbackRef<S, dyn 'b + Fn(web::Event)>,
 	/// Controls the ***options*** parameter of [***EventTarget.addEventListener()***](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener).
 	///
 	/// Note that [`EventBindingOptions`] is created with the [`EventBindingOptions.passive()`] flag already enabled!
@@ -461,18 +467,18 @@ mod sealed {
 	};
 
 	pub trait Sealed {}
-	impl Sealed for fn(web::Event) {}
-	impl<T> Sealed for fn(DomRef<&'_ T>) {}
+	impl<'b> Sealed for dyn 'b + Fn(web::Event) {}
+	impl<'b, T> Sealed for dyn 'b + Fn(DomRef<&'_ T>) {}
 	impl Sealed for ThreadBound {}
 	impl Sealed for ThreadSafe {}
 	impl<'a> Sealed for Attribute<'a> {}
 	impl Sealed for EventBindingOptions {}
-	impl<R, C: CallbackSignature> Sealed for CallbackRegistration<R, C> {}
-	impl<S: ThreadSafety, C: CallbackSignature> Sealed for CallbackRef<S, C> {}
-	impl<'a, S: ThreadSafety> Sealed for Element<'a, S> {}
-	impl<'a, S: ThreadSafety> Sealed for EventBinding<'a, S> {}
-	impl<'a, S: ThreadSafety> Sealed for Node<'a, S> {}
-	impl<'a, S: ThreadSafety> Sealed for ReorderableFragment<'a, S> {}
+	impl<R, C: ?Sized + CallbackSignature> Sealed for CallbackRegistration<R, C> {}
+	impl<S: ThreadSafety, C: ?Sized + CallbackSignature> Sealed for CallbackRef<S, C> {}
+	impl<'a, 'b, S: ThreadSafety> Sealed for Element<'a, 'b, S> {}
+	impl<'a, 'b, S: ThreadSafety> Sealed for EventBinding<'a, 'b, S> {}
+	impl<'a, 'b, S: ThreadSafety> Sealed for Node<'a, 'b, S> {}
+	impl<'a, 'b, S: ThreadSafety> Sealed for ReorderableFragment<'a, 'b, S> {}
 	impl Sealed for RemnantSite {}
 }
 
@@ -525,7 +531,7 @@ impl Vdom for EventBindingOptions {
 
 macro_rules! vdom_impls {
 	($($name:ident),*$(,)?) => {$(
-		impl<'a, S> Vdom for $name<'a, S> where
+		impl<'a, 'b, S> Vdom for $name<'a, 'b, S> where
 			S: ThreadSafety,
 		{
 			type ThreadSafety = S;
@@ -537,7 +543,7 @@ vdom_impls!(Element, EventBinding, Node, ReorderableFragment);
 impl<S, C> Vdom for CallbackRef<S, C>
 where
 	S: ThreadSafety,
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 {
 	type ThreadSafety = S;
 }

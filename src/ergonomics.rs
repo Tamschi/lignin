@@ -22,7 +22,7 @@ impl From<ThreadSafe> for ThreadBound {
 
 impl<C> From<CallbackRef<ThreadSafe, C>> for CallbackRef<ThreadBound, C>
 where
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 {
 	#[allow(clippy::inline_always)]
 	#[inline(always)] // No-op.
@@ -34,7 +34,7 @@ where
 impl<S, C> Debug for CallbackRef<S, C>
 where
 	S: ThreadSafety,
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 {
 	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 		f.debug_struct(type_name::<Self>())
@@ -46,7 +46,7 @@ where
 impl<S, C> Clone for CallbackRef<S, C>
 where
 	S: ThreadSafety,
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 {
 	fn clone(&self) -> Self {
 		*self
@@ -55,14 +55,14 @@ where
 impl<S, C> Copy for CallbackRef<S, C>
 where
 	S: ThreadSafety,
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 {
 }
 impl<S1, S2, C> PartialEq<CallbackRef<S2, C>> for CallbackRef<S1, C>
 where
 	S1: ThreadSafety,
 	S2: ThreadSafety,
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 {
 	fn eq(&self, other: &CallbackRef<S2, C>) -> bool {
 		self.key == other.key
@@ -71,13 +71,13 @@ where
 impl<S, C> Eq for CallbackRef<S, C>
 where
 	S: ThreadSafety,
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 {
 }
 impl<S, C> Hash for CallbackRef<S, C>
 where
 	S: ThreadSafety,
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 {
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		self.key.hash(state)
@@ -87,7 +87,7 @@ impl<S1, S2, C> PartialOrd<CallbackRef<S2, C>> for CallbackRef<S1, C>
 where
 	S1: ThreadSafety,
 	S2: ThreadSafety,
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 {
 	fn partial_cmp(&self, other: &CallbackRef<S2, C>) -> Option<Ordering> {
 		self.key.partial_cmp(&other.key)
@@ -96,7 +96,7 @@ where
 impl<S, C> Ord for CallbackRef<S, C>
 where
 	S: ThreadSafety,
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 {
 	fn cmp(&self, other: &Self) -> Ordering {
 		self.key.cmp(&other.key)
@@ -106,7 +106,7 @@ where
 impl<R, C> From<&CallbackRegistration<R, C>> for CallbackRef<ThreadSafe, C>
 where
 	R: Sync,
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 {
 	fn from(registration: &CallbackRegistration<R, C>) -> Self {
 		registration.to_ref()
@@ -115,7 +115,7 @@ where
 
 impl<R, C> From<&CallbackRegistration<R, C>> for CallbackRef<ThreadBound, C>
 where
-	C: CallbackSignature,
+	C: ?Sized + CallbackSignature,
 {
 	fn from(registration: &CallbackRegistration<R, C>) -> Self {
 		registration.to_ref_thread_bound()
@@ -131,15 +131,15 @@ macro_rules! vdom_ergonomics {
 			cmp: |&$cmp_self:ident, $cmp_other:ident| $cmp:expr,
 		}
 	),*$(,)?]) => {$(
-		impl<'a> From<$VdomName<'a, ThreadSafe>> for $VdomName<'a, ThreadBound> {
+		impl<'a, 'b> From<$VdomName<'a, 'b, ThreadSafe>> for $VdomName<'a, 'b, ThreadBound> {
 			#[allow(clippy::inline_always)]
 			#[inline(always)] // No-op.
-			fn from(thread_safe: $VdomName<'a, ThreadSafe>) -> Self {
+			fn from(thread_safe: $VdomName<'a, 'b, ThreadSafe>) -> Self {
 				thread_safe.align()
 			}
 		}
 
-		impl<'a, S> Debug for $VdomName<'a, S> where
+		impl<'a, 'b, S> Debug for $VdomName<'a, 'b, S> where
 			S: ThreadSafety,
 		{
 			fn fmt(&$debug_self, $debug_f: &mut Formatter<'_>) -> fmt::Result {
@@ -147,30 +147,30 @@ macro_rules! vdom_ergonomics {
 			}
 		}
 
-		impl<'a, S> Clone for $VdomName<'a, S> where
+		impl<'a, 'b, S> Clone for $VdomName<'a, 'b, S> where
 			S: ThreadSafety,
 		{
 			fn clone(&self) -> Self {
 				*self
 			}
 		}
-		impl<'a, S> Copy for $VdomName<'a, S> where
+		impl<'a, 'b, S> Copy for $VdomName<'a, 'b, S> where
 			S: ThreadSafety,
 		{}
 
-		impl<'a, S1, S2> PartialEq<$VdomName<'a, S2>> for $VdomName<'a, S1> where
+		impl<'a, 'b, S1, S2> PartialEq<$VdomName<'a, 'b, S2>> for $VdomName<'a, 'b, S1> where
 			S1: ThreadSafety,
 			S2: ThreadSafety,
 		{
-			fn eq(&$eq_self, $eq_other: &$VdomName<'a, S2>) -> bool {
+			fn eq(&$eq_self, $eq_other: &$VdomName<'a, 'b, S2>) -> bool {
 				$partial_eq
 			}
 		}
-		impl<'a, S> Eq for $VdomName<'a, S> where
+		impl<'a, 'b, S> Eq for $VdomName<'a, 'b, S> where
 			S: ThreadSafety,
 		{}
 
-		impl<'a, S> Hash for $VdomName<'a, S> where
+		impl<'a, 'b, S> Hash for $VdomName<'a, 'b, S> where
 			S: ThreadSafety,
 		{
 			fn hash<H: Hasher>(&$hash_self, $hash_state: &mut H) {
@@ -178,17 +178,17 @@ macro_rules! vdom_ergonomics {
 			}
 		}
 
-		impl<'a, S1, S2> PartialOrd<$VdomName<'a, S2>> for $VdomName<'a, S1>
+		impl<'a, 'b, S1, S2> PartialOrd<$VdomName<'a, 'b, S2>> for $VdomName<'a, 'b, S1>
 		where
 			S1: ThreadSafety,
 			S2: ThreadSafety,
 		{
 			#[inline(always)] // Proxy function.
-			fn partial_cmp(&self, other: &$VdomName<'a, S2>) -> Option<core::cmp::Ordering> {
+			fn partial_cmp(&self, other: &$VdomName<'a, 'b, S2>) -> Option<core::cmp::Ordering> {
 				Some(Ord::cmp(self.align_ref(), other.align_ref()))
 			}
 		}
-		impl<'a, S> Ord for $VdomName<'a, S>
+		impl<'a, 'b, S> Ord for $VdomName<'a, 'b, S>
 		where
 			S: ThreadSafety,
 		{
@@ -525,7 +525,7 @@ vdom_ergonomics!([
 
 // Conversions between distinct types //
 
-impl<'a, S> Element<'a, S>
+impl<'a, 'b, S> Element<'a, 'b, S>
 where
 	S: ThreadSafety,
 {
@@ -549,7 +549,7 @@ where
 	/// }).as_html();
 	/// ```
 	#[must_use]
-	pub fn as_html(&'a self) -> Node<'a, S> {
+	pub fn as_html(&'a self) -> Node<'a, 'b, S> {
 		Node::HtmlElement {
 			element: self,
 			dom_binding: None,
@@ -576,7 +576,7 @@ where
 	/// }).as_svg();
 	/// ```
 	#[must_use]
-	pub fn as_svg(&'a self) -> Node<'a, S> {
+	pub fn as_svg(&'a self) -> Node<'a, 'b, S> {
 		Node::SvgElement {
 			element: self,
 			dom_binding: None,
@@ -584,27 +584,27 @@ where
 	}
 }
 
-impl<'a, S1, S2> From<&'a [Node<'a, S1>]> for Node<'a, S2>
+impl<'a, 'b, S1, S2> From<&'a [Node<'a, 'b, S1>]> for Node<'a, 'b, S2>
 where
 	S1: ThreadSafety + Into<S2>,
 	S2: ThreadSafety,
 {
-	fn from(content: &'a [Node<'a, S1>]) -> Self {
+	fn from(content: &'a [Node<'a, 'b, S1>]) -> Self {
 		Node::Multi(content).align()
 	}
 }
 
-impl<'a, S1, S2> From<&'a mut [Node<'a, S1>]> for Node<'a, S2>
+impl<'a, 'b, S1, S2> From<&'a mut [Node<'a, 'b, S1>]> for Node<'a, 'b, S2>
 where
 	S1: ThreadSafety + Into<S2>,
 	S2: ThreadSafety,
 {
-	fn from(content: &'a mut [Node<'a, S1>]) -> Self {
+	fn from(content: &'a mut [Node<'a, 'b, S1>]) -> Self {
 		Node::Multi(content).align()
 	}
 }
 
-impl<'a, S> From<&'a str> for Node<'a, S>
+impl<'a, S> From<&'a str> for Node<'a, 'static, S>
 where
 	S: ThreadSafety,
 {
@@ -616,7 +616,7 @@ where
 	}
 }
 
-impl<'a, S> From<&'a mut str> for Node<'a, S>
+impl<'a, S> From<&'a mut str> for Node<'a, 'static, S>
 where
 	S: ThreadSafety,
 {
@@ -628,7 +628,7 @@ where
 	}
 }
 
-impl<'a, S: ThreadSafety> Node<'a, S> {
+impl<'a, 'b, S: ThreadSafety> Node<'a, 'b, S> {
 	/// Calculates the aggregate surface level length of this [`Node`] in [***Node***](https://developer.mozilla.org/en-US/docs/Web/API/Node)s.
 	///
 	/// This operation is recursive across *for example* [`Node::Multi`] and [`Node::Keyed`], which sum up their contents in this regard.
