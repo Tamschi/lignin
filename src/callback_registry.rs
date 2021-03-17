@@ -110,7 +110,11 @@ mod callbacks_on {
 			drop(registry);
 			panic!("[lignin] Callback registry keys exhausted")
 		} else {
-			fn invoke_typed<R, T>(receiver_address: usize, handler_address: usize, parameter: DomRef<&'_ T>) {
+			fn invoke_typed<R, T>(
+				receiver_address: usize,
+				handler_address: usize,
+				parameter: DomRef<&'_ T>,
+			) {
 				let receiver = receiver_address as *const R;
 				let handler = unsafe {
 					// SAFETY: The pointer to invoke_typed is taken with matching monomorphization just below.
