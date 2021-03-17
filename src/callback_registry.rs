@@ -110,11 +110,11 @@ mod callbacks_on {
 			drop(registry);
 			panic!("[lignin] Callback registry keys exhausted")
 		} else {
-			fn invoke_typed<R, T>(receiver_address: usize, handler_address: usize, parameter: T) {
+			fn invoke_typed<R, T>(receiver_address: usize, handler_address: usize, parameter: DomRef<&'_ T>) {
 				let receiver = receiver_address as *const R;
 				let handler = unsafe {
 					// SAFETY: The pointer to invoke_typed is taken with matching monomorphization just below.
-					mem::transmute::<usize, fn(*const R, T)>(handler_address)
+					mem::transmute::<usize, fn(*const R, DomRef<&'_ T>)>(handler_address)
 				};
 				handler(receiver, parameter)
 			}
@@ -174,7 +174,7 @@ mod callbacks_on {
 		if let Some(entry) = registry.entries.get(&key) {
 			let invoke_typed = unsafe {
 				// SAFETY: Pretty much same type as above, just specified.
-				mem::transmute::<usize, fn(usize, usize, DomRef<&T>)>(entry.invoke_typed_address)
+				mem::transmute::<usize, fn(usize, usize, DomRef<&'_ T>)>(entry.invoke_typed_address)
 			};
 			invoke_typed(entry.receiver_address, entry.handler_address, parameter)
 		}
