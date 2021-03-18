@@ -46,12 +46,13 @@ Apps or components can be written against the callback API without enabling this
 ## Example
 
 ```rust
-use lignin::{Node, Element};
+use lignin::{Node, Element, ElementCreationOptions};
 
 // Please bring your own allocator where necessary.
 let _ = &Node::HtmlElement {
   element: &Element {
     name: "DIV", // Use all-caps for more efficient DOM interactions.¹
+    creation_options: ElementCreationOptions::new(), // `const fn` builder and getter/setter patterns for extensible interfaces.
     attributes: &[],
     content: Node::Multi(&[
       "Hello! ".into(), // Some convenience included.

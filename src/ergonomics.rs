@@ -213,22 +213,26 @@ vdom_ergonomics!([
 		debug: |&self, f| f
 			.debug_struct("Element")
 			.field("name", &self.name)
+			.field("creation_options", &self.creation_options)
 			.field("attributes", &self.attributes)
-			.field("content", &self.content) // Recursion.
 			.field("event_bindings", &self.event_bindings)
+			.field("content", &self.content) // Recursion.
 			.finish(),
 		partial_eq: |&self, other| self.name == other.name
+			&& self.creation_options == other.creation_options
 			&& self.attributes == other.attributes
 			&& self.event_bindings == other.event_bindings
 			&& self.content == other.content, // Recursion.
 		hash: |&self, state| {
 			self.name.hash(state);
+			self.creation_options.hash(state);
 			self.attributes.hash(state);
 			self.event_bindings.hash(state);
 			self.content.hash(state); // Recursion.
 		},
 		cmp: |&self, other| {
 			cmp!(self.name, other.name);
+			cmp!(&self.creation_options, &other.creation_options);
 			cmp!(self.attributes, other.attributes);
 			for i in 0..cmp::min(self.event_bindings.len(), other.event_bindings.len()) {
 				cmp!(&self.event_bindings[i], &other.event_bindings[i]);
@@ -242,15 +246,20 @@ vdom_ergonomics!([
 			.debug_struct("EventBinding")
 			.field("name", &self.name)
 			.field("callback", &self.callback)
+			.field("options", &self.options)
 			.finish(),
-		partial_eq: |&self, other| self.name == other.name && self.callback == other.callback,
+		partial_eq: |&self, other| self.name == other.name
+			&& self.callback == other.callback
+			&& self.options == other.options,
 		hash: |&self, state| {
 			self.name.hash(state);
 			self.callback.hash(state);
+			self.options.hash(state);
 		},
 		cmp: |&self, other| {
 			cmp!(self.name, other.name);
-			self.callback.cmp(&other.callback)
+			cmp!(&self.callback, &other.callback);
+			self.options.cmp(&other.options)
 		},
 	},
 	Node {
@@ -581,7 +590,7 @@ where
 	/// # Example
 	///
 	/// ```rust
-	/// use lignin::{Node, ThreadSafe};
+	/// use lignin::{ElementCreationOptions, Node, ThreadSafe};
 	///
 	/// fn allocate<'a, T>(value: T) -> &'a T {
 	///   // […]
@@ -590,6 +599,7 @@ where
 	///
 	/// let html_node: Node<ThreadSafe> = allocate(lignin::Element {
 	///   name: "DIV",
+	///   creation_options: ElementCreationOptions::new(),
 	///   attributes: &[],
 	///   content: Node::Multi(&[]),
 	///   event_bindings: &[],
@@ -608,7 +618,7 @@ where
 	/// # Example
 	///
 	/// ```rust
-	/// use lignin::{Node, ThreadSafe};
+	/// use lignin::{ElementCreationOptions, Node, ThreadSafe};
 	///
 	/// fn allocate<'a, T>(value: T) -> &'a T {
 	///   // […]
@@ -617,6 +627,7 @@ where
 	///
 	/// let svg_node: Node<ThreadSafe> = allocate(lignin::Element {
 	///   name: "SVG",
+	///   creation_options: ElementCreationOptions::new(),
 	///   attributes: &[],
 	///   content: Node::Multi(&[]),
 	///   event_bindings: &[],

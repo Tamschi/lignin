@@ -572,8 +572,9 @@
 //! as long as [`AutoSafe`] and [`Deanonymize`] are in scope.
 
 use crate::{
-	callback_registry::CallbackSignature, Attribute, CallbackRef, Element, EventBinding, Node,
-	ReorderableFragment, ThreadBound, ThreadSafe, ThreadSafety, Vdom,
+	callback_registry::CallbackSignature, Attribute, CallbackRef, Element, ElementCreationOptions,
+	EventBinding, EventBindingOptions, Node, ReorderableFragment, ThreadBound, ThreadSafe,
+	ThreadSafety, Vdom,
 };
 
 /// Deanonymize towards the general ([`ThreadBound`]) case. Used as `-> impl AutoSafe<…>`.
@@ -741,6 +742,30 @@ impl<'a> Attribute<'a> {
 		#[deprecated = "Call of `.prefer_thread_safe()` on `Attribute`."]
 		by ref:
 		#[deprecated = "Call of `.prefer_thread_safe_ref()` on `Attribute`."]
+	}
+}
+
+impl<'a> ElementCreationOptions<'a> {
+	deanonymize_on_named!();
+	prefer_thread_safe_safe! {
+		///
+		/// > Calling this method on [`ElementCreationOptions`] produces a deprecation warning since the type is always [`ThreadSafe`].
+		by value:
+		#[deprecated = "Call of `.prefer_thread_safe()` on `ElementCreationOptions`."]
+		by ref:
+		#[deprecated = "Call of `.prefer_thread_safe_ref()` on `ElementCreationOptions`."]
+	}
+}
+
+impl EventBindingOptions {
+	deanonymize_on_named!();
+	prefer_thread_safe_safe! {
+		///
+		/// > Calling this method on [`EventBindingOptions`] produces a deprecation warning since the type is always [`ThreadSafe`].
+		by value:
+		#[deprecated = "Call of `.prefer_thread_safe()` on `EventBindingOptions`."]
+		by ref:
+		#[deprecated = "Call of `.prefer_thread_safe_ref()` on `EventBindingOptions`."]
 	}
 }
 

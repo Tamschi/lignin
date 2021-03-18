@@ -284,6 +284,9 @@ pub struct Element<'a, S: ThreadSafety> {
 	///
 	/// Since browsers will generally return the canonical uppercase name, it's recommended to generate the VDOM all-uppercase too, to avoid unnecessary mismatches.
 	pub name: &'a str,
+	/// Controls the ***options*** parameter of [***Document.createElement()***](https://developer.mozilla.org/en-US/docs/Web/API/Document/createElement)
+	/// *or* (currently only) the global [***is***](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/is) attribute.
+	pub creation_options: ElementCreationOptions<'a>,
 	/// The [***Element.attributes***](https://developer.mozilla.org/en-US/docs/Web/API/Element/attributes).
 	///
 	/// Note that while this collection is unordered in the browser, reordering attributes will generally affect diffing performance.
@@ -294,6 +297,70 @@ pub struct Element<'a, S: ThreadSafety> {
 	///
 	/// See [`EventBinding`] for more information.
 	pub event_bindings: &'a [EventBinding<'a, S>],
+}
+
+/// [`Vdom`] Maps to ***options*** parameter values of [***Document.createElement()***](https://developer.mozilla.org/en-US/docs/Web/API/Document/createElement)
+/// (including ***undefined***) *or* (currently only) the global [***is***](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/is) attribute.
+///
+/// # Options
+///
+/// ## `is`
+///
+/// The ***tag name*** of a previously [defined](https://developer.mozilla.org/en-US/docs/Web/API/CustomElementRegistry/define)
+/// [***customized built-in element***](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements#customized_built-in_elements)
+/// to instantiate over a built-in HTML element.
+///
+/// When rendering HTML, this controls the global [***is***](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/is) attribute.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ElementCreationOptions<'a> {
+	is: Option<&'a str>,
+}
+impl<'a> Default for ElementCreationOptions<'a> {
+	fn default() -> Self {
+		Self::new()
+	}
+}
+#[allow(clippy::inline_always)] // Trivial getters and setters.
+impl<'a> ElementCreationOptions<'a> {
+	/// Creates a new [`ElementCreationOptions`] with all fields set to [`None`].
+	#[inline(always)]
+	#[must_use]
+	pub const fn new() -> Self {
+		Self { is: None }
+	}
+
+	/// Indicates whether this [`ElementCreationOptions`] instance can be omitted entirely in a [***Document.createElement()***](https://developer.mozilla.org/en-US/docs/Web/API/Document/createElement)
+	/// call.
+	#[inline(always)]
+	#[must_use]
+	pub const fn matches_undefined(&self) -> bool {
+		matches!(self, Self { is: None })
+	}
+
+	/// Retrieves the ***tag name*** of a previously [defined](https://developer.mozilla.org/en-US/docs/Web/API/CustomElementRegistry/define)
+	/// [***customized built-in element***](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements#customized_built-in_elements)
+	/// to use.
+	#[inline(always)]
+	#[must_use]
+	pub const fn is(&self) -> Option<&'a str> {
+		self.is
+	}
+	/// Sets the ***tag name*** of a previously [defined](https://developer.mozilla.org/en-US/docs/Web/API/CustomElementRegistry/define)
+	/// [***customized built-in element***](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements#customized_built-in_elements)
+	/// to use.
+	#[inline(always)]
+	pub fn set_is(&mut self, is: Option<&'a str>) {
+		self.is = is
+	}
+	/// Sets the ***tag name*** of a previously [defined](https://developer.mozilla.org/en-US/docs/Web/API/CustomElementRegistry/define)
+	/// [***customized built-in element***](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements#customized_built-in_elements)
+	/// to use.
+	#[inline(always)]
+	#[must_use]
+	pub const fn with_is(self, is: Option<&'a str>) -> Self {
+		#[allow(clippy::needless_update)]
+		Self { is, ..self }
+	}
 }
 
 /// [`Vdom`] Represents a single DOM event binding with `name` and `callback`.
@@ -471,8 +538,8 @@ mod sealed {
 	use super::{ThreadBound, ThreadSafe};
 	use crate::{
 		callback_registry::CallbackSignature, remnants::RemnantSite, web, Attribute, CallbackRef,
-		CallbackRegistration, DomRef, Element, EventBinding, EventBindingOptions, Node,
-		ReorderableFragment, ThreadSafety,
+		CallbackRegistration, DomRef, Element, ElementCreationOptions, EventBinding,
+		EventBindingOptions, Node, ReorderableFragment, ThreadSafety,
 	};
 
 	pub trait Sealed {}
@@ -481,6 +548,7 @@ mod sealed {
 	impl Sealed for ThreadBound {}
 	impl Sealed for ThreadSafe {}
 	impl<'a> Sealed for Attribute<'a> {}
+	impl<'a> Sealed for ElementCreationOptions<'a> {}
 	impl Sealed for EventBindingOptions {}
 	impl<R, C: CallbackSignature> Sealed for CallbackRegistration<R, C> {}
 	impl<S: ThreadSafety, C: CallbackSignature> Sealed for CallbackRef<S, C> {}
@@ -519,7 +587,7 @@ impl ThreadSafety for ThreadSafe {}
 
 /// Marker trait for VDOM data types, which (almost) all vary by [`ThreadSafety`].
 ///
-/// Somewhat uselessly implemented on [`Attribute`] and [`EventBindingOptions`], which are always [`ThreadSafe`].
+/// Somewhat uselessly implemented on [`Attribute`], [`ElementCreationOptions`] and [`EventBindingOptions`], which are always [`ThreadSafe`].
 pub trait Vdom: Sealed
 where
 	Self: Sized + Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord + Hash,
@@ -531,6 +599,10 @@ where
 }
 
 impl<'a> Vdom for Attribute<'a> {
+	type ThreadSafety = ThreadSafe;
+}
+
+impl<'a> Vdom for ElementCreationOptions<'a> {
 	type ThreadSafety = ThreadSafe;
 }
 
