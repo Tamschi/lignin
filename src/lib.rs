@@ -414,7 +414,7 @@ pub struct EventBinding<'a, S: ThreadSafety> {
 /// > ***passive: true*** isn't always the default in web browsers for backwards compatibility reasons.
 /// >
 /// > As `lignin` is a new framework, it's able to break with that tradition for more consistency and a better default.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EventBindingOptions(u8);
 mod event_bindings_impl {
 	#![allow(clippy::inline_always)] // Trivial bit manipulation.

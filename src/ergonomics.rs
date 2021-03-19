@@ -3,7 +3,8 @@
 
 use crate::{
 	auto_safety::Align, callback_registry::CallbackSignature, CallbackRef, CallbackRegistration,
-	Element, EventBinding, Node, ReorderableFragment, ThreadBound, ThreadSafe, ThreadSafety,
+	Element, EventBinding, EventBindingOptions, Node, ReorderableFragment, ThreadBound, ThreadSafe,
+	ThreadSafety,
 };
 use core::{
 	any::type_name,
@@ -725,5 +726,15 @@ impl<'a, S: ThreadSafety> Node<'a, S> {
 				todo!("RemnantSite dom_empty")
 			}
 		}
+	}
+}
+
+impl Debug for EventBindingOptions {
+	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		f.debug_struct("EventBindingOptions")
+			.field("capture", &self.capture())
+			.field("once", &self.once())
+			.field("passive", &self.passive())
+			.finish()
 	}
 }
