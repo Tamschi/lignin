@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["update_child_nodes",""]],"struct":[["Error",""]]});
+initSidebarItems({"struct":[["DomDiffer",""]]});

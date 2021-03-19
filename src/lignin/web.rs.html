@@ -205,6 +205,10 @@
 <span id="202">202</span>
 <span id="203">203</span>
 <span id="204">204</span>
+<span id="205">205</span>
+<span id="206">206</span>
+<span id="207">207</span>
+<span id="208">208</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Erasable web type stand-ins used as callback parameters.</span>
 <span class="doccomment">//!</span>
@@ -298,6 +302,9 @@
 	<span class="doccomment">/// Erasable stand-in for [`web_sys::Comment`](https://docs.rs/web-sys/0.3/web_sys/struct.Comment.html) used as callback parameter.</span>
 	(<span class="ident">Comment</span>, <span class="string">&quot;Comment&quot;</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">web_sys</span>::<span class="ident">Comment</span>,
 
+	<span class="doccomment">/// Erasable stand-in for [`web_sys::Element`](https://docs.rs/web-sys/0.3/web_sys/struct.Element.html) used as callback parameter.</span>
+	(<span class="ident">Element</span>, <span class="string">&quot;Element&quot;</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">web_sys</span>::<span class="ident">Element</span>,
+
 	<span class="doccomment">/// Erasable stand-in for [`web_sys::Event`](https://docs.rs/web-sys/0.3/web_sys/struct.Event.html) used as callback parameter.</span>
 	(<span class="ident">Event</span>, <span class="string">&quot;Event&quot;</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">web_sys</span>::<span class="ident">Event</span>,
 
@@ -379,6 +386,7 @@
 
 <span class="macro">conversions</span><span class="macro">!</span> {
 	<span class="ident">Comment</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">web_sys</span>::<span class="ident">Comment</span>,
+	<span class="ident">Element</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">web_sys</span>::<span class="ident">Element</span>,
 	<span class="ident">Event</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">web_sys</span>::<span class="ident">Event</span>,
 	<span class="ident">HtmlElement</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">web_sys</span>::<span class="ident">HtmlElement</span>,
 	<span class="ident">SvgElement</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">web_sys</span>::<span class="ident">SvgElement</span>,

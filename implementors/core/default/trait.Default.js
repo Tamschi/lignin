@@ -1,3 +1,4 @@
 (function() {var implementors = {};
-implementors["lignin"] = [{"text":"impl Default for EventBindingOptions","synthetic":false,"types":[]}];
+implementors["lignin"] = [{"text":"impl&lt;'a&gt; Default for ElementCreationOptions&lt;'a&gt;","synthetic":false,"types":[]},{"text":"impl Default for EventBindingOptions","synthetic":false,"types":[]}];
+implementors["rc_map"] = [{"text":"impl&lt;K, C, V, S&gt; Default for RcHashMap&lt;K, C, V, S&gt; <span class=\"where fmt-newline\">where<br>&nbsp;&nbsp;&nbsp;&nbsp;K: Eq + Hash,<br>&nbsp;&nbsp;&nbsp;&nbsp;C: CheckedAdd + CheckedSub + One + Zero,<br>&nbsp;&nbsp;&nbsp;&nbsp;S: BuildHasher + Default,&nbsp;</span>","synthetic":false,"types":[]}];
 if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

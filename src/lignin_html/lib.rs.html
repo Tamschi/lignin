@@ -697,6 +697,14 @@
 <span id="694">694</span>
 <span id="695">695</span>
 <span id="696">696</span>
+<span id="697">697</span>
+<span id="698">698</span>
+<span id="699">699</span>
+<span id="700">700</span>
+<span id="701">701</span>
+<span id="702">702</span>
+<span id="703">703</span>
+<span id="704">704</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! An HTML renderer for [`lignin`](https://github.com/Tamschi/lignin) that does *some* syntactic and *no* semantic validation.</span>
 <span class="doccomment">//!</span>
@@ -831,6 +839,10 @@
 
 		<span class="comment">// See &lt;https://html.spec.whatwg.org/multipage/syntax.html#elements-2&gt;.</span>
 		<span class="ident">Node</span>::<span class="ident">HtmlElement</span> {
+			<span class="ident">element</span>,
+			<span class="ident">dom_binding</span>: <span class="kw">_</span>,
+		}
+		<span class="op">|</span> <span class="ident">Node</span>::<span class="ident">MathMlElement</span> {
 			<span class="ident">element</span>,
 			<span class="ident">dom_binding</span>: <span class="kw">_</span>,
 		}
@@ -1029,9 +1041,10 @@
 	}
 
 	<span class="kw">match</span> <span class="ident">vdom</span> {
-		<span class="ident">Node</span>::<span class="ident">Comment</span> { .. } <span class="op">|</span> <span class="ident">Node</span>::<span class="ident">HtmlElement</span> { .. } <span class="op">|</span> <span class="ident">Node</span>::<span class="ident">SvgElement</span> { .. } <span class="op">=</span><span class="op">&gt;</span> {
-			<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>(<span class="ident">ErrorKind</span>::<span class="ident">NonTextDomNodeInRawTextPosition</span>(<span class="ident">vdom</span>)))
-		}
+		<span class="ident">Node</span>::<span class="ident">Comment</span> { .. }
+		<span class="op">|</span> <span class="ident">Node</span>::<span class="ident">HtmlElement</span> { .. }
+		<span class="op">|</span> <span class="ident">Node</span>::<span class="ident">MathMlElement</span> { .. }
+		<span class="op">|</span> <span class="ident">Node</span>::<span class="ident">SvgElement</span> { .. } <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>(<span class="ident">ErrorKind</span>::<span class="ident">NonTextDomNodeInRawTextPosition</span>(<span class="ident">vdom</span>))),
 		<span class="ident">Node</span>::<span class="ident">Memoized</span> {
 			<span class="ident">state_key</span>: <span class="kw">_</span>,
 			<span class="ident">content</span>,
@@ -1128,7 +1141,10 @@
 		<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>(<span class="ident">ErrorKind</span>::<span class="ident">DepthLimitExceeded</span>(<span class="ident">vdom</span>)));
 	}
 	<span class="kw">match</span> <span class="ident">vdom</span> {
-		<span class="ident">Node</span>::<span class="ident">Comment</span> { .. } <span class="op">|</span> <span class="ident">Node</span>::<span class="ident">HtmlElement</span> { .. } <span class="op">|</span> <span class="ident">Node</span>::<span class="ident">SvgElement</span> { .. } <span class="op">=</span><span class="op">&gt;</span> {
+		<span class="ident">Node</span>::<span class="ident">Comment</span> { .. }
+		<span class="op">|</span> <span class="ident">Node</span>::<span class="ident">HtmlElement</span> { .. }
+		<span class="op">|</span> <span class="ident">Node</span>::<span class="ident">MathMlElement</span> { .. }
+		<span class="op">|</span> <span class="ident">Node</span>::<span class="ident">SvgElement</span> { .. } <span class="op">=</span><span class="op">&gt;</span> {
 			<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>(<span class="ident">ErrorKind</span>::<span class="ident">NonTextDomNodeInEscapableRawTextPosition</span>(
 				<span class="ident">vdom</span>,
 			)))
