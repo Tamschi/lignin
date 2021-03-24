@@ -192,6 +192,10 @@ pub enum Node<'a, S: ThreadSafety> {
 	///
 	/// # Implementation Contract (reminder)
 	///
+	/// Even if [`state_key`](`Node::Memoized::state_key`) is unchanged between two VDOM iterations, the full contents must still be present in the second.
+	///
+	/// > When skipping the memoized [`content`](`Node::Memoized::content`), a renderer may still require this information to, for example, advance its DOM cursor.
+	///
 	/// Note that when diffing a non-[`Memoized`](`Node::Memoized`) [`Node`] into a [`Node::Memoized`] (and vice-versa), renderers must still behave as if the DOM tree was recreated, which means cycling all [***Node***](https://developer.mozilla.org/en-US/docs/Web/API/Node) reference bindings even if they match.
 	///
 	/// > However, this often happens with matching or near-matching fragments during hydration of a web app.
