@@ -534,15 +534,19 @@ pub fn registry_exhaustion() -> u8 {
 /// let callback_ref: CallbackRef<ThreadBound, fn(web::Event)> = // …
 /// # unreachable!();
 ///
-/// let common_handler = Closure::<dyn Fn(JsValue, web_sys::Event)>::wrap(Box::new(|callback_ref: JsValue, event: web_sys::Event| {
-///   unsafe { CallbackRef::<ThreadBound, fn(web::Event)>::from_js(&callback_ref) }
-///   .expect_throw("Invalid `CallbackRef`.")
-///   .call(event.into());
-/// }));
+/// let common_handler = Closure::<dyn Fn(JsValue, web_sys::Event)>::wrap(
+///   Box::new(|callback_ref: JsValue, event: web_sys::Event| {
+///     unsafe { CallbackRef::<ThreadBound, fn(web::Event)>::from_js(&callback_ref) }
+///     .expect_throw("Invalid `CallbackRef`.")
+///     .call(event.into());
+///   })
+/// );
 ///
-/// let listener = common_handler.as_ref().unchecked_ref::<Function>().bind1(&JsValue::UNDEFINED, &callback_ref.into_js());
+/// let listener = common_handler.as_ref().unchecked_ref::<Function>()
+///   .bind1(&JsValue::UNDEFINED, &callback_ref.into_js());
 ///
-/// // `common_handler` must be either leaked or stored somewhere, since otherwise it will throw when called from JavaScript.
+/// // `common_handler` must be either leaked or stored somewhere,
+/// // since otherwise it will throw when called from JavaScript.
 ///
 /// let result = element.add_event_listener_with_callback("click", &listener);
 /// ```
