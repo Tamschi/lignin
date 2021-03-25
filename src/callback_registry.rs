@@ -521,6 +521,31 @@ pub fn registry_exhaustion() -> u8 {
 ///
 /// > Most DOM renderers will still require an [***event listener***](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener)
 /// > table in order to unsubscribe from events.
+///
+/// # Example
+///
+/// ```rust, no_run
+/// use js_sys::Function;
+/// use lignin::{CallbackRef, ThreadBound, web};
+/// use wasm_bindgen::{closure::Closure, JsCast, JsValue, UnwrapThrowExt};
+///
+/// let element: web_sys::Element = // …
+/// # unreachable!();
+/// let callback_ref: CallbackRef<ThreadBound, fn(web::Event)> = // …
+/// # unreachable!();
+///
+/// let common_handler = Closure::<dyn Fn(JsValue, web_sys::Event)>::wrap(Box::new(|callback_ref: JsValue, event: web_sys::Event| {
+///   unsafe { CallbackRef::<ThreadBound, fn(web::Event)>::from_js(&callback_ref) }
+///   .expect_throw("Invalid `CallbackRef`.")
+///   .call(event.into());
+/// }));
+///
+/// let listener = common_handler.as_ref().unchecked_ref::<Function>().bind1(&JsValue::UNDEFINED, &callback_ref.into_js());
+///
+/// // `common_handler` must be either leaked or stored somewhere, since otherwise it will throw when called from JavaScript.
+///
+/// let result = element.add_event_listener_with_callback("click", &listener);
+/// ```
 #[cfg(feature = "callbacks")]
 impl<S, C> CallbackRef<S, C>
 where
@@ -534,9 +559,6 @@ where
 	/// # Implementation Contract
 	///
 	/// The return value of this function must be treated as opaque handle.
-	///
-	/// # Example
-	//TODO: Example event handler and binding.
 	#[must_use]
 	pub fn into_js(self) -> wasm_bindgen::JsValue {
 		let key: f64 = self.key.get().into();
