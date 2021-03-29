@@ -28,10 +28,11 @@ is-it-maintained-open-issues = { repository = "Tamschi/lignin" }
 maintenance = { status = "experimental" }
 
 [features]
-callbacks = ["lazy_static", "wasm-bindgen", "web-sys"] # Enables DOM callback support. Requires `std`.
+callbacks = ["lazy_static", "syn", "wasm-bindgen", "web-sys"] # Enables DOM callback support. Requires `std`.
 
 [dependencies]
 lazy_static = { version = "1.4.0", optional = true }
+syn = { version = "=1.0.65", optional = true } # workaround
 wasm-bindgen = { version = "0.2.71", optional = true } # public
 web-sys = { version = "0.3.47", optional = true, features = ["Comment", "Element", "Event", "HtmlElement", "SvgElement", "Text"] } # public
 
