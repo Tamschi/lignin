@@ -264,7 +264,7 @@
 //!
 //! #### Identity Cast
 //!
-//! Calling `.deanonymize()` on named types is valid but ultimately useless:
+//! Calling `.deanonymize()` on named types is valid but ultimately useless, so it produces a warning if resolved like that:
 //!
 //! ```
 //! # use lignin::{
@@ -292,9 +292,38 @@
 //! //   Call of `.deanonymize()` on named type.
 //! ```
 //!
-//! Macros can suppress this warning by emitting the method call with [`Span::mixed_site()`](https://doc.rust-lang.org/stable/proc_macro/struct.Span.html#method.mixed_site) hygiene.
+//! Macros should suppress this warning as specifically as possible:
 //!
-//! <!-- TODO: Make sure that's actually the case. -->
+//! ```rust
+//! # use lignin::{
+//! #   auto_safety::{Align as _, AutoSafe, Deanonymize as _},
+//! #   Node, ThreadBound, ThreadSafe,
+//! # };
+//! #
+//! # fn safe<'a>() -> Node::<'a, ThreadSafe> { Node::Multi(&[]) }
+//! # fn bound<'a>() -> Node::<'a, ThreadBound> { Node::Multi(&[]) }
+//! # fn inferred_safe<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { safe() }
+//! # fn inferred_bound<'a>() -> impl AutoSafe<Node::<'a, ThreadBound>> { bound() }
+//! #
+//! # fn allocate<'a, T>(value: T) -> &'a T { Box::leak(Box::new(value)) }
+//! #
+//! # fn assert_safe<'a>(value: Node<'a, ThreadSafe>) { }
+//! # fn assert_bound<'a>(value: Node<'a, ThreadBound>) { }
+//! #
+//! {
+//!   let rendered = // …
+//!   # safe();
+//!
+//!   #[deny(warnings)]
+//!   {
+//!     // Use `$crate` if possible, and ideally don't leak these imports into caller code.
+//!     use ::lignin::auto_safety::{AutoSafe as _, Deanonymize as _};
+//!     #[allow(deprecated)]
+//!     rendered.deanonymize()
+//!   }
+//! }
+//! # ;
+//! ```
 //!
 //! #### No Coercion
 //!
