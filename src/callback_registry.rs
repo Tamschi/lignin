@@ -731,7 +731,7 @@ impl<T> CallbackSignature for fn(dom_ref: web::DomRef<&'_ T>) {}
 ///
 ///   > The current implementation of this is somewhat inefficient and will always allocate.
 ///   >
-///   > I have a more efficient scheduler in mind, but particular model would require [`set_ptr_value`](https://doc.rust-lang.org/stable/std/primitive.pointer.html#method.set_ptr_value-1)
+///   > I have a more efficient scheduler in mind, but that particular model would require [`set_ptr_value`](https://doc.rust-lang.org/stable/std/primitive.pointer.html#method.set_ptr_value-1)
 ///   > to be stabilised first. If you have better suggestions, feel free to [send them my way](https://github.com/Tamschi/lignin/discussions/categories/ideas)
 ///   > (with permission to actually implement them here)!
 ///
