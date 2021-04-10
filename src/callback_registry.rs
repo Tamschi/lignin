@@ -315,6 +315,17 @@ use callbacks_off as callbacks;
 ///
 /// 1. [`impl<T: ?Sized> Unpin for Cell<T> where T: Unpin`](`core::cell::Cell`#impl-Unpin)
 /// 2. [`impl<T> Unpin for Option<T> where T: Unpin`](`core::option::Option`#impl-Unpin)
+///
+/// # Safety Notes
+///
+/// When storing [`CallbackRegistration`]s inside a receiver, care must be taken that these fields are dropped first, before any other component state is invalidated.
+/// [This should in most cases be done by placing them in the first fields of the receiver data structure.](https://doc.rust-lang.org/reference/destructors.html)
+///
+/// Code generators that must run more complex code but also want to avoid any overhead from clearing an [`Option`] [can make use of `ManuallyDrop`](`::core::mem::ManuallyDrop`#manuallydrop-and-drop-order).
+/// However, this is somewhat more tricky to get right and much less easy to read, so I wouldn't recommend it for one-off code.
+///
+/// Double-dropping a [`CallbackRegistration`] will lead to, *at best*, a panic, but retrieving a [`CallbackRef`] from a dropped [`CallbackRegistration`] is guaranteed be sound.
+/// Such a [`CallbackRef`] will never lead to a handler invocation unless the callback registry is [reset](`reset_callback_registry`).
 #[allow(clippy::type_complexity)]
 #[derive(Debug)]
 pub struct CallbackRegistration<R, C>
@@ -353,7 +364,7 @@ impl<R> CallbackRegistration<R, fn(event: web::Event)> {
 	///
 	/// You can ensure this most easily by storing the latter in for example a `Cell<Option<CallbackRegistration>>` embedded in the `receiver`.
 	///
-	/// Dropping the [`CallbackRegistration`] instance prevents any further calls to `handler` derived from it.
+	/// Dropping the [`CallbackRegistration`] instance prevents any further calls to `handler` derived from it from running, blocking until this can be guaranteed.
 	#[inline(always)] // Proxy function.
 	#[must_use]
 	pub fn new(receiver: Pin<&'_ R>, handler: fn(receiver: *const R, event: web::Event)) -> Self {
@@ -370,7 +381,7 @@ impl<R, T> CallbackRegistration<R, fn(dom_ref: DomRef<&'_ T>)> {
 	///
 	/// You can ensure this most easily by storing the latter in for example a `Cell<Option<CallbackRegistration>>` embedded in the `receiver`.
 	///
-	/// Dropping the [`CallbackRegistration`] instance prevents any further calls to `handler` derived from it.
+	/// Dropping the [`CallbackRegistration`] instance prevents any further calls to `handler` derived from it from running, blocking until this can be guaranteed.
 	#[inline(always)] // Proxy function.
 	#[must_use]
 	pub fn new(
@@ -618,6 +629,10 @@ fn assert_no_quantization() {
 /// # Safety
 ///
 /// The caller (generally a renderer) must ensure that no currently existing [`CallbackRef`]s created from a dropped [`CallbackRegistration`] can have their [`.call(…)`](`CallbackRef::call`) function invoked during or after this call.
+///
+/// # See Also
+///
+/// [`yet_more_unsafe_force_clear_callback_registry`], which yet-more-unsafely ignores [`CallbackRegistration`]s that haven't been dropped yet.
 #[allow(clippy::inline_always)]
 #[allow(clippy::module_name_repetitions)]
 #[allow(clippy::result_unit_err)]
