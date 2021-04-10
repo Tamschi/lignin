@@ -731,9 +731,12 @@ impl<T> CallbackSignature for fn(dom_ref: web::DomRef<&'_ T>) {}
 ///
 ///   > The current implementation of this is somewhat inefficient and will always allocate.
 ///   >
-///   > I have a more efficient scheduler in mind, but that particular model would require [`set_ptr_value`](https://doc.rust-lang.org/stable/std/primitive.pointer.html#method.set_ptr_value-1)
-///   > to be stabilised first. If you have better suggestions, feel free to [send them my way](https://github.com/Tamschi/lignin/discussions/categories/ideas)
-///   > (with permission to actually implement them here)!
+///   > I have a more efficient scheduler in mind, but that particular model would require ~~[`set_ptr_value`](https://doc.rust-lang.org/stable/std/primitive.pointer.html#method.set_ptr_value-1)~~
+///   > at least [`std::alloc::Allocator`](https://doc.rust-lang.org/stable/std/alloc/trait.Allocator.html)
+///   > to be stabilized first in order to construct a consumable box pointing to an allocation arena.
+///   >
+///   > If you have a better suggestion that works on stable Rust, feel free to [send it my way](https://github.com/Tamschi/lignin/discussions/categories/ideas)
+///   > (with permission to actually implement it here if it's extensive enough to warrant that)!
 ///
 /// # Panic Notes
 ///
