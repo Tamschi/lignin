@@ -21,6 +21,7 @@ mod callbacks_on {
 
 	use super::{CallbackRegistration, CallbackSignature};
 	use core::{
+		cell::Cell,
 		convert::TryInto,
 		marker::{PhantomData, PhantomPinned},
 		mem,
@@ -29,7 +30,13 @@ mod callbacks_on {
 	};
 	use lazy_static::lazy_static;
 	use mem::size_of_val;
-	use std::{collections::HashMap, sync::RwLock};
+	use std::{
+		boxed::Box,
+		collections::{HashMap, VecDeque},
+		panic::{catch_unwind, AssertUnwindSafe},
+		result::Result::{Err, Ok},
+		sync::RwLock,
+	};
 
 	lazy_static! {
 		static ref REGISTRY: RwLock<Registry> = RwLock::default();
@@ -160,14 +167,33 @@ mod callbacks_on {
 	where
 		fn(T): CallbackSignature,
 	{
-		let registry = REGISTRY.read().unwrap();
-		if let Some(entry) = registry.entries.get(&key) {
-			let invoke_typed = unsafe {
-				// SAFETY: Same type as above.
-				mem::transmute::<usize, fn(usize, usize, T)>(entry.invoke_typed_address)
-			};
-			invoke_typed(entry.receiver_address, entry.handler_address, parameter)
-		}
+		CONTINUATION_QUEUE.with(|continuation_queue| {
+			let none = continuation_queue.replace(Some(VecDeque::new()));
+			debug_assert!(none.is_none());
+
+			// UNWIND SAFETY: The only part we examine is the continuation queue,
+			// and we don't run consumer code while holding a reference to it.
+			match catch_unwind(AssertUnwindSafe(|| {
+				let registry = REGISTRY.read().unwrap();
+				if let Some(entry) = registry.entries.get(&key) {
+					let invoke_typed = unsafe {
+						// SAFETY: Same type as above.
+						mem::transmute::<usize, fn(usize, usize, T)>(entry.invoke_typed_address)
+					};
+					invoke_typed(entry.receiver_address, entry.handler_address, parameter)
+				}
+			})) {
+				Ok(()) => {
+					for continuation in continuation_queue.take().unwrap() {
+						continuation()
+					}
+				}
+				Err(panic) => {
+					continuation_queue.take(); // Drop continuations.
+					std::panic::resume_unwind(panic)
+				}
+			}
+		})
 	}
 
 	pub fn invoke_with_ref<T>(key: NonZeroU32, parameter: DomRef<&T>)
@@ -209,6 +235,23 @@ mod callbacks_on {
 		let mut registry = REGISTRY.write().unwrap();
 		registry.entries.clear();
 		registry.key_count = 0;
+	}
+
+	pub fn when_unlocked_locally<F: 'static + FnOnce()>(continuation: F) {
+		CONTINUATION_QUEUE.with(|continuation_queue| {
+			match unsafe {
+				// SAFETY: All access is thread-local and not recursive.
+				&mut *continuation_queue.as_ptr()
+			} {
+				Some(queue) => queue.push_back(Box::new(continuation)),
+				None => continuation(),
+			}
+		})
+	}
+
+	std::thread_local! {
+		#[allow(clippy::type_complexity)]
+		static CONTINUATION_QUEUE: Cell<Option<VecDeque<Box<dyn FnOnce()>>>> = None.into();
 	}
 }
 
@@ -297,6 +340,11 @@ mod callbacks_off {
 
 	#[inline(always)]
 	pub unsafe fn yet_more_unsafe_force_clear_callback_registry() {}
+
+	#[inline(always)]
+	pub fn when_unlocked_locally<F: FnOnce()>(continuation: F) {
+		continuation()
+	}
 }
 
 #[cfg(feature = "callbacks")]
@@ -666,3 +714,35 @@ pub unsafe fn yet_more_unsafe_force_clear_callback_registry() {
 pub trait CallbackSignature: Sealed + Sized + Copy {}
 impl CallbackSignature for fn(event: web::Event) {}
 impl<T> CallbackSignature for fn(dom_ref: web::DomRef<&'_ T>) {}
+
+/// Causes a continuation to be called when the callback registry is not locked (anymore) by the current thread.
+///
+/// > **Warning:**
+/// >
+/// > Spawning a thread that calls this function and then joining on it from a callback handler is an easy path towards deadlocks, so please avoid doing that.
+///
+/// More specifically: This function has one of two effects, depending on whether in scope of (and on the same thread as!) a callback managed by `lignin`:
+///
+/// - If such a callback is currently running on the current thread, `continuation` is scheduled for later execution.
+///
+///   As soon as the registry becomes unlocked, all such scheduled continuations are run, *in order of their respective [`when_unlocked_locally`] calls*.
+///
+/// - If **no** callback is currently running on this thread, the continuation is invoked immediately.
+///
+/// > The current implementation of this is somewhat inefficient and will always allocate.
+/// >
+/// > I have a more efficient scheduler in mind, but particular model would require [`set_ptr_value`](https://doc.rust-lang.org/stable/std/primitive.pointer.html#method.set_ptr_value-1)
+/// > to be stabilised first. If you have better suggestions, feel free to [send them my way](https://github.com/Tamschi/lignin/discussions/categories/ideas)
+/// > (with permission to actually implement them here)!
+///
+/// # Panic Notes
+///
+/// While this function won't panic by itself (except due to memory limits),
+/// it's still possible that a callback handler panics while continuations are pending.
+///
+/// Should this happen, all pending continuations are dropped without being executed.
+#[allow(clippy::inline_always)]
+#[inline(always)] // Proxy function.
+pub fn when_unlocked_locally(continuation: impl 'static + FnOnce()) {
+	callbacks::when_unlocked_locally(continuation)
+}
