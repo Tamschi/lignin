@@ -721,19 +721,19 @@ impl<T> CallbackSignature for fn(dom_ref: web::DomRef<&'_ T>) {}
 /// >
 /// > Spawning a thread that calls this function and then joining on it from a callback handler is an easy path towards deadlocks, so please avoid doing that.
 ///
-/// More specifically: This function has one of two effects, depending on whether in scope of (and on the same thread as!) a callback managed by `lignin`:
+/// More specifically: This function has one of two effects, depending on whether it is called in scope of (and on the same thread as!) a callback managed by `lignin`:
+///
+/// - If **no** callback is currently running on this thread, the continuation is invoked immediately.
 ///
 /// - If such a callback is currently running on the current thread, `continuation` is scheduled for later execution.
 ///
 ///   As soon as the registry becomes unlocked, all such scheduled continuations are run, *in order of their respective [`when_unlocked_locally`] calls*.
 ///
-/// - If **no** callback is currently running on this thread, the continuation is invoked immediately.
-///
-/// > The current implementation of this is somewhat inefficient and will always allocate.
-/// >
-/// > I have a more efficient scheduler in mind, but particular model would require [`set_ptr_value`](https://doc.rust-lang.org/stable/std/primitive.pointer.html#method.set_ptr_value-1)
-/// > to be stabilised first. If you have better suggestions, feel free to [send them my way](https://github.com/Tamschi/lignin/discussions/categories/ideas)
-/// > (with permission to actually implement them here)!
+///   > The current implementation of this is somewhat inefficient and will always allocate.
+///   >
+///   > I have a more efficient scheduler in mind, but particular model would require [`set_ptr_value`](https://doc.rust-lang.org/stable/std/primitive.pointer.html#method.set_ptr_value-1)
+///   > to be stabilised first. If you have better suggestions, feel free to [send them my way](https://github.com/Tamschi/lignin/discussions/categories/ideas)
+///   > (with permission to actually implement them here)!
 ///
 /// # Panic Notes
 ///
