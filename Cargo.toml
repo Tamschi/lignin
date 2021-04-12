@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/Tamschi/lignin"
 homepage = "https://github.com/Tamschi/lignin/tree/v0.0.5"
 documentation = "https://docs.rs/lignin/0.0.5"
-keywords = ["VDOM", "tree"]
+keywords = ["VDOM", "tree", "no_std"]
 categories = ["data-structures"]
 readme = "README.md"
 include = [
@@ -28,15 +28,24 @@ is-it-maintained-open-issues = { repository = "Tamschi/lignin" }
 maintenance = { status = "experimental" }
 
 [features]
-bumpalo-collections = ["bumpalo/collections"]
-debug = ["derivative"]
+callbacks = ["lazy_static", "wasm-bindgen", "web-sys"] # Enables DOM callback support. Requires `std`.
 
 [dependencies]
-bumpalo = "~3.6.0" # public, minor version rustc bumps
-derivative = { version = "2.1.1", optional = true }
+lazy_static = { version = "1.4.0", optional = true }
+wasm-bindgen = { version = "0.2.71", optional = true } # public
+web-sys = { version = "0.3.47", optional = true, features = ["Comment", "Element", "Event", "HtmlElement", "SvgElement", "Text"] } # public
 
 [dev-dependencies]
 cargo-husky = "1.5.0"
 doc-comment = "0.3.3"
 git_info = "0.1.2"
+js-sys = "0.3.49"
+static_assertions = "1.1.0"
 version-sync = "0.9.1"
+
+[package.metadata.docs.rs]
+features = ["callbacks"]
+targets = ["x86_64-unknown-linux-gnu"] # The same everywhere.
+
+[package.metadata.playground]
+features = ["callbacks"]
