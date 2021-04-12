@@ -25,7 +25,7 @@ TODO: Date
     >
     > The feature should only be enabled by renderers that support these callbacks.  
     > Any other consumers of this library should test with the feature, but not require it.
-  * Event bindings are now both leak-safe and sound
+  * Event bindings are now both leak-resistant and sound
   * VDOM producers can now subscribe to DOM Node reference updates
   * Increased minimum Rust version from 1.44 to 1.46
     > in order to use `match` expressions in `const fn` functions.
