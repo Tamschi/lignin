@@ -23,10 +23,6 @@ jobs:
       matrix:
         os: [macos, ubuntu, windows]
         rust: ['1.46', stable, beta, nightly]
-        include:
-        - os: ubuntu
-          target: wasm32-unknown-unknown
-          no-workspace: --lib
     env:
       target: ${{matrix.target && format('--target={0}', matrix.target)}}
       workspace: ${{matrix.no-workspace || '--workspace'}}
