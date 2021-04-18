@@ -13,6 +13,25 @@ For anything else, please use the ["Custom issue"] template.
 
 ## Pull Requests
 
+### Running browser tests locally
+
+The plain `cargo test` won't run browser tests. Instead, install `wasm-pack` with
+
+```cmd
+cargo install wasm-pack
+```
+
+and then test with:
+
+```sh
+wasm-pack test --chrome --firefox --safari --headless -- --all-features
+```
+
+Omit browsers you don't have installed (CI will cover this sufficiently.), and omit `--headless` to run tests in a browser of your choice manually.
+
+Append for example `--test callback_ref_roundtrip` to run only that particular test.
+> This is especially useful without `--headless`.
+
 ### CI
 
 This repository uses fairly extensive CI to make sure everything is in order.  
