@@ -54,6 +54,16 @@
 //!
 //! For shallow comparisons, access and compare fields directly or [memoize](`Node::Memoized`) parts of the GUI.
 //!
+//! # Features
+//!
+//! ## `"callbacks"`
+//!
+//! Enables DOM callback support. Requires [`std`](https://doc.rust-lang.org/stable/std/index.html).
+//!
+//! Without this feature, most of the callback API is still available but stand-in types in [`web`] are vacant and will materialize into **any** type.
+//!
+//! Always test VDOM generators with the `"callbacks"` feature enabled if they make use of them at all, but only depend on it in order to *invoke* callbacks.
+//!
 //! # Notes on Performance
 //!
 //! ## Clone
