@@ -8,8 +8,8 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/Tamschi/TODO_CRATE_NAME"
 homepage = "https://github.com/Tamschi/TODO_CRATE_NAME/tree/v0.0.1"
 documentation = "https://docs.rs/TODO_CRATE_NAME/0.0.1"
-keywords = [TODO]
-categories = [TODO]
+keywords = [] #TODO
+categories = [] #TODO
 readme = "README.md"
 include = [
 	"**/*.rs",
@@ -20,6 +20,7 @@ include = [
 	"LICENSE-*",
 	"README.md",
 ]
+resolver = "2"
 publish = false
 
 [badges]
@@ -32,3 +33,4 @@ cargo-husky = "1.5.0"
 doc-comment = "0.3.3"
 git_info = "0.1.2"
 version-sync = "0.9.1"
+wasm-bindgen-test = "0.3.23"

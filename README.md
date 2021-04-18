@@ -2,9 +2,9 @@
 
 [![Lib.rs](https://img.shields.io/badge/Lib.rs-*-84f)](https://lib.rs/crates/TODO_CRATE_NAME)
 [![Crates.io](https://img.shields.io/crates/v/TODO_CRATE_NAME)](https://crates.io/crates/TODO_CRATE_NAME)
-[![Docs.rs](https://docs.rs/TODO_CRATE_NAME/badge.svg)](https://docs.rs/crates/TODO_CRATE_NAME)
+[![Docs.rs](https://docs.rs/TODO_CRATE_NAME/badge.svg)](https://docs.rs/TODO_CRATE_NAME)
 
-![Rust 1.40.0](https://img.shields.io/static/v1?logo=Rust&label=&message=1.40.0&color=grey)
+![Rust 1.40](https://img.shields.io/static/v1?logo=Rust&label=&message=1.40&color=grey)
 [![CI](https://github.com/Tamschi/TODO_CRATE_NAME/workflows/CI/badge.svg?branch=develop)](https://github.com/Tamschi/TODO_CRATE_NAME/actions?query=workflow%3ACI+branch%3Adevelop)
 ![Crates.io - License](https://img.shields.io/crates/l/TODO_CRATE_NAME/0.0.1)
 
@@ -26,7 +26,7 @@ cargo add TODO_CRATE_NAME
 ## Example
 
 ```rust
-TODO_EXAMPLE
+// TODO_EXAMPLE
 ```
 
 ## License
