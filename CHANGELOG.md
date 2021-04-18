@@ -2,14 +2,18 @@
 
 <!-- markdownlint-disable no-trailing-punctuation -->
 
-## next
+## 0.0.6
 
-TODO: Date
+2021-04-18
+
+This is nearly a complete rewrite of this crate, with much improved DOM feature coverage, and support for safe threading and callbacks.
+All VDOM types can now be [forgotten] without risk of memory leaks.
+
+[forgotten]: https://doc.rust-lang.org/stable/core/mem/fn.forget.html
 
 * **Breaking:**
   * Removed `bumpalo` dependency and re-export
-    > the necessary state management for Remnants will happen out of band, somehow.  
-    > Probably with mutable tree inside `lignin-dom` that's iterated in parallel to diffs.
+    > Active Remnants will likely be managed by the DOM renderer, once this feature is available.
   * Stubbed out remnant implementation
     > See above.
   * Removed "debug" feature
@@ -31,7 +35,7 @@ TODO: Date
     > in order to use `match` expressions in `const fn` functions.
 
 * Revisions
-  * Run CI against Rust 1.44 instead of Rust 1.44.0 specifically
+  * Run CI against Rust 1.46 instead of Rust 1.44.0 specifically.
 
 ## 0.0.5
 
