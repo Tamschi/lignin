@@ -2,6 +2,14 @@
 
 <!-- markdownlint-disable no-trailing-punctuation -->
 
+## next
+
+TODO: Date
+
+* Revisions
+  * Updated Rust project template to version 6
+    > This mainly leads to more thorough CI, but also fixes the docs.rs badge link.
+
 ## 0.0.6
 
 2021-04-18
