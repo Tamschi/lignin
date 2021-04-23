@@ -425,7 +425,7 @@ use callbacks_off as callbacks;
 /// It is impossible to soundly derive a `&mut R` from the `*const R`, as this pointer was originally derived from a shared reference.
 ///
 /// Similarly, no `&mut R` for the given instance may be created *or mutably re-borrowed* elsewhere in the program, by whatever means,
-/// between the calls to any [`CallbackRegistration::new`] and *dereferencing* `receiver` in `handler`,
+/// between the call to any [`CallbackRegistration::new`] and dereferencing `receiver` in `handler`,
 /// as doing so would invalidate all sibling references and pointers.
 /// (Avoiding this situation dynamically is sound.)
 ///
