@@ -148,7 +148,7 @@ use sealed::Sealed;
 ///   assert!(size_of::<Node<ThreadSafe>>() <= 16);
 /// }
 /// ```
-#[allow(clippy::clippy::type_complexity)] // `Option<CallbackRef<S, fn(DomRef<&'_ …>)>>` appears to be a little much.
+#[allow(clippy::type_complexity)] // `Option<CallbackRef<S, fn(DomRef<&'_ …>)>>` appears to be a little much.
 pub enum Node<'a, S: ThreadSafety> {
 	/// Represents a [***Comment***](https://developer.mozilla.org/en-US/docs/Web/API/Comment) node.
 	Comment {

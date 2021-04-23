@@ -719,7 +719,7 @@ where
 	pub unsafe fn from_js(key: &wasm_bindgen::JsValue) -> Option<Self> {
 		let key = key.as_f64()?;
 
-		#[allow(clippy::clippy::float_cmp)]
+		#[allow(clippy::float_cmp)]
 		if key.trunc() != key || key > u32::MAX.into() || key < 1.0 {
 			None
 		} else {
