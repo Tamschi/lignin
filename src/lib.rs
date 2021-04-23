@@ -98,9 +98,9 @@
 //!
 //! While the limit is relatively high at [`u32::MAX`], the total number of [`CallbackRegistration`]s that can be created over the program's lifetime is still limited¹.
 //!
-//! For this reason, you should hold onto [`CallbackRegistration`] instances as long a possible and avoid recreating them for each frame.
+//! For this reason, you should hold onto [`CallbackRegistration`] instances as long a possible and avoid recreating them for each VDOM update.
 //!
-//! > However, **you must not make assumptions about when the respective `callback` is invoked in relation to a component being rendered**, as [`CallbackRef`]s can legally be kept for multiple frames.
+//! > However, **you must not make assumptions about when the respective `callback` is invoked in relation to a component being rendered**, as [`CallbackRef`]s can legally be kept over multiple VDOM updates.
 //!
 //! See [`CallbackRegistration`] for storage hints.
 //!
