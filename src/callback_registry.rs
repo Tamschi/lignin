@@ -419,6 +419,19 @@ use callbacks_off as callbacks;
 ///
 /// Double-dropping a [`CallbackRegistration`] will lead to, *at best*, a panic, but retrieving a [`CallbackRef`] from a dropped [`CallbackRegistration`] is guaranteed be sound.
 /// Such a [`CallbackRef`] will never lead to a handler invocation unless the callback registry is [reset](`reset_callback_registry`).
+///
+/// ## `receiver` pointer
+///
+/// It is impossible to soundly derive a `&mut R` from the `*const R`, as this pointer was originally derived from a shared reference.
+///
+/// Similarly, no `&mut R` for the given instance may be created *or mutably re-borrowed* elsewhere in the program, by whatever means,
+/// between the calls to any [`CallbackRegistration::new`] and *dereferencing* `receiver` in `handler`,
+/// as doing so would invalidate all sibling references and pointers.
+/// (Avoiding this situation dynamically is sound.)
+///
+/// To still update values, use [atomics](https://doc.rust-lang.org/stable/core/sync/atomic/index.html),
+/// [cells](https://doc.rust-lang.org/stable/core/cell/index.html)
+/// or, if necessary, [critical sections](https://doc.rust-lang.org/stable/std/sync/index.html#higher-level-synchronization-objects).
 #[allow(clippy::type_complexity)]
 #[derive(Debug)]
 pub struct CallbackRegistration<R, C>
@@ -451,6 +464,16 @@ where
 impl<R> CallbackRegistration<R, fn(event: web::Event)> {
 	/// Creates a new [`CallbackRegistration<R, T>`] with the given `receiver` and `handler`.
 	///
+	/// # Deadlocks / Panics
+	///
+	/// Creating or dropping **any** [`CallbackRegistration`] from within `handler` **may** deadlock or panic.
+	///
+	/// > This happens due to read-to-write re-entrance of the single internal callback registry [`RwLock`](https://doc.rust-lang.org/stable/std/sync/struct.RwLock.html), but this constraint may be relaxed somewhat in the future.
+	/// >
+	/// > File an [issue](https://github.com/Tamschi/lignin/issues) or open a [discussion](https://github.com/Tamschi/lignin/discussions) with your use case if you would benefit from that, so that I can better prioritize.
+	///
+	/// Use [`callback_registry::when_unlocked_locally`](`when_unlocked_locally`) to defer any such operations where necessary.
+	///
 	/// # Safety
 	///
 	/// **The `receiver` pointer given to `handler` may dangle unless `receiver` remains pinned until the created [`CallbackRegistration`] is dropped.**
@@ -467,6 +490,16 @@ impl<R> CallbackRegistration<R, fn(event: web::Event)> {
 /// Separate `impl`s due to Rust language limitation. See [`CallbackSignature`] and expect future broadening.
 impl<R, T> CallbackRegistration<R, fn(dom_ref: DomRef<&'_ T>)> {
 	/// Creates a new [`CallbackRegistration<R, T>`] with the given `receiver` and `handler`.
+	///
+	/// # Deadlocks / Panics
+	///
+	/// Creating or dropping **any** [`CallbackRegistration`] from within `handler` **may** deadlock or panic.
+	///
+	/// > This happens due to read-to-write re-entrance of the single internal callback registry [`RwLock`](https://doc.rust-lang.org/stable/std/sync/struct.RwLock.html), but this constraint may be relaxed somewhat in the future.
+	/// >
+	/// > File an [issue](https://github.com/Tamschi/lignin/issues) or open a [discussion](https://github.com/Tamschi/lignin/discussions) with your use case if you would benefit from that, so that I can better prioritize.
+	///
+	/// Use [`callback_registry::when_unlocked_locally`](`when_unlocked_locally`) to defer any such operations where necessary.
 	///
 	/// # Safety
 	///
