@@ -6,9 +6,14 @@
 
 TODO: Date
 
+* Features
+  * Added `callback_registry::ENABLED` constant.
+  * Added `callback_registry::if_callbacks!` and `callback_registry::if_not_callbacks!` macros.
+    > Prefer using the constant over the macros where possible, as the former won't turn off syntax and type checks for part of your code.
 * Revisions
   * Updated Rust project template to version 6
     > This mainly leads to more thorough CI, but also fixes the docs.rs badge link.
+  * Added more usage notes and examples to the documentation.
 
 ## 0.0.6
 

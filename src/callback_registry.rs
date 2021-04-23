@@ -13,6 +13,51 @@ use core::{
 	pin::Pin,
 };
 
+/// Indicates whether the `"callbacks"` feature is enabled.
+pub const ENABLED: bool = cfg!(feature = "callback");
+
+/// Canonically located at `callback_registry::if_callbacks`.  
+/// Identity iff the `"callbacks"` feature is enabled, otherwise empty output.  
+/// In most cases, prefer using the [`ENABLED`] constant to always check all of your code.
+#[cfg(feature = "callbacks")]
+#[macro_export]
+macro_rules! if_callbacks {
+	{$($tt:tt)*} => {$($tt)*}
+}
+
+/// Canonically located at `callback_registry::if_callbacks`.  
+/// Identity iff the `"callbacks"` feature is enabled, otherwise empty output.  
+/// In most cases, prefer using the [`ENABLED`] constant to always check all of your code.
+#[cfg(not(feature = "callbacks"))]
+#[macro_export]
+macro_rules! if_callbacks {
+	{$($tt:tt)*} => {}
+}
+
+#[doc(inline)]
+pub use if_callbacks;
+
+/// Canonically located at `callback_registry::if_not_callbacks`.  
+/// Identity iff the `"callbacks"` feature is **not** enabled, otherwise empty output.  
+/// In most cases, prefer using the [`ENABLED`] constant to always check all of your code.
+#[cfg(feature = "callbacks")]
+#[macro_export]
+macro_rules! if_not_callbacks {
+	{$($tt:tt)*} => {}
+}
+
+/// Canonically located at `callback_registry::if_not_callbacks`.  
+/// Identity iff the `"callbacks"` feature is **not** enabled, otherwise empty output.  
+/// In most cases, prefer using the [`ENABLED`] constant to always check all of your code.
+#[cfg(not(feature = "callbacks"))]
+#[macro_export]
+macro_rules! if_not_callbacks {
+	{$($tt:tt)*} => {$($tt)*}
+}
+
+#[doc(inline)]
+pub use if_not_callbacks;
+
 #[cfg(feature = "callbacks")]
 mod callbacks_on {
 	extern crate std;
@@ -355,7 +400,7 @@ use callbacks_off as callbacks;
 
 /// A callback registration handle that should be held onto by the matching receiver `R` or a container with [pin-projection](https://doc.rust-lang.org/stable/core/pin/index.html#pinning-is-structural-for-field) towards that value.
 ///
-/// [`CallbackRegistration`] is [`!Unpin`](`Unpin`) for convenience: A receiver correctly becomes [`!Unpin`](`Unpin`) if it contains for example a `Cell<Option<CallbackRegistration<R, T>>`¹⁻².
+/// [`CallbackRegistration`] is [`!Unpin`](`Unpin`) for convenience: A receiver correctly becomes [`!Unpin`](`Unpin`) if it contains for example a `Cell<Option<CallbackRegistration<R, T>>`¹⁻², which can be conveniently initialized in a rendering function called with [`Pin<&…>`](`Pin`) argument.
 ///
 /// To hold onto a [`CallbackRegistration`] without boxing or pinning, use a newtype wrapper with explicit [`Unpin`] implementation.
 ///
