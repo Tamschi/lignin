@@ -631,8 +631,36 @@
 <span id="628">628</span>
 <span id="629">629</span>
 <span id="630">630</span>
+<span id="631">631</span>
+<span id="632">632</span>
+<span id="633">633</span>
+<span id="634">634</span>
+<span id="635">635</span>
+<span id="636">636</span>
+<span id="637">637</span>
+<span id="638">638</span>
+<span id="639">639</span>
+<span id="640">640</span>
+<span id="641">641</span>
+<span id="642">642</span>
+<span id="643">643</span>
+<span id="644">644</span>
+<span id="645">645</span>
+<span id="646">646</span>
+<span id="647">647</span>
+<span id="648">648</span>
+<span id="649">649</span>
+<span id="650">650</span>
+<span id="651">651</span>
+<span id="652">652</span>
+<span id="653">653</span>
+<span id="654">654</span>
+<span id="655">655</span>
+<span id="656">656</span>
+<span id="657">657</span>
+<span id="658">658</span>
 </pre><div class="example-wrap"><pre class="rust ">
-<span class="attribute">#![<span class="ident">doc</span>(<span class="ident">html_root_url</span> <span class="op">=</span> <span class="string">&quot;https://docs.rs/lignin/0.0.5&quot;</span>)]</span>
+<span class="attribute">#![<span class="ident">doc</span>(<span class="ident">html_root_url</span> <span class="op">=</span> <span class="string">&quot;https://docs.rs/lignin/0.0.6&quot;</span>)]</span>
 <span class="attribute">#![<span class="ident">no_std</span>]</span>
 <span class="attribute">#![<span class="ident">warn</span>(<span class="ident">clippy</span>::<span class="ident">pedantic</span>)]</span>
 <span class="attribute">#![<span class="ident">warn</span>(<span class="ident">missing_docs</span>)]</span>
@@ -688,6 +716,16 @@
 <span class="doccomment">//!</span>
 <span class="doccomment">//! For shallow comparisons, access and compare fields directly or [memoize](`Node::Memoized`) parts of the GUI.</span>
 <span class="doccomment">//!</span>
+<span class="doccomment">//! # Features</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! ## `&quot;callbacks&quot;`</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! Enables DOM callback support. Requires [`std`](https://doc.rust-lang.org/stable/std/index.html).</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! Without this feature, most of the callback API is still available but stand-in types in [`web`] are vacant and will materialize into **any** type.</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! Always test VDOM generators with the `&quot;callbacks&quot;` feature enabled if they make use of them at all, but only depend on it in order to *invoke* callbacks.</span>
+<span class="doccomment">//!</span>
 <span class="doccomment">//! # Notes on Performance</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! ## Clone</span>
@@ -718,8 +756,22 @@
 <span class="doccomment">//! Element and attribute names are always plain `&amp;str`s, which isn&#39;t ideal for software that renders its GUI more directly than through a web browser.</span>
 <span class="doccomment">//! I&#39;m open to maintaining a generic fork if there&#39;s interest in this regard.</span>
 <span class="doccomment">//!</span>
+<span class="doccomment">//! ## with `&quot;callbacks&quot;` feature</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! While the limit is relatively high at [`u32::MAX`], the total number of [`CallbackRegistration`]s that can be created over the program&#39;s lifetime is still limited¹.</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! For this reason, you should hold onto [`CallbackRegistration`] instances as long a possible and avoid recreating them for each frame.</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! &gt; However, **you must not make assumptions about when the respective `callback` is invoked in relation to a component being rendered**, as [`CallbackRef`]s can legally be kept for multiple frames.</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! See [`CallbackRegistration`] for storage hints.</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! ¹ APIs exist in [`callback_registry`] to partially or completely reset this limit, but they have additional safety requirements to the application as a whole.</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! ## without `&quot;callbacks&quot;` feature</span>
+<span class="doccomment">//!</span>
 <span class="doccomment">//! While the `&quot;callbacks&quot;` feature is disabled, all callback management is erased.</span>
-<span class="doccomment">//! This makes `lignin` faster and removes usage limits, but removes unique identities from [`CallbackRegistration`] and [`CallbackRef`], which affects comparisons and hashing.</span>
+<span class="doccomment">//! This makes `lignin` faster and removes all instantiation limits on [`CallbackRegistration`], but removes unique identities from [`CallbackRegistration`] and [`CallbackRef`], which affects comparisons and hashing.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! [MathML](https://developer.mozilla.org/en-US/docs/Web/MathML) support is rudimentary due lack of direct support in web-sys.</span>
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">doctest</span>)]</span>
@@ -825,6 +877,10 @@
 	<span class="doccomment">/// A (good enough) `content` [hash](`core::hash`) makes for a good `state_key`, but this isn&#39;t the only possible scheme and may not be the optimal one for your use case.</span>
 	<span class="doccomment">///</span>
 	<span class="doccomment">/// # Implementation Contract (reminder)</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// Even if [`state_key`](`Node::Memoized::state_key`) is unchanged between two VDOM iterations, the full contents must still be present in the second.</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// &gt; When skipping the memoized [`content`](`Node::Memoized::content`), a renderer may still require this information to, for example, advance its DOM cursor.</span>
 	<span class="doccomment">///</span>
 	<span class="doccomment">/// Note that when diffing a non-[`Memoized`](`Node::Memoized`) [`Node`] into a [`Node::Memoized`] (and vice-versa), renderers must still behave as if the DOM tree was recreated, which means cycling all [***Node***](https://developer.mozilla.org/en-US/docs/Web/API/Node) reference bindings even if they match.</span>
 	<span class="doccomment">///</span>
@@ -1263,4 +1319,5 @@
 	<span class="kw">type</span> <span class="ident">ThreadSafety</span> <span class="op">=</span> <span class="ident">S</span>;
 }
 </pre></div>
-</section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../";window.currentCrate = "lignin";</script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>
+</section><section id="search" class="content hidden"></section><section class="footer"></section><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lignin"></div>
+    <script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>

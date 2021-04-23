@@ -852,6 +852,35 @@
 <span id="849">849</span>
 <span id="850">850</span>
 <span id="851">851</span>
+<span id="852">852</span>
+<span id="853">853</span>
+<span id="854">854</span>
+<span id="855">855</span>
+<span id="856">856</span>
+<span id="857">857</span>
+<span id="858">858</span>
+<span id="859">859</span>
+<span id="860">860</span>
+<span id="861">861</span>
+<span id="862">862</span>
+<span id="863">863</span>
+<span id="864">864</span>
+<span id="865">865</span>
+<span id="866">866</span>
+<span id="867">867</span>
+<span id="868">868</span>
+<span id="869">869</span>
+<span id="870">870</span>
+<span id="871">871</span>
+<span id="872">872</span>
+<span id="873">873</span>
+<span id="874">874</span>
+<span id="875">875</span>
+<span id="876">876</span>
+<span id="877">877</span>
+<span id="878">878</span>
+<span id="879">879</span>
+<span id="880">880</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Transitive (across function boundaries) [`ThreadSafety`] inference, mainly for use by frameworks.</span>
 <span class="doccomment">//!</span>
@@ -1119,7 +1148,7 @@
 <span class="doccomment">//!</span>
 <span class="doccomment">//! #### Identity Cast</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! Calling `.deanonymize()` on named types is valid but ultimately useless:</span>
+<span class="doccomment">//! Calling `.deanonymize()` on named types is valid but ultimately useless, so it produces a warning if resolved like that:</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! ```</span>
 <span class="doccomment">//! # use lignin::{</span>
@@ -1147,9 +1176,38 @@
 <span class="doccomment">//! //   Call of `.deanonymize()` on named type.</span>
 <span class="doccomment">//! ```</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! Macros can suppress this warning by emitting the method call with [`Span::mixed_site()`](https://doc.rust-lang.org/stable/proc_macro/struct.Span.html#method.mixed_site) hygiene.</span>
+<span class="doccomment">//! Macros should suppress this warning as specifically as possible:</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! &lt;!-- TODO: Make sure that&#39;s actually the case. --&gt;</span>
+<span class="doccomment">//! ```rust</span>
+<span class="doccomment">//! # use lignin::{</span>
+<span class="doccomment">//! #   auto_safety::{Align as _, AutoSafe, Deanonymize as _},</span>
+<span class="doccomment">//! #   Node, ThreadBound, ThreadSafe,</span>
+<span class="doccomment">//! # };</span>
+<span class="doccomment">//! #</span>
+<span class="doccomment">//! # fn safe&lt;&#39;a&gt;() -&gt; Node::&lt;&#39;a, ThreadSafe&gt; { Node::Multi(&amp;[]) }</span>
+<span class="doccomment">//! # fn bound&lt;&#39;a&gt;() -&gt; Node::&lt;&#39;a, ThreadBound&gt; { Node::Multi(&amp;[]) }</span>
+<span class="doccomment">//! # fn inferred_safe&lt;&#39;a&gt;() -&gt; impl AutoSafe&lt;Node::&lt;&#39;a, ThreadBound&gt;&gt; { safe() }</span>
+<span class="doccomment">//! # fn inferred_bound&lt;&#39;a&gt;() -&gt; impl AutoSafe&lt;Node::&lt;&#39;a, ThreadBound&gt;&gt; { bound() }</span>
+<span class="doccomment">//! #</span>
+<span class="doccomment">//! # fn allocate&lt;&#39;a, T&gt;(value: T) -&gt; &amp;&#39;a T { Box::leak(Box::new(value)) }</span>
+<span class="doccomment">//! #</span>
+<span class="doccomment">//! # fn assert_safe&lt;&#39;a&gt;(value: Node&lt;&#39;a, ThreadSafe&gt;) { }</span>
+<span class="doccomment">//! # fn assert_bound&lt;&#39;a&gt;(value: Node&lt;&#39;a, ThreadBound&gt;) { }</span>
+<span class="doccomment">//! #</span>
+<span class="doccomment">//! {</span>
+<span class="doccomment">//!   let rendered = // …</span>
+<span class="doccomment">//!   # safe();</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//!   #[deny(warnings)]</span>
+<span class="doccomment">//!   {</span>
+<span class="doccomment">//!     // Use `$crate` if possible, and ideally don&#39;t leak these imports into caller code.</span>
+<span class="doccomment">//!     use ::lignin::auto_safety::{AutoSafe as _, Deanonymize as _};</span>
+<span class="doccomment">//!     #[allow(deprecated)]</span>
+<span class="doccomment">//!     rendered.deanonymize()</span>
+<span class="doccomment">//!   }</span>
+<span class="doccomment">//! }</span>
+<span class="doccomment">//! # ;</span>
+<span class="doccomment">//! ```</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! #### No Coercion</span>
 <span class="doccomment">//!</span>
@@ -1705,4 +1763,5 @@
 <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">inline</span>)]</span>
 <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">AutoSafe_alias</span>;
 </pre></div>
-</section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../";window.currentCrate = "lignin";</script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>
+</section><section id="search" class="content hidden"></section><section class="footer"></section><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lignin"></div>
+    <script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>

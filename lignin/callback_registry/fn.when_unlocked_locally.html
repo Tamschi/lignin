@@ -1,0 +1,32 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `when_unlocked_locally` fn in crate `lignin`."><meta name="keywords" content="rust, rustlang, rust-lang, when_unlocked_locally"><title>lignin::callback_registry::when_unlocked_locally - Rust</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled ><script id="default-settings"></script><script src="../../storage.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+<link rel="alternate icon" type="image/png" href="../../favicon-16x16.png">
+<link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc fn"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../../lignin/index.html'><div class='logo-container rust-logo'><img src='../../rust-logo.png' alt='logo'></div></a><div class="sidebar-elems"><p class="location"><a href="../index.html">lignin</a>::<wbr><a href="index.html">callback_registry</a></p><div id="sidebar-vars" data-name="when_unlocked_locally" data-ty="fn" data-relpath=""></div><script defer src="sidebar-items.js"></script></div></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><script src="../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" class="help-button">?</button>
+                <a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><h1 class="fqn"><span class="in-band">Function <a href="../index.html">lignin</a>::<wbr><a href="index.html">callback_registry</a>::<wbr><a class="fn" href="">when_unlocked_locally</a></span><span class="out-of-band"><span id="render-detail"><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span><a class="srclink" href="../../src/lignin/callback_registry.rs.html#827-829" title="goto source code">[src]</a></span></h1><pre class="rust fn">pub fn when_unlocked_locally(continuation: impl 'static + <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnOnce.html" title="trait core::ops::function::FnOnce">FnOnce</a>())</pre><div class="docblock"><p>Causes a continuation to be called when the callback registry is not locked (anymore) by the current thread.</p>
+<blockquote>
+<p><strong>Warning:</strong></p>
+<p>Spawning a thread that calls this function and then joining on it from a callback handler is an easy path towards deadlocks, so please avoid doing that.</p>
+</blockquote>
+<p>More specifically: This function has one of two effects, depending on whether it is called in scope of (and on the same thread as!) a callback managed by <code>lignin</code>:</p>
+<ul>
+<li>
+<p>If <strong>no</strong> callback is currently running on this thread, the continuation is invoked immediately.</p>
+</li>
+<li>
+<p>If such a callback is currently running on the current thread, <code>continuation</code> is scheduled for later execution.</p>
+<p>As soon as the registry becomes unlocked, all such scheduled continuations are run, <em>in order of their respective <a href="../../lignin/callback_registry/fn.when_unlocked_locally.html" title="when_unlocked_locally"><code>when_unlocked_locally</code></a> calls</em>.</p>
+<blockquote>
+<p>The current implementation of this is somewhat inefficient and will always allocate.</p>
+<p>I have a more efficient scheduler in mind, but that particular model would require <del><a href="https://doc.rust-lang.org/stable/std/primitive.pointer.html#method.set_ptr_value-1"><code>set_ptr_value</code></a></del>
+at least <a href="https://doc.rust-lang.org/stable/std/alloc/trait.Allocator.html"><code>std::alloc::Allocator</code></a>
+to be stabilized first in order to construct a consumable box pointing to an allocation arena.</p>
+<p>If you have a better suggestion that works on stable Rust, feel free to <a href="https://github.com/Tamschi/lignin/discussions/categories/ideas">send it my way</a>
+(with permission to actually implement it here if it's extensive enough to warrant that)!</p>
+</blockquote>
+</li>
+</ul>
+<h1 id="panic-notes" class="section-header"><a href="#panic-notes">Panic Notes</a></h1>
+<p>While this function won't panic by itself (except due to memory limits),
+it's still possible that a callback handler panics while continuations are pending.</p>
+<p>Should this happen, all pending continuations are dropped without being executed.</p>
+</div></section><section id="search" class="content hidden"></section><section class="footer"></section><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lignin"></div>
+    <script src="../../main.js"></script><script defer src="../../search-index.js"></script></body></html>

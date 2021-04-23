@@ -1,3 +1,3 @@
 (function() {var implementors = {};
-implementors["lignin_html"] = [{"text":"impl&lt;'a, S:&nbsp;ThreadSafety&gt; Error for Error&lt;'a, S&gt;","synthetic":false,"types":[]}];
+implementors["lignin_html"] = [{"text":"impl&lt;'a, S:&nbsp;<a class=\"trait\" href=\"lignin/trait.ThreadSafety.html\" title=\"trait lignin::ThreadSafety\">ThreadSafety</a>&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/std/error/trait.Error.html\" title=\"trait std::error::Error\">Error</a> for <a class=\"struct\" href=\"lignin_html/struct.Error.html\" title=\"struct lignin_html::Error\">Error</a>&lt;'a, S&gt;","synthetic":false,"types":["lignin_html::Error"]}];
 if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
