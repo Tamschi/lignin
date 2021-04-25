@@ -13,6 +13,51 @@ use core::{
 	pin::Pin,
 };
 
+/// Indicates whether the `"callbacks"` feature is enabled.
+pub const ENABLED: bool = cfg!(feature = "callback");
+
+/// Canonically located at `callback_registry::if_callbacks`.  
+/// Identity iff the `"callbacks"` feature is enabled, otherwise empty output.  
+/// In most cases, prefer using the [`ENABLED`] constant to always check all of your code.
+#[cfg(feature = "callbacks")]
+#[macro_export]
+macro_rules! if_callbacks {
+	{$($tt:tt)*} => {$($tt)*}
+}
+
+/// Canonically located at `callback_registry::if_callbacks`.  
+/// Identity iff the `"callbacks"` feature is enabled, otherwise empty output.  
+/// In most cases, prefer using the [`ENABLED`] constant to always check all of your code.
+#[cfg(not(feature = "callbacks"))]
+#[macro_export]
+macro_rules! if_callbacks {
+	{$($tt:tt)*} => {}
+}
+
+#[doc(inline)]
+pub use if_callbacks;
+
+/// Canonically located at `callback_registry::if_not_callbacks`.  
+/// Identity iff the `"callbacks"` feature is **not** enabled, otherwise empty output.  
+/// In most cases, prefer using the [`ENABLED`] constant to always check all of your code.
+#[cfg(feature = "callbacks")]
+#[macro_export]
+macro_rules! if_not_callbacks {
+	{$($tt:tt)*} => {}
+}
+
+/// Canonically located at `callback_registry::if_not_callbacks`.  
+/// Identity iff the `"callbacks"` feature is **not** enabled, otherwise empty output.  
+/// In most cases, prefer using the [`ENABLED`] constant to always check all of your code.
+#[cfg(not(feature = "callbacks"))]
+#[macro_export]
+macro_rules! if_not_callbacks {
+	{$($tt:tt)*} => {$($tt)*}
+}
+
+#[doc(inline)]
+pub use if_not_callbacks;
+
 #[cfg(feature = "callbacks")]
 mod callbacks_on {
 	extern crate std;
@@ -355,7 +400,7 @@ use callbacks_off as callbacks;
 
 /// A callback registration handle that should be held onto by the matching receiver `R` or a container with [pin-projection](https://doc.rust-lang.org/stable/core/pin/index.html#pinning-is-structural-for-field) towards that value.
 ///
-/// [`CallbackRegistration`] is [`!Unpin`](`Unpin`) for convenience: A receiver correctly becomes [`!Unpin`](`Unpin`) if it contains for example a `Cell<Option<CallbackRegistration<R, T>>`¹⁻².
+/// [`CallbackRegistration`] is [`!Unpin`](`Unpin`) for convenience: A receiver correctly becomes [`!Unpin`](`Unpin`) if it contains for example a `Cell<Option<CallbackRegistration<R, T>>`¹⁻², which can be conveniently initialized in a rendering function called with [`Pin<&…>`](`Pin`) argument.
 ///
 /// To hold onto a [`CallbackRegistration`] without boxing or pinning, use a newtype wrapper with explicit [`Unpin`] implementation.
 ///
@@ -374,6 +419,19 @@ use callbacks_off as callbacks;
 ///
 /// Double-dropping a [`CallbackRegistration`] will lead to, *at best*, a panic, but retrieving a [`CallbackRef`] from a dropped [`CallbackRegistration`] is guaranteed be sound.
 /// Such a [`CallbackRef`] will never lead to a handler invocation unless the callback registry is [reset](`reset_callback_registry`).
+///
+/// ## `receiver` pointer
+///
+/// It is impossible to soundly derive a `&mut R` from the `*const R`, as this pointer was originally derived from a shared reference.
+///
+/// Similarly, no `&mut R` for the given instance may be created *or mutably re-borrowed* elsewhere in the program, by whatever means,
+/// between the call to any [`CallbackRegistration::new`] and dereferencing `receiver` in `handler`,
+/// as doing so would invalidate all sibling references and pointers.
+/// (Avoiding this situation dynamically is sound.)
+///
+/// To still update values, use [atomics](https://doc.rust-lang.org/stable/core/sync/atomic/index.html),
+/// [cells](https://doc.rust-lang.org/stable/core/cell/index.html)
+/// or, if necessary, [critical sections](https://doc.rust-lang.org/stable/std/sync/index.html#higher-level-synchronization-objects).
 #[allow(clippy::type_complexity)]
 #[derive(Debug)]
 pub struct CallbackRegistration<R, C>
@@ -406,6 +464,16 @@ where
 impl<R> CallbackRegistration<R, fn(event: web::Event)> {
 	/// Creates a new [`CallbackRegistration<R, T>`] with the given `receiver` and `handler`.
 	///
+	/// # Deadlocks / Panics
+	///
+	/// Creating or dropping **any** [`CallbackRegistration`] from within `handler` **may** deadlock or panic.
+	///
+	/// > This happens due to read-to-write re-entrance of the single internal callback registry [`RwLock`](https://doc.rust-lang.org/stable/std/sync/struct.RwLock.html), but this constraint may be relaxed somewhat in the future.
+	/// >
+	/// > File an [issue](https://github.com/Tamschi/lignin/issues) or open a [discussion](https://github.com/Tamschi/lignin/discussions) with your use case if you would benefit from that, so that I can better prioritize.
+	///
+	/// Use [`callback_registry::when_unlocked_locally`](`when_unlocked_locally`) to defer any such operations where necessary.
+	///
 	/// # Safety
 	///
 	/// **The `receiver` pointer given to `handler` may dangle unless `receiver` remains pinned until the created [`CallbackRegistration`] is dropped.**
@@ -422,6 +490,16 @@ impl<R> CallbackRegistration<R, fn(event: web::Event)> {
 /// Separate `impl`s due to Rust language limitation. See [`CallbackSignature`] and expect future broadening.
 impl<R, T> CallbackRegistration<R, fn(dom_ref: DomRef<&'_ T>)> {
 	/// Creates a new [`CallbackRegistration<R, T>`] with the given `receiver` and `handler`.
+	///
+	/// # Deadlocks / Panics
+	///
+	/// Creating or dropping **any** [`CallbackRegistration`] from within `handler` **may** deadlock or panic.
+	///
+	/// > This happens due to read-to-write re-entrance of the single internal callback registry [`RwLock`](https://doc.rust-lang.org/stable/std/sync/struct.RwLock.html), but this constraint may be relaxed somewhat in the future.
+	/// >
+	/// > File an [issue](https://github.com/Tamschi/lignin/issues) or open a [discussion](https://github.com/Tamschi/lignin/discussions) with your use case if you would benefit from that, so that I can better prioritize.
+	///
+	/// Use [`callback_registry::when_unlocked_locally`](`when_unlocked_locally`) to defer any such operations where necessary.
 	///
 	/// # Safety
 	///
@@ -641,7 +719,7 @@ where
 	pub unsafe fn from_js(key: &wasm_bindgen::JsValue) -> Option<Self> {
 		let key = key.as_f64()?;
 
-		#[allow(clippy::clippy::float_cmp)]
+		#[allow(clippy::float_cmp)]
 		if key.trunc() != key || key > u32::MAX.into() || key < 1.0 {
 			None
 		} else {

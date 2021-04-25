@@ -1,4 +1,4 @@
-#![doc(html_root_url = "https://docs.rs/lignin/0.0.6")]
+#![doc(html_root_url = "https://docs.rs/lignin/0.0.7")]
 #![no_std]
 #![warn(clippy::pedantic)]
 #![warn(missing_docs)]
@@ -94,8 +94,22 @@
 //! Element and attribute names are always plain `&str`s, which isn't ideal for software that renders its GUI more directly than through a web browser.
 //! I'm open to maintaining a generic fork if there's interest in this regard.
 //!
+//! ## with `"callbacks"` feature
+//!
+//! While the limit is relatively high at [`u32::MAX`], the total number of [`CallbackRegistration`]s that can be created over the program's lifetime is still limited¹.
+//!
+//! For this reason, you should hold onto [`CallbackRegistration`] instances as long a possible and avoid recreating them for each VDOM update.
+//!
+//! > However, **you must not make assumptions about when the respective `callback` is invoked in relation to a component being rendered**, as [`CallbackRef`]s can legally be kept over multiple VDOM updates.
+//!
+//! See [`CallbackRegistration`] for storage hints.
+//!
+//! ¹ APIs exist in [`callback_registry`] to partially or completely reset this limit, but they have additional safety requirements to the application as a whole.
+//!
+//! ## without `"callbacks"` feature
+//!
 //! While the `"callbacks"` feature is disabled, all callback management is erased.
-//! This makes `lignin` faster and removes usage limits, but removes unique identities from [`CallbackRegistration`] and [`CallbackRef`], which affects comparisons and hashing.
+//! This makes `lignin` faster and removes all instantiation limits on [`CallbackRegistration`], but removes unique identities from [`CallbackRegistration`] and [`CallbackRef`], which affects comparisons and hashing.
 //!
 //! [MathML](https://developer.mozilla.org/en-US/docs/Web/MathML) support is rudimentary due lack of direct support in web-sys.
 #[cfg(doctest)]
@@ -134,7 +148,7 @@ use sealed::Sealed;
 ///   assert!(size_of::<Node<ThreadSafe>>() <= 16);
 /// }
 /// ```
-#[allow(clippy::clippy::type_complexity)] // `Option<CallbackRef<S, fn(DomRef<&'_ …>)>>` appears to be a little much.
+#[allow(clippy::type_complexity)] // `Option<CallbackRef<S, fn(DomRef<&'_ …>)>>` appears to be a little much.
 pub enum Node<'a, S: ThreadSafety> {
 	/// Represents a [***Comment***](https://developer.mozilla.org/en-US/docs/Web/API/Comment) node.
 	Comment {

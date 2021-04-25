@@ -44,7 +44,7 @@ fn crates() {
 fn docs() {
 	version_sync::assert_contains_regex!(
 		"README.md",
-		r"^\[!\[Docs\.rs\]\(https://docs\.rs/{name}/badge\.svg\)\]\(https://docs\.rs/crates/{name}\)$"
+		r"^\[!\[Docs\.rs\]\(https://docs\.rs/{name}/badge\.svg\)\]\(https://docs\.rs/{name}\)$"
 	);
 }
 
