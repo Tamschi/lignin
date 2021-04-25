@@ -2,9 +2,9 @@
 
 <!-- markdownlint-disable no-trailing-punctuation -->
 
-## next
+## 0.0.7
 
-TODO: Date
+2021-04-25
 
 * Features
   * Added `callback_registry::ENABLED` constant.
