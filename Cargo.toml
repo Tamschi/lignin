@@ -36,12 +36,16 @@ wasm-bindgen = { version = "0.2.71", optional = true } # public
 web-sys = { version = "0.3.47", optional = true, features = ["Comment", "Element", "Event", "HtmlElement", "SvgElement", "Text"] } # public
 
 [dev-dependencies]
+bumpalo = "3.6.1"
 cargo-husky = "1.5.0"
+crc32fast = "1.2.1"
 doc-comment = "0.3.3"
 git_info = "0.1.2"
+intaglio = "1.2.1"
 js-sys = "0.3.49"
 static_assertions = "1.1.0"
 version-sync = "0.9.1"
+wasm-bindgen = "0.2.73"
 wasm-bindgen-test = "0.3.23"
 
 [package.metadata.docs.rs]

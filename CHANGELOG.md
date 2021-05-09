@@ -2,6 +2,15 @@
 
 <!-- markdownlint-disable no-trailing-punctuation -->
 
+## next
+
+TODO: Date
+
+* **Breaking:**
+  * The type of `ReorderableFragment::dom_key` has changed from `usize` to `u32`.
+    > This change comes with expanded documentation on `Node::Keyed`,
+    > which includes a usage example!
+
 ## 0.0.7
 
 2021-04-25
