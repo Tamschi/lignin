@@ -283,16 +283,16 @@ pub enum Node<'a, S: ThreadSafety> {
 	/// // `.unwrap_throw()` produces smaller executables when targeting Wasm.
 	/// // However, the error message may be less specific.
 	/// use wasm_bindgen::UnwrapThrowExt as _;
-	/// 
+	///
 	/// // Persist this in your component.
 	/// let mut key_map: SymbolTable<BuildHasherDefault<Hasher>> = SymbolTable::default();
-	/// 
+	///
 	/// // Fake data:
 	/// let items = ["Prepare for trouble!", "And make it double!"];
-	/// 
+	///
 	/// // Fake render parameter:
 	/// let bump = Bump::new();
-	/// 
+	///
 	/// // Render:
 	/// let _ = Node::Keyed::<ThreadSafe>(bump.alloc_slice_fill_iter(items.iter().map(|item| {
 	///     ReorderableFragment {
