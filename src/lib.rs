@@ -112,6 +112,20 @@
 //! This makes `lignin` faster and removes all instantiation limits on [`CallbackRegistration`], but removes unique identities from [`CallbackRegistration`] and [`CallbackRef`], which affects comparisons and hashing.
 //!
 //! [MathML](https://developer.mozilla.org/en-US/docs/Web/MathML) support is rudimentary due lack of direct support in web-sys.
+//!
+//! # Usage Notes
+//!
+//! ## Optional Tags
+//!
+//! > This is only a suggestion. Renderers should normally not depend on certain tags to be present or absent.
+//!
+//! While HTML allows certain elements, like [***`<body>`***](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/body)
+//! to be partially or entirely implied, [`lignin`](`crate`) is not granular enough to model this accurately.
+//!
+//! Implied elements are also still present in the browser DOM, even if both their start and end tag have been omitted.
+//!
+//! As such, these elements should normally be explicit in the VDOM.
+//! HTML renderers may omit tags from the serialised document or fragment [according to the HTML specification](https://html.spec.whatwg.org/multipage/syntax.html#optional-tags).
 #[cfg(doctest)]
 pub mod readme {
 	doc_comment::doctest!("../README.md");

@@ -11,6 +11,9 @@ TODO: Date
     > This change comes with expanded documentation on `Node::Keyed`,
     > which includes a usage example!
 
+* Revisions
+  * Added new "Usage Notes" section to the crate documentation.
+
 ## 0.0.7
 
 2021-04-25
