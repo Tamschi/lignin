@@ -334,7 +334,7 @@ pub enum Node<'a, S: ThreadSafety> {
 	/// > More importantly, duplicate DOM keys can introduce subtle UX glitches into your app, which can shift [focus](https://developer.mozilla.org/en-US/docs/Web/API/HTMLOrForeignElement/focus)
 	/// > in unexpected ways inside a list. (This can most easily occur when dismissing a duplicate item with contained button.)
 	/// >
-	/// > This glitches are likely imperceptible to the majority of your users, unless they navigate by keyboard, or use a screen reader, or your focus style is quite visible, or items animate in or out or to their new position, … the list of edge cases is really quite long.
+	/// > These glitches are likely imperceptible to the majority of your users, unless they navigate by keyboard, or use a screen reader, or your focus style is quite visible, or items animate in or out or to their new position, … the list of edge cases is really quite long.
 	/// > The point is that **these issues may be subtle during early development but can surface in force later, when it's difficult to fix them thoroughly**. **`lignin` avoids this** by denying the necessary circumstance (duplication of keys) for them to occur in the first place.
 	Keyed(&'a [ReorderableFragment<'a, S>]),
 	/// Represents a [***Text***](https://developer.mozilla.org/en-US/docs/Web/API/Text) node.
