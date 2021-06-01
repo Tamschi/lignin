@@ -13,6 +13,9 @@ TODO: Date
 
 * Revisions
   * Added new "Usage Notes" section to the crate documentation.
+  * Added SECURITY.md to package.
+    > This file contains information on how to report vulnerabilities,
+    > as well as on how to subscribe to vulnerability advisories and/or crate update notifications in general.
 
 ## 0.0.7
 
