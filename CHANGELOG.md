@@ -2,9 +2,9 @@
 
 <!-- markdownlint-disable no-trailing-punctuation -->
 
-## next
+## 0.0.8
 
-TODO: Date
+2021-06-01
 
 * **Breaking:**
   * The type of `ReorderableFragment::dom_key` has changed from `usize` to `u32`.
