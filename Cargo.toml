@@ -21,12 +21,11 @@ include = [
 	"README.md",
 	"SECURITY.md",
 ]
-publish = false
 
 [badges]
 is-it-maintained-issue-resolution = { repository = "Tamschi/lignin" }
 is-it-maintained-open-issues = { repository = "Tamschi/lignin" }
-maintenance = { status = "experimental" }
+maintenance = { status = "actively-developed" }
 
 [features]
 callbacks = ["lazy_static", "wasm-bindgen", "web-sys"] # Enables DOM callback support. Requires `std`.
