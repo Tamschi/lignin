@@ -2,6 +2,12 @@
 
 <!-- markdownlint-disable no-trailing-punctuation -->
 
+## 0.1.0
+
+2021-06-01
+
+Initial maintenance branch release (`v0.1`), identical to version 0.0.8.
+
 ## 0.0.8
 
 2021-06-01
