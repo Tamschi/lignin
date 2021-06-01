@@ -2,6 +2,21 @@
 
 <!-- markdownlint-disable no-trailing-punctuation -->
 
+## 0.0.8
+
+2021-06-01
+
+* **Breaking:**
+  * The type of `ReorderableFragment::dom_key` has changed from `usize` to `u32`.
+    > This change comes with expanded documentation on `Node::Keyed`,
+    > which includes a usage example!
+
+* Revisions
+  * Added new "Usage Notes" section to the crate documentation.
+  * Added SECURITY.md to package.
+    > This file contains information on how to report vulnerabilities,
+    > as well as on how to subscribe to vulnerability advisories and/or crate update notifications in general.
+
 ## 0.0.7
 
 2021-04-25

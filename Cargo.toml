@@ -1,13 +1,13 @@
 [package]
 name = "lignin"
-version = "0.0.7"
+version = "0.0.8"
 authors = ["Tamme Schichler <tamme@schichler.dev>"]
 edition = "2018"
 description = "A virtual DOM structure, primarily for web use."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Tamschi/lignin"
-homepage = "https://github.com/Tamschi/lignin/tree/v0.0.7"
-documentation = "https://docs.rs/lignin/0.0.7"
+homepage = "https://github.com/Tamschi/lignin/tree/v0.0.8"
+documentation = "https://docs.rs/lignin/0.0.8"
 keywords = ["VDOM", "tree", "no_std"]
 categories = ["data-structures"]
 readme = "README.md"
@@ -19,6 +19,7 @@ include = [
 	"CODE_OF_CONDUCT.md",
 	"LICENSE-*",
 	"README.md",
+	"SECURITY.md",
 ]
 
 [badges]
@@ -35,12 +36,16 @@ wasm-bindgen = { version = "0.2.71", optional = true } # public
 web-sys = { version = "0.3.47", optional = true, features = ["Comment", "Element", "Event", "HtmlElement", "SvgElement", "Text"] } # public
 
 [dev-dependencies]
+bumpalo = "3.6.1"
 cargo-husky = "1.5.0"
+crc32fast = "1.2.1"
 doc-comment = "0.3.3"
 git_info = "0.1.2"
+intaglio = "1.2.1"
 js-sys = "0.3.49"
 static_assertions = "1.1.0"
 version-sync = "0.9.1"
+wasm-bindgen = "0.2.73"
 wasm-bindgen-test = "0.3.23"
 
 [package.metadata.docs.rs]

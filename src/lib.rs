@@ -1,4 +1,4 @@
-#![doc(html_root_url = "https://docs.rs/lignin/0.0.7")]
+#![doc(html_root_url = "https://docs.rs/lignin/0.0.8")]
 #![no_std]
 #![warn(clippy::pedantic)]
 #![warn(missing_docs)]
@@ -112,6 +112,20 @@
 //! This makes `lignin` faster and removes all instantiation limits on [`CallbackRegistration`], but removes unique identities from [`CallbackRegistration`] and [`CallbackRef`], which affects comparisons and hashing.
 //!
 //! [MathML](https://developer.mozilla.org/en-US/docs/Web/MathML) support is rudimentary due lack of direct support in web-sys.
+//!
+//! # Usage Notes
+//!
+//! ## Optional Tags
+//!
+//! > This is only a suggestion. Renderers should normally not depend on certain tags to be present or absent.
+//!
+//! While HTML allows certain elements, like [***`<body>`***](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/body)
+//! to be partially or entirely implied, [`lignin`](`crate`) is not granular enough to model this accurately.
+//!
+//! Implied elements are also still present in the browser DOM, even if both their start and end tag have been omitted.
+//!
+//! As such, these elements should normally be explicit in the VDOM.
+//! HTML renderers may omit tags from the serialised document or fragment [according to the HTML specification](https://html.spec.whatwg.org/multipage/syntax.html#optional-tags).
 #[cfg(doctest)]
 pub mod readme {
 	doc_comment::doctest!("../README.md");
@@ -250,7 +264,7 @@ pub enum Node<'a, S: ThreadSafety> {
 	/// > **This is not a soundness contract**. Code using this crate must not rely on it for soundness.
 	/// > However, it is free to panic when encountering an incorrect implementation.
 	///
-	/// The [`ReorderableFragment::dom_key`] values must be unique within a slice referenced by a [`Node::Keyed`] instance.
+	/// The [`ReorderableFragment::dom_key`] values **must be unique** within a slice referenced by a [`Node::Keyed`] instance.
 	///
 	///
 	/// If a [`dom_key`](`ReorderableFragment::dom_key`) value appears both in the initial and target slice of a [`ReorderableFragment::dom_key`] diff,
@@ -259,7 +273,69 @@ pub enum Node<'a, S: ThreadSafety> {
 	///
 	/// > These rules do not apply between distinct [`ReorderableFragment`] slices, even if they overlap in memory or one is reachable from the other.
 	///
-	/// > The recursive diff otherwise proceeds as normal. There are no rules on whether it happens before or after the reordering.
+	/// > The recursive diff otherwise proceeds as normal.
+	/// > There are no rules on whether it happens before, during or after the reordering.
+	///
+	/// # Usage Notes
+	///
+	/// [`ReorderableFragment::dom_key`] is of type [`u32`] and intentionally doesn't fit [`Hasher`](`core::hash::Hasher`) output.  
+	/// It may be tempting to use a hash as easily-made DOM key, but this would violate the uniqueness constraint in the implementation contract above.
+	///
+	/// To derive unique `dom_key`s from your application's native IDs, you may want to use a symbol interner like [intaglio](https://docs.rs/intaglio/1).  
+	/// When doing so, consider using a custom ([`Build`](`core::hash::BuildHasher`))[`Hasher`](`core::hash::Hasher`) to reduce the code size of your compiled program.
+	/// A "bad" hash won't hurt your app if individual symbol tables are small.
+	///
+	/// ## Example
+	///
+	/// ```
+	/// use bumpalo::Bump;
+	/// // CRC32 is about as simple a hash as is compatible with `core::hash::Hash`.
+	/// use crc32fast::Hasher;
+	/// use intaglio::SymbolTable;
+	/// use lignin::{Node, ReorderableFragment, ThreadSafe};
+	/// use std::{borrow::Cow, hash::BuildHasherDefault};
+	/// // `.unwrap_throw()` produces smaller executables when targeting Wasm.
+	/// // However, the error message may be less specific.
+	/// use wasm_bindgen::UnwrapThrowExt as _;
+	///
+	/// // Persist this in your component.
+	/// let mut key_map: SymbolTable<BuildHasherDefault<Hasher>> = SymbolTable::default();
+	///
+	/// // Fake data:
+	/// let items = ["Prepare for trouble!", "And make it double!"];
+	///
+	/// // Fake render parameter:
+	/// let bump = Bump::new();
+	///
+	/// // Render:
+	/// let _ = Node::Keyed::<ThreadSafe>(bump.alloc_slice_fill_iter(items.iter().map(|item| {
+	///     ReorderableFragment {
+	///         dom_key: key_map.intern(Cow::Borrowed(*item)).unwrap_throw().id(),
+	///         content: Node::Text {
+	///             text: item,
+	///             dom_binding: None,
+	///         },
+	///     }
+	/// })));
+	/// ```
+	///
+	/// # Motivation
+	///
+	/// > You may have noticed that the implementation contract for [`Node::Keyed`] is unusually strict compared to other frameworks.
+	/// >
+	/// > There are two reasons for this:
+	/// >
+	/// > ### Ease of Implementation
+	/// >
+	/// > Without having to account for duplicate keys, it's easier to implement an efficient DOM differ.
+	/// >
+	/// > ### Accessibility and Glitch Avoidance
+	/// >
+	/// > More importantly, duplicate DOM keys can introduce subtle UX glitches into your app, which can shift [focus](https://developer.mozilla.org/en-US/docs/Web/API/HTMLOrForeignElement/focus)
+	/// > in unexpected ways inside a list. (This can most easily occur when dismissing a duplicate item with contained button.)
+	/// >
+	/// > These glitches are likely imperceptible to the majority of your users, unless they navigate by keyboard, or use a screen reader, or your focus style is quite visible, or items animate in or out or to their new position, … the list of edge cases is really quite long.
+	/// > The point is that **these issues may be subtle during early development but can surface in force later, when it's difficult to fix them thoroughly**. **`lignin` avoids this** by denying the necessary circumstance (duplication of keys) for them to occur in the first place.
 	Keyed(&'a [ReorderableFragment<'a, S>]),
 	/// Represents a [***Text***](https://developer.mozilla.org/en-US/docs/Web/API/Text) node.
 	Text {
@@ -298,7 +374,9 @@ pub enum Node<'a, S: ThreadSafety> {
 /// For more information, see [`Node::Keyed`].
 pub struct ReorderableFragment<'a, S: ThreadSafety> {
 	/// A key uniquely identifying a [`ReorderableFragment`] within any directly spanning [`Node::Keyed`].
-	pub dom_key: usize,
+	///
+	/// Note [`Node::Keyed`]'s usage notes!
+	pub dom_key: u32,
 	/// The [`Node`] to render from this [`ReorderableFragment`].
 	pub content: Node<'a, S>,
 }
