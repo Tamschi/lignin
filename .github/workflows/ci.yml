@@ -17,6 +17,22 @@ jobs:
     - run: cargo test --workspace
     - run: cargo test --workspace --all-features
 
+  browser-test:
+    name: Browser Test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1.0.7
+      with:
+        toolchain: stable
+        profile: minimal
+        target: wasm32-unknown-unknown
+    - run: cargo +stable install wasm-bindgen-cli --vers "^0.2.71"
+    - run: cat CI.toml >> Cargo.toml
+    - run: cargo +stable test --workspace --target wasm32-unknown-unknown --no-default-features
+    - run: cargo +stable test --workspace --target wasm32-unknown-unknown
+    - run: cargo +stable test --workspace --target wasm32-unknown-unknown --all-features
+
   check:
     name: Check on Rust ${{matrix.rust}}${{format(' ({0})', matrix.target || matrix.os)}}
     runs-on: ${{matrix.os}}-latest
@@ -52,31 +68,3 @@ jobs:
     - run: cargo +nightly check --lib --no-default-features
     - run: cargo +nightly check --lib
     - run: cargo +nightly check --lib --all-features
-
-  clippy:
-    name: Clippy
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions-rs/toolchain@v1.0.7
-      with:
-        toolchain: nightly
-        profile: minimal
-        components: clippy
-    - run: cat CI.toml >> Cargo.toml
-    - run: cargo +nightly clippy --workspace --no-default-features
-    - run: cargo +nightly clippy --workspace
-    - run: cargo +nightly clippy --workspace --all-features
-
-  fmt:
-    name: Formatting
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions-rs/toolchain@v1.0.7
-      with:
-        toolchain: nightly
-        profile: minimal
-        components: rustfmt
-    - run: cat CI.toml >> Cargo.toml
-    - run: cargo +nightly fmt --all -- --check
