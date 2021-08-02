@@ -377,7 +377,7 @@ mod callbacks_off {
 		0
 	}
 
-	#[allow(clippy::result_unit_err)]
+	#[allow(clippy::result_unit_err, clippy::unnecessary_wraps)]
 	#[inline(always)]
 	pub unsafe fn reset_callback_registry() -> Result<(), ()> {
 		Ok(())

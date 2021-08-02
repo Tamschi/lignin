@@ -44,6 +44,7 @@ where
 	}
 }
 
+#[allow(clippy::expl_impl_clone_on_copy)]
 impl<S, C> Clone for CallbackRef<S, C>
 where
 	S: ThreadSafety,
@@ -148,6 +149,7 @@ macro_rules! vdom_ergonomics {
 			}
 		}
 
+		#[allow(clippy::expl_impl_clone_on_copy)]
 		impl<'a, S> Clone for $VdomName<'a, S> where
 			S: ThreadSafety,
 		{

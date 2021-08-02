@@ -2,6 +2,7 @@
 #![no_std]
 #![warn(clippy::pedantic)]
 #![warn(missing_docs)]
+#![allow(clippy::semicolon_if_nothing_returned)]
 
 //! `lignin`, named after the structural polymer found in plants, is a lightweight but comprehensive VDOM data type library for use in a wider web context.
 //!
