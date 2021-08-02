@@ -14,9 +14,9 @@ jobs:
         profile: minimal
         components: clippy
     - run: cat CI.toml >> Cargo.toml
-    - run: cargo +nightly clippy --workspace --no-default-features
-    - run: cargo +nightly clippy --workspace
-    - run: cargo +nightly clippy --workspace --all-features
+    - run: cargo +nightly clippy --workspace --locked --no-default-features
+    - run: cargo +nightly clippy --workspace --locked
+    - run: cargo +nightly clippy --workspace --locked --all-features
 
   fmt:
     name: Formatting

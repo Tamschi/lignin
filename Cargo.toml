@@ -19,6 +19,7 @@ include = [
 	"CODE_OF_CONDUCT.md",
 	"LICENSE-*",
 	"README.md",
+	"SECURITY.md",
 ]
 resolver = "2"
 publish = false
@@ -26,11 +27,11 @@ publish = false
 [badges]
 is-it-maintained-issue-resolution = { repository = "Tamschi/TODO_CRATE_NAME" }
 is-it-maintained-open-issues = { repository = "Tamschi/TODO_CRATE_NAME" }
-maintenance = { status = "experimental" }
+maintenance = { status = "experimental" } # This may differ between branches.
 
 [dev-dependencies]
 cargo-husky = "1.5.0"
 doc-comment = "0.3.3"
 git_info = "0.1.2"
 version-sync = "0.9.1"
-wasm-bindgen-test = "0.3.23"
+wasm-bindgen-test = "0.3.24"
