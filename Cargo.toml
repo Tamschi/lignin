@@ -26,7 +26,7 @@ publish = false
 [badges]
 is-it-maintained-issue-resolution = { repository = "Tamschi/lignin" }
 is-it-maintained-open-issues = { repository = "Tamschi/lignin" }
-maintenance = { status = "experimental" }
+maintenance = { status = "experimental" } # This may differ between branches.
 
 [features]
 callbacks = ["lazy_static", "wasm-bindgen", "web-sys"] # Enables DOM callback support. Requires `std`.
