@@ -34,7 +34,7 @@ callbacks = ["lazy_static", "wasm-bindgen", "web-sys"] # Enables DOM callback su
 [dependencies]
 lazy_static = { version = "1.4", optional = true }
 wasm-bindgen = { version = "0.2.76", optional = true } # public
-web-sys = { version = "0.3.47", optional = true, features = ["Comment", "Element", "Event", "HtmlElement", "SvgElement", "Text"] } # public
+web-sys = { version = "0.3.53", optional = true, features = ["Comment", "Element", "Event", "HtmlElement", "SvgElement", "Text"] } # public
 
 [dev-dependencies]
 bumpalo = "3.6"
