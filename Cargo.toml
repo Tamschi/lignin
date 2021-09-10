@@ -47,7 +47,7 @@ js-sys = "0.3.53"
 static_assertions = "1.1"
 version-sync = "0.9.1"
 wasm-bindgen = "0.2.77"
-wasm-bindgen-test = "0.3.26"
+wasm-bindgen-test = "0.3.27"
 
 [package.metadata.docs.rs]
 features = ["callbacks"]
