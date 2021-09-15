@@ -33,7 +33,7 @@ callbacks = ["lazy_static", "wasm-bindgen", "web-sys"] # Enables DOM callback su
 
 [dependencies]
 lazy_static = { version = "1.4", optional = true }
-wasm-bindgen = { version = "0.2.77", optional = true } # public
+wasm-bindgen = { version = "0.2.78", optional = true } # public
 web-sys = { version = "0.3.54", optional = true, features = ["Comment", "Element", "Event", "HtmlElement", "SvgElement", "Text"] } # public
 
 [dev-dependencies]
@@ -46,7 +46,7 @@ intaglio = "1.3"
 js-sys = "0.3.53"
 static_assertions = "1.1"
 version-sync = "0.9.1"
-wasm-bindgen = "0.2.77"
+wasm-bindgen = "0.2.78"
 wasm-bindgen-test = "0.3.27"
 
 [package.metadata.docs.rs]
