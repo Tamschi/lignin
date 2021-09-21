@@ -45,7 +45,7 @@ git_info = "0.1.2"
 intaglio = "1.3"
 js-sys = "0.3.53"
 static_assertions = "1.1"
-version-sync = "0.9.1"
+version-sync = "0.9.3"
 wasm-bindgen = "0.2.78"
 wasm-bindgen-test = "0.3.28"
 
