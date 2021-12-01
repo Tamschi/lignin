@@ -1,10 +1,11 @@
 #![doc(html_root_url = "https://docs.rs/lignin/0.1.0")]
+#![warn(clippy::pedantic, missing_docs)]
 #![no_std]
-#![warn(clippy::pedantic)]
-#![warn(missing_docs)]
 #![allow(clippy::semicolon_if_nothing_returned)]
 
 //! `lignin`, named after the structural polymer found in plants, is a lightweight but comprehensive VDOM data type library for use in a wider web context.
+//!
+//! [![Zulip Chat](https://img.shields.io/endpoint?label=chat&url=https%3A%2F%2Fiteration-square-automation.schichler.dev%2F.netlify%2Ffunctions%2Fstream_subscribers_shield%3Fstream%3Dproject%252Flignin)](https://iteration-square.schichler.dev/#narrow/stream/project.2Flignin)
 //!
 //! # About the Documentation
 //!
@@ -128,9 +129,8 @@
 //! As such, these elements should normally be explicit in the VDOM.
 //! HTML renderers may omit tags from the serialised document or fragment [according to the HTML specification](https://html.spec.whatwg.org/multipage/syntax.html#optional-tags).
 #[cfg(doctest)]
-pub mod readme {
-	doc_comment::doctest!("../README.md");
-}
+#[doc = include_str!("../README.md")]
+mod readme {}
 
 pub mod auto_safety;
 pub mod callback_registry;
