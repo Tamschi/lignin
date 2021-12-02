@@ -79,7 +79,7 @@ There are a few ecosystem compatibility rules that aren't covered by Rust's type
 
 ## Prior Art
 
-* Dodrio, which didn't quite satisfy my requirements but generally inspired this approach.
+- Dodrio, which didn't quite satisfy my requirements but generally inspired this approach.
 
 ## Thanks
 
