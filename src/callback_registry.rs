@@ -144,7 +144,7 @@ mod callbacks_on {
 			CallbackRegistration {
 				key,
 				phantom: PhantomData,
-				pinned: PhantomPinned,
+				_pinned: PhantomPinned,
 			}
 		}
 	}
@@ -191,7 +191,7 @@ mod callbacks_on {
 			CallbackRegistration {
 				key,
 				phantom: PhantomData,
-				pinned: PhantomPinned,
+				_pinned: PhantomPinned,
 			}
 		}
 	}
@@ -329,7 +329,7 @@ mod callbacks_off {
 		CallbackRegistration {
 			key: NonZeroU32::new(u32::MAX).unwrap(),
 			phantom: PhantomData,
-			pinned: PhantomPinned,
+			_pinned: PhantomPinned,
 		}
 	}
 
@@ -347,7 +347,7 @@ mod callbacks_off {
 		CallbackRegistration {
 			key: NonZeroU32::new(u32::MAX).unwrap(),
 			phantom: PhantomData,
-			pinned: PhantomPinned,
+			_pinned: PhantomPinned,
 		}
 	}
 
@@ -441,7 +441,7 @@ where
 	key: NonZeroU32,
 	///FIXME: Can this be written with `&R` (removing the manual `Send` and `Sync` impls below)?
 	phantom: PhantomData<(*const R, C)>,
-	pinned: PhantomPinned,
+	_pinned: PhantomPinned,
 }
 // SAFETY: `CallbackRegistration<R, C>` only refers to a `*const R`, so it acts like `&R` for thread-safety.
 //
