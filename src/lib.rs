@@ -164,7 +164,7 @@ use sealed::Sealed;
 /// }
 /// ```
 #[allow(clippy::type_complexity)] // `Option<CallbackRef<S, fn(DomRef<&'_ …>)>>` appears to be a little much.
-pub enum Node<'a, S: ThreadSafety + ?Sized> {
+pub enum Node<'a, S: ThreadSafety> {
 	/// Represents a [***Comment***](https://developer.mozilla.org/en-US/docs/Web/API/Comment) node.
 	Comment {
 		/// The comment's body, as unescaped plaintext.
@@ -373,7 +373,7 @@ pub enum Node<'a, S: ThreadSafety + ?Sized> {
 /// [`Vdom`] A VDOM node that has its DOM identity preserved during DOM updates even after being repositioned within a (path-)matching [`Node::Keyed`].
 ///
 /// For more information, see [`Node::Keyed`].
-pub struct ReorderableFragment<'a, S: ThreadSafety + ?Sized> {
+pub struct ReorderableFragment<'a, S: ThreadSafety> {
 	/// A key uniquely identifying a [`ReorderableFragment`] within any directly spanning [`Node::Keyed`].
 	///
 	/// Note [`Node::Keyed`]'s usage notes!
@@ -384,7 +384,7 @@ pub struct ReorderableFragment<'a, S: ThreadSafety + ?Sized> {
 
 #[allow(clippy::doc_markdown)]
 /// [`Vdom`] Represents a single [***HTMLElement***](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement) as `name`, `attributes`, `content` and `event_bindings`.
-pub struct Element<'a, S: ThreadSafety + ?Sized> {
+pub struct Element<'a, S: ThreadSafety> {
 	/// The [***Element.tag_name***](https://developer.mozilla.org/en-US/docs/Web/API/Element/tagName).
 	///
 	/// Unlike in the browser, this is generally treated case-*sensitively*, meaning for example `"div"` doesn't equal `"DIV"`.
@@ -481,7 +481,7 @@ impl<'a> ElementCreationOptions<'a> {
 ///
 /// While this limit is likely hard to hit, economizing registrations a little will still (indirectly) improve app performance.
 /// Lazily registering callbacks for events only when rendering is also the easiest way for framework developers to use [pinning](core::pin) to avoid heap allocations.
-pub struct EventBinding<'a, S: ThreadSafety + ?Sized> {
+pub struct EventBinding<'a, S: ThreadSafety> {
 	/// The event name.
 	pub name: &'a str,
 	/// A callback reference created via [`CallbackRegistration`].
@@ -652,28 +652,45 @@ mod sealed {
 	pub trait Sealed {}
 	impl Sealed for fn(web::Event) {}
 	impl<T> Sealed for fn(DomRef<&'_ T>) {}
+	impl Sealed for ThreadBound {}
+	impl Sealed for ThreadSafe {}
 	impl<'a> Sealed for Attribute<'a> {}
 	impl<'a> Sealed for ElementCreationOptions<'a> {}
 	impl Sealed for EventBindingOptions {}
 	impl<R, C: CallbackSignature> Sealed for CallbackRegistration<R, C> {}
-	impl<S: ThreadSafety + ?Sized, C: CallbackSignature> Sealed for CallbackRef<S, C> {}
-	impl<'a, S: ThreadSafety + ?Sized> Sealed for Element<'a, S> {}
-	impl<'a, S: ThreadSafety + ?Sized> Sealed for EventBinding<'a, S> {}
-	impl<'a, S: ThreadSafety + ?Sized> Sealed for Node<'a, S> {}
-	impl<'a, S: ThreadSafety + ?Sized> Sealed for ReorderableFragment<'a, S> {}
+	impl<S: ThreadSafety, C: CallbackSignature> Sealed for CallbackRef<S, C> {}
+	impl<'a, S: ThreadSafety> Sealed for Element<'a, S> {}
+	impl<'a, S: ThreadSafety> Sealed for EventBinding<'a, S> {}
+	impl<'a, S: ThreadSafety> Sealed for Node<'a, S> {}
+	impl<'a, S: ThreadSafety> Sealed for ReorderableFragment<'a, S> {}
 	impl Sealed for RemnantSite {}
 }
 
-/// Thread safety marker base.
-///
-/// This trait is never actually implemented.
-/// Instead, [`ThreadSafe`] and [`ThreadBound`] are trait object types based on this trait.
-pub trait ThreadSafety: Sealed {}
+/// Marker trait for thread-safety tokens.
+pub trait ThreadSafety: Sealed + Into<ThreadBound>
+where
+	Self: Sized + Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord + Hash,
+{
+}
 
 /// [`ThreadSafety`] marker for `!Send + !Sync`.
-pub type ThreadBound = dyn ThreadSafety;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ThreadBound(
+	/// Neither [`Send`] nor [`Sync`].
+	pub PhantomData<*const ()>,
+	/// [Uninhabited.](https://doc.rust-lang.org/nomicon/exotic-sizes.html#empty-types)
+	pub Infallible,
+);
 /// [`ThreadSafety`] marker for `Send + Sync`.
-pub type ThreadSafe = dyn ThreadSafety + Send + Sync;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ThreadSafe(
+	/// This field here technically doesn't matter, but I went with something to match [`ThreadBound`].
+	pub PhantomData<&'static ()>,
+	/// [Uninhabited.](https://doc.rust-lang.org/nomicon/exotic-sizes.html#empty-types)
+	pub Infallible,
+);
+impl ThreadSafety for ThreadBound {}
+impl ThreadSafety for ThreadSafe {}
 
 /// Marker trait for VDOM data types, which (almost) all vary by [`ThreadSafety`].
 ///
@@ -685,7 +702,7 @@ where
 	/// The [`ThreadSafety`] of the [`Vdom`] type, either [`ThreadSafe`] or [`ThreadBound`].
 	///
 	/// This comes from a generic type argument `S`, but [`Attribute`] and [`EventBindingOptions`] are always [`ThreadSafe`].
-	type ThreadSafety: ThreadSafety + ?Sized;
+	type ThreadSafety: ThreadSafety;
 }
 
 impl<'a> Vdom for Attribute<'a> {
@@ -703,7 +720,7 @@ impl Vdom for EventBindingOptions {
 macro_rules! vdom_impls {
 	($($name:ident),*$(,)?) => {$(
 		impl<'a, S> Vdom for $name<'a, S> where
-			S: ThreadSafety + ?Sized,
+			S: ThreadSafety,
 		{
 			type ThreadSafety = S;
 		}
@@ -713,7 +730,7 @@ vdom_impls!(Element, EventBinding, Node, ReorderableFragment);
 
 impl<S, C> Vdom for CallbackRef<S, C>
 where
-	S: ThreadSafety + ?Sized,
+	S: ThreadSafety,
 	C: CallbackSignature,
 {
 	type ThreadSafety = S;
