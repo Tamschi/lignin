@@ -742,3 +742,46 @@ impl Debug for EventBindingOptions {
 			.finish()
 	}
 }
+
+impl Hash for ThreadBound {
+	fn hash<H: Hasher>(&self, _: &mut H) {}
+}
+impl Hash for ThreadSafe {
+	fn hash<H: Hasher>(&self, _: &mut H) {}
+}
+
+impl PartialEq for ThreadBound {
+	fn eq(&self, _: &Self) -> bool {
+		true
+	}
+}
+impl PartialEq for ThreadSafe {
+	fn eq(&self, _: &Self) -> bool {
+		true
+	}
+}
+
+impl Eq for ThreadBound {}
+impl Eq for ThreadSafe {}
+
+impl PartialOrd for ThreadBound {
+	fn partial_cmp(&self, _: &Self) -> Option<Ordering> {
+		Some(Ordering::Equal)
+	}
+}
+impl PartialOrd for ThreadSafe {
+	fn partial_cmp(&self, _: &Self) -> Option<Ordering> {
+		Some(Ordering::Equal)
+	}
+}
+
+impl Ord for ThreadBound {
+	fn cmp(&self, _: &Self) -> Ordering {
+		Ordering::Equal
+	}
+}
+impl Ord for ThreadSafe {
+	fn cmp(&self, _: &Self) -> Ordering {
+		Ordering::Equal
+	}
+}

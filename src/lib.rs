@@ -143,7 +143,7 @@ pub use web::{DomRef, Materialize};
 
 mod ergonomics;
 
-use core::{convert::Infallible, fmt::Debug, hash::Hash, marker::PhantomData};
+use core::{fmt::Debug, hash::Hash};
 use remnants::RemnantSite;
 use sealed::Sealed;
 
@@ -666,6 +666,13 @@ mod sealed {
 	impl Sealed for RemnantSite {}
 }
 
+mod private {
+	use core::fmt::Debug;
+
+	/// This is intentionally never implemented: It effectively makes both [`super::ThreadBound`] and [`super::ThreadSafe`] vacant.
+	pub trait ThreadSafetyBase: Debug {}
+}
+
 /// Marker trait for thread-safety tokens.
 pub trait ThreadSafety: Sealed + Into<ThreadBound>
 where
@@ -674,21 +681,9 @@ where
 }
 
 /// [`ThreadSafety`] marker for `!Send + !Sync`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ThreadBound(
-	/// Neither [`Send`] nor [`Sync`].
-	pub PhantomData<*const ()>,
-	/// [Uninhabited.](https://doc.rust-lang.org/nomicon/exotic-sizes.html#empty-types)
-	pub Infallible,
-);
+pub type ThreadBound = &'static dyn private::ThreadSafetyBase;
 /// [`ThreadSafety`] marker for `Send + Sync`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ThreadSafe(
-	/// This field here technically doesn't matter, but I went with something to match [`ThreadBound`].
-	pub PhantomData<&'static ()>,
-	/// [Uninhabited.](https://doc.rust-lang.org/nomicon/exotic-sizes.html#empty-types)
-	pub Infallible,
-);
+pub type ThreadSafe = &'static (dyn private::ThreadSafetyBase + Send + Sync);
 impl ThreadSafety for ThreadBound {}
 impl ThreadSafety for ThreadSafe {}
 
