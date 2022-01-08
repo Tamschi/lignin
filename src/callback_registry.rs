@@ -605,17 +605,17 @@ where
 /// [`Vdom`](`crate::Vdom`) A callback reference linked to a [`CallbackRegistration`].
 pub struct CallbackRef<S, C>
 where
-	S: ThreadSafety,
+	S: ThreadSafety + ?Sized,
 	C: CallbackSignature,
 {
 	//SAFETY: This type must be unchanged after a roundtrip through JavaScript via the `CallbackRef::into_js` and `CallbackRef::from_js` methods.
 	pub(crate) key: NonZeroU32,
-	phantom: PhantomData<(S, C)>,
+	phantom: PhantomData<(C, S)>,
 }
 /// Separate `impl`s due to Rust language limitation. See [`CallbackSignature`] and expect future broadening.
 impl<S> CallbackRef<S, fn(event: web::Event)>
 where
-	S: ThreadSafety,
+	S: ThreadSafety + ?Sized,
 {
 	/// Invokes the stored handler with the stored receiver and `parameter`,
 	/// provided that the original [`CallbackRegistration`] hasn't been dropped yet.
@@ -629,7 +629,7 @@ where
 /// Separate `impl`s due to Rust language limitation. See [`CallbackSignature`] and expect future broadening.
 impl<S, T> CallbackRef<S, fn(dom_ref: DomRef<&'_ T>)>
 where
-	S: ThreadSafety,
+	S: ThreadSafety + ?Sized,
 {
 	/// Invokes the stored handler with the stored receiver and `parameter`,
 	/// provided that the original [`CallbackRegistration`] hasn't been dropped yet.
@@ -690,7 +690,7 @@ pub fn registry_exhaustion() -> u8 {
 #[cfg(feature = "callbacks")]
 impl<S, C> CallbackRef<S, C>
 where
-	S: ThreadSafety,
+	S: ThreadSafety + ?Sized,
 	C: ?Sized + CallbackSignature,
 {
 	/// Returns this [`CallbackRef`]'s identity as [`JsValue`](`wasm_bindgen::JsValue`),

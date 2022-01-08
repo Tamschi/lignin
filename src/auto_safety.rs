@@ -800,7 +800,7 @@ impl EventBindingOptions {
 
 macro_rules! impl_auto_safety {
 	($($Name:ident),*$(,)?) => {$(
-		impl<'a, S: ThreadSafety> $Name<'a, S> {
+		impl<'a, S: ThreadSafety + ?Sized> $Name<'a, S> {
 			deanonymize_on_named!();
 		}
 		impl<'a> $Name<'a, ThreadSafe> {
@@ -816,15 +816,15 @@ macro_rules! impl_auto_safety {
 		/// Not derived from the [`Into`] constraints on `$Name` directly since those are too broad.
 		impl<'a, S1, S2> Align<$Name<'a, S2>> for $Name<'a, S1>
 		where
-			S1: ThreadSafety + Into<S2>,
-			S2: ThreadSafety,
+			S1: ThreadSafety + ?Sized + AsRef<S2>,
+			S2: ThreadSafety + ?Sized,
 		{}
 	)*};
 }
 
 impl_auto_safety!(Element, EventBinding, Node, ReorderableFragment);
 
-impl<S: ThreadSafety, C> CallbackRef<S, C>
+impl<S: ThreadSafety + ?Sized, C> CallbackRef<S, C>
 where
 	C: CallbackSignature,
 {
@@ -851,8 +851,8 @@ where
 impl<S1, S2, C> Align<CallbackRef<S2, C>> for CallbackRef<S1, C>
 where
 	C: CallbackSignature,
-	S1: ThreadSafety + Into<S2>,
-	S2: ThreadSafety,
+	S1: ThreadSafety + ?Sized + AsRef<S2>,
+	S2: ThreadSafety + ?Sized,
 {
 }
 

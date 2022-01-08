@@ -14,9 +14,9 @@ use core::{
 	matches,
 };
 
-impl From<ThreadSafe> for ThreadBound {
+impl AsRef<ThreadBound> for ThreadSafe {
 	/// Unreachable. Available as compatibility marker when handling generic [`ThreadSafety`] directly.
-	fn from(_: ThreadSafe) -> Self {
+	fn as_ref(&self) -> &ThreadBound {
 		unreachable!()
 	}
 }
@@ -34,7 +34,7 @@ where
 
 impl<S, C> Debug for CallbackRef<S, C>
 where
-	S: ThreadSafety,
+	S: ThreadSafety + ?Sized,
 	C: CallbackSignature,
 {
 	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -47,7 +47,7 @@ where
 #[allow(clippy::expl_impl_clone_on_copy)]
 impl<S, C> Clone for CallbackRef<S, C>
 where
-	S: ThreadSafety,
+	S: ThreadSafety + ?Sized,
 	C: CallbackSignature,
 {
 	fn clone(&self) -> Self {
@@ -56,14 +56,14 @@ where
 }
 impl<S, C> Copy for CallbackRef<S, C>
 where
-	S: ThreadSafety,
+	S: ThreadSafety + ?Sized,
 	C: CallbackSignature,
 {
 }
 impl<S1, S2, C> PartialEq<CallbackRef<S2, C>> for CallbackRef<S1, C>
 where
-	S1: ThreadSafety,
-	S2: ThreadSafety,
+	S1: ThreadSafety + ?Sized,
+	S2: ThreadSafety + ?Sized,
 	C: CallbackSignature,
 {
 	fn eq(&self, other: &CallbackRef<S2, C>) -> bool {
@@ -72,13 +72,13 @@ where
 }
 impl<S, C> Eq for CallbackRef<S, C>
 where
-	S: ThreadSafety,
+	S: ThreadSafety + ?Sized,
 	C: CallbackSignature,
 {
 }
 impl<S, C> Hash for CallbackRef<S, C>
 where
-	S: ThreadSafety,
+	S: ThreadSafety + ?Sized,
 	C: CallbackSignature,
 {
 	fn hash<H: Hasher>(&self, state: &mut H) {
@@ -87,8 +87,8 @@ where
 }
 impl<S1, S2, C> PartialOrd<CallbackRef<S2, C>> for CallbackRef<S1, C>
 where
-	S1: ThreadSafety,
-	S2: ThreadSafety,
+	S1: ThreadSafety + ?Sized,
+	S2: ThreadSafety + ?Sized,
 	C: CallbackSignature,
 {
 	fn partial_cmp(&self, other: &CallbackRef<S2, C>) -> Option<Ordering> {
@@ -97,7 +97,7 @@ where
 }
 impl<S, C> Ord for CallbackRef<S, C>
 where
-	S: ThreadSafety,
+	S: ThreadSafety + ?Sized,
 	C: CallbackSignature,
 {
 	fn cmp(&self, other: &Self) -> Ordering {
@@ -142,7 +142,7 @@ macro_rules! vdom_ergonomics {
 		}
 
 		impl<'a, S> Debug for $VdomName<'a, S> where
-			S: ThreadSafety,
+			S: ThreadSafety + ?Sized,
 		{
 			fn fmt(&$debug_self, $debug_f: &mut Formatter<'_>) -> fmt::Result {
 				$debug
@@ -151,30 +151,30 @@ macro_rules! vdom_ergonomics {
 
 		#[allow(clippy::expl_impl_clone_on_copy)]
 		impl<'a, S> Clone for $VdomName<'a, S> where
-			S: ThreadSafety,
+			S: ThreadSafety + ?Sized,
 		{
 			fn clone(&self) -> Self {
 				*self
 			}
 		}
 		impl<'a, S> Copy for $VdomName<'a, S> where
-			S: ThreadSafety,
+			S: ThreadSafety + ?Sized,
 		{}
 
 		impl<'a, S1, S2> PartialEq<$VdomName<'a, S2>> for $VdomName<'a, S1> where
-			S1: ThreadSafety,
-			S2: ThreadSafety,
+			S1: ThreadSafety + ?Sized,
+			S2: ThreadSafety + ?Sized,
 		{
 			fn eq(&$eq_self, $eq_other: &$VdomName<'a, S2>) -> bool {
 				$partial_eq
 			}
 		}
 		impl<'a, S> Eq for $VdomName<'a, S> where
-			S: ThreadSafety,
+			S: ThreadSafety + ?Sized,
 		{}
 
 		impl<'a, S> Hash for $VdomName<'a, S> where
-			S: ThreadSafety,
+			S: ThreadSafety + ?Sized,
 		{
 			fn hash<H: Hasher>(&$hash_self, $hash_state: &mut H) {
 				$hash
@@ -183,8 +183,8 @@ macro_rules! vdom_ergonomics {
 
 		impl<'a, S1, S2> PartialOrd<$VdomName<'a, S2>> for $VdomName<'a, S1>
 		where
-			S1: ThreadSafety,
-			S2: ThreadSafety,
+			S1: ThreadSafety + ?Sized,
+			S2: ThreadSafety + ?Sized,
 		{
 			#[inline(always)] // Proxy function.
 			fn partial_cmp(&self, other: &$VdomName<'a, S2>) -> Option<core::cmp::Ordering> {
@@ -193,7 +193,7 @@ macro_rules! vdom_ergonomics {
 		}
 		impl<'a, S> Ord for $VdomName<'a, S>
 		where
-			S: ThreadSafety,
+			S: ThreadSafety + ?Sized,
 		{
 			fn cmp(&$cmp_self, $cmp_other: &Self) -> Ordering {
 				$cmp
@@ -586,7 +586,7 @@ vdom_ergonomics!([
 
 impl<'a, S> Element<'a, S>
 where
-	S: ThreadSafety,
+	S: ThreadSafety + ?Sized,
 {
 	/// Wraps a reference to this [`Element`] inside a [`Node::HtmlElement`] without [`dom_binding`](`Node::HtmlElement::dom_binding`).
 	///
@@ -647,8 +647,8 @@ where
 
 impl<'a, S1, S2> From<&'a [Node<'a, S1>]> for Node<'a, S2>
 where
-	S1: ThreadSafety + Into<S2>,
-	S2: ThreadSafety,
+	S1: ThreadSafety + ?Sized + AsRef<S2>,
+	S2: ThreadSafety + ?Sized,
 {
 	fn from(content: &'a [Node<'a, S1>]) -> Self {
 		Node::Multi(content).align()
@@ -657,8 +657,8 @@ where
 
 impl<'a, S1, S2> From<&'a mut [Node<'a, S1>]> for Node<'a, S2>
 where
-	S1: ThreadSafety + Into<S2>,
-	S2: ThreadSafety,
+	S1: ThreadSafety + ?Sized + AsRef<S2>,
+	S2: ThreadSafety + ?Sized,
 {
 	fn from(content: &'a mut [Node<'a, S1>]) -> Self {
 		Node::Multi(content).align()
@@ -667,7 +667,7 @@ where
 
 impl<'a, S> From<&'a str> for Node<'a, S>
 where
-	S: ThreadSafety,
+	S: ThreadSafety + ?Sized,
 {
 	fn from(text: &'a str) -> Self {
 		Self::Text {
@@ -679,7 +679,7 @@ where
 
 impl<'a, S> From<&'a mut str> for Node<'a, S>
 where
-	S: ThreadSafety,
+	S: ThreadSafety + ?Sized,
 {
 	fn from(text: &'a mut str) -> Self {
 		Self::Text {
@@ -689,7 +689,7 @@ where
 	}
 }
 
-impl<'a, S: ThreadSafety> Node<'a, S> {
+impl<'a, S: ThreadSafety + ?Sized> Node<'a, S> {
 	/// Calculates the aggregate surface level length of this [`Node`] in [***Node***](https://developer.mozilla.org/en-US/docs/Web/API/Node)s.
 	///
 	/// This operation is recursive across *for example* [`Node::Multi`] and [`Node::Keyed`], which sum up their contents in this regard.
