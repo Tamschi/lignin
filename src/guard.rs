@@ -100,7 +100,8 @@ impl<'a> ConsumedCallback<'a> {
 ///     let raw = allocate().write(unsafe {
 ///         //SAFETY:
 ///         // `callback` is rejoined with the peeled `Node`s below,
-///         // as `Guard::new` satisfies `ConsumedCallback::leak`'s and `ConsumedCallback::peel`'s safety contracts.
+///         // as `Guard::new` satisfies `ConsumedCallback::leak`'s and
+///         // `ConsumedCallback::peel`'s safety contracts.
 ///         [
 ///             {
 ///                 let (node, callback_) = c1().leak();
