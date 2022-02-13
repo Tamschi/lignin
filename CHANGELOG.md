@@ -10,6 +10,9 @@ TODO: Date
   - Increased minimum Rust version to 1.54,
     > which comes with the project template update.
 
+- Features:
+  - Added `Guard` struct that acts as type-erased drop guard for shared `Node`s.
+
 - Revisions:
   - Adjusted CHANGELOG formatting.
 
