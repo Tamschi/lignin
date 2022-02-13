@@ -7,6 +7,8 @@
 //!
 //! [![Zulip Chat](https://img.shields.io/endpoint?label=chat&url=https%3A%2F%2Fiteration-square-automation.schichler.dev%2F.netlify%2Ffunctions%2Fstream_subscribers_shield%3Fstream%3Dproject%252Flignin)](https://iteration-square.schichler.dev/#narrow/stream/project.2Flignin)
 //!
+//! The primary compatibility types of this crate or [`Node`] and [`Guard`].
+//!
 //! # About the Documentation
 //!
 //! DOM API terms are ***bold italic*** and linked to the MDN Web Docs.
@@ -134,10 +136,12 @@ mod readme {}
 
 pub mod auto_safety;
 pub mod callback_registry;
+pub mod guard;
 mod remnants;
 pub mod web;
 
 pub use callback_registry::{CallbackRef, CallbackRegistration};
+pub use guard::Guard;
 pub use web::{DomRef, Materialize};
 
 mod ergonomics;
