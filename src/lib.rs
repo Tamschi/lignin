@@ -7,7 +7,8 @@
 //!
 //! [![Zulip Chat](https://img.shields.io/endpoint?label=chat&url=https%3A%2F%2Fiteration-square-automation.schichler.dev%2F.netlify%2Ffunctions%2Fstream_subscribers_shield%3Fstream%3Dproject%252Flignin)](https://iteration-square.schichler.dev/#narrow/stream/project.2Flignin)
 //!
-//! The primary compatibility types of this crate or [`Node`] and [`Guard`].
+//! The primary interop types are [`Node`] and [`Guard`],
+//! meaning these are the ones most intended to appear in dependent crates' APIs.
 //!
 //! # About the Documentation
 //!
@@ -671,7 +672,7 @@ mod sealed {
 }
 
 /// Marker trait for thread-safety tokens.
-pub trait ThreadSafety: Sealed + Into<ThreadBound>
+pub trait ThreadSafety: 'static + Sealed + Into<ThreadBound>
 where
 	Self: Sized + Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord + Hash,
 {

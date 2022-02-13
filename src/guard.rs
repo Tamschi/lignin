@@ -53,36 +53,103 @@ impl<'a> ConsumedCallback<'a> {
 /// > if it renders very slowly for some reason. (I.e. an app could render out a VDOM while calculating or retrieving data synchronously, even if it *probably shouldn't*.)
 /// >
 /// > In terms of leaks, a good example is subtree caching, which due to delayed [`Guard`] drops **must** store any number of states as necessary or panic if it won't/can't at some point.
+///
+/// # Examples
+///
+/// ```rust
+/// extern crate alloc;
+///
+/// use lignin::{guard::ConsumedCallback, Guard, Node, ThreadSafe};
+/// use alloc::boxed::Box;
+///
+/// /// This is quite inefficient; use a better allocator if possible.
+/// fn boxed() -> Guard<'static, ThreadSafe> {
+///     let raw = Box::into_raw(Box::new([Node::Text {
+///         text: "Hello from the heap!",
+///         dom_binding: None,
+///     }]));
+///     unsafe {
+///         //SAFETY: `Guard::new` satisfies `ConsumedCallback::new`'s safety contract.
+///         Guard::new(
+///             Node::Multi(&*raw),
+///             Some(ConsumedCallback::new(
+///                 |boxed| drop(Box::from_raw(boxed as *mut [Node<'static, ThreadSafe>; 1])),
+///                 raw as *const (),
+///             )),
+///         )
+///     }
+/// }
+/// ```
+///
+/// ```rust
+/// extern crate alloc;
+///
+/// use alloc::boxed::Box;
+/// use lignin::{guard::ConsumedCallback, Guard, Node, ThreadSafety};
+///
+/// /// An efficient allocator that can reclaim instances leaked into it.
+/// fn allocate<'a, T>() -> &'a mut core::mem::MaybeUninit<T> {
+///     unimplemented!()
+/// }
+///
+/// fn with_content<'a, S: ThreadSafety>(
+///     c1: impl FnOnce() -> Guard<'a, S>,
+///     c2: impl FnOnce() -> Guard<'a, S>,
+/// ) -> Guard<'a, S> {
+///     let mut callback;
+///     let raw = allocate().write(unsafe {
+///         //SAFETY:
+///         // `callback` is rejoined with the peeled `Node`s below,
+///         // as `Guard::new` satisfies `ConsumedCallback::leak`'s and `ConsumedCallback::peel`'s safety contracts.
+///         [
+///             {
+///                 let (node, callback_) = c1().leak();
+///                 callback = callback_;
+///                 node
+///             },
+///             c2().peel(&mut callback, allocate),
+///         ]
+///     }) as *mut _;
+///
+///     Guard::new(
+///         Node::Multi(unsafe{ &*raw }),
+///         callback,
+///     )
+/// }
+/// ```
+///
+/// There are also `.map(…)` methods on [`Guard`] that are easier to use in certain circumstances.
 pub struct Guard<'a, S: ThreadSafety> {
-	vdom: &'a Node<'a, S>,
+	vdom: Node<'a, S>,
 	guarded: Option<ConsumedCallback<'a>>,
 }
 impl<'a, S: ThreadSafety> Guard<'a, S> {
 	/// Creates a new instance of [`Guard`] which calls `guarded` once only when dropped.
 	#[must_use]
-	pub fn new_with_callback(vdom: &'a Node<'a, S>, guarded: Option<ConsumedCallback<'a>>) -> Self {
+	pub fn new(vdom: Node<'a, S>, guarded: Option<ConsumedCallback<'a>>) -> Self {
 		Self { vdom, guarded }
 	}
 
+	/// Splits this [`Guard`] into its [`Node`] and [optional](`Option`) [`ConsumedCallback`].
 	///
 	/// # Safety
 	///
 	/// The returned [`Node`] reference becomes invalid once the returned [`ConsumedCallback`] is called.
 	#[must_use = "Calling this method may leak memory unless any returned `ConsumedCallback` is called later on."]
-	pub unsafe fn leak(mut self) -> (&'a Node<'a, S>, Option<ConsumedCallback<'a>>) {
+	pub unsafe fn leak(mut self) -> (Node<'a, S>, Option<ConsumedCallback<'a>>) {
 		(self.vdom, self.guarded.take())
 	}
 
-	/// Splits off and stores this [`Guard`]'s drop-[`ConsumedCallback`], leaving an [`&Node<'a, S>`](`Node`).
+	/// Splits off and stores this [`Guard`]'s [`ConsumedCallback`], leaving a [`Node`].
 	///
 	/// # Safety
 	///
-	/// The returned [`Node`] reference becomes invalid once `add_to`'s value is called, if [`Some`] after this call.
+	/// The returned [`Node`] becomes invalid once `add_to`'s value is called, if [`Some`] after this call.
 	pub unsafe fn peel(
 		mut self,
 		add_to: &mut Option<ConsumedCallback<'a>>,
 		allocate: impl FnOnce() -> &'a mut MaybeUninit<[ConsumedCallback<'a>; 2]>,
-	) -> &'a Node<'a, S> {
+	) -> Node<'a, S> {
 		if let Some(peel) = self.guarded.take() {
 			*add_to = Some(match add_to.take() {
 				Some(previous) => {
@@ -103,10 +170,10 @@ impl<'a, S: ThreadSafety> Guard<'a, S> {
 		self.vdom
 	}
 
-	/// Transforms the VDOM without manipulating the callback.
+	/// Transforms the guarded [`Node`] without manipulating the callback.
 	pub fn map<S2: ThreadSafety>(
 		mut self,
-		f: impl for<'any> FnOnce(&'any Node<'any, S>) -> &'any Node<'any, S2>,
+		f: impl for<'any> FnOnce(Node<'any, S>) -> Node<'any, S2>,
 	) -> Guard<'a, S2> {
 		Guard {
 			vdom: f(self.vdom),
@@ -114,11 +181,11 @@ impl<'a, S: ThreadSafety> Guard<'a, S> {
 		}
 	}
 
-	/// Transforms the VDOM, optionally adding on another callback.
+	/// Transforms the guarded [`Node`], optionally adding on another callback.
 	pub fn flat_map<S2: ThreadSafety>(
 		mut self,
 		allocate: impl FnOnce() -> &'a mut MaybeUninit<[ConsumedCallback<'a>; 2]>,
-		f: impl for<'any> FnOnce(&'any Node<'any, S>) -> Guard<'any, S2>,
+		f: impl for<'any> FnOnce(Node<'any, S>) -> Guard<'any, S2>,
 	) -> Guard<'a, S2> {
 		unsafe {
 			//SAFETY:
