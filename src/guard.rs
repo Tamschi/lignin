@@ -3,7 +3,11 @@
 //! If a [`Node`] producer neither caches nor can act as container for other components which may, then it's fine to return a plain [`Node`] or [`&Node`](https://doc.rust-lang.org/stable/std/primitive.reference.html).
 
 use crate::{Node, ThreadSafety};
-use core::{marker::PhantomData, mem::MaybeUninit};
+use core::{
+	marker::PhantomData,
+	mem::MaybeUninit,
+	ops::{Deref, DerefMut},
+};
 
 /// A type-erased callback that's consumed upon calling and doesn't need to be allocated inside a `Box<_>`.
 ///
@@ -194,6 +198,20 @@ impl<'a, S: ThreadSafety> Guard<'a, S> {
 				guarded: self.guarded.take(),
 			}
 		}
+	}
+}
+
+impl<'a, S: ThreadSafety> Deref for Guard<'a, S> {
+	type Target = Node<'a, S>;
+
+	fn deref(&self) -> &Self::Target {
+		&self.vdom
+	}
+}
+
+impl<S: ThreadSafety> DerefMut for Guard<'_, S> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.vdom
 	}
 }
 
