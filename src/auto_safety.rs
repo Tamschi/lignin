@@ -600,6 +600,8 @@
 //! As the generated trait is a subtrait of [`AutoSafe`], its instances can be treated the same as that trait's,
 //! as long as [`AutoSafe`] and [`Deanonymize`] are in scope.
 
+use core::ptr::addr_of;
+
 use crate::{
 	callback_registry::CallbackSignature, Attribute, CallbackRef, Element, ElementCreationOptions,
 	EventBinding, EventBindingOptions, Node, ReorderableFragment, ThreadBound, ThreadSafe,
@@ -649,7 +651,7 @@ where
 			// SAFETY:
 			// Under normal circumstances, this trait or method would have to be `unsafe`.
 			// However, we're ensuring only sound implementations exist by sealing it and carefully implementing it only across layout-compatible types.
-			*(&self as *const Self).cast()
+			*addr_of!(self).cast()
 		}
 	}
 }
@@ -673,7 +675,7 @@ pub trait Align<T: Vdom>: Vdom {
 	fn align(self) -> T {
 		unsafe {
 			// SAFETY: This trait is sealed and only implemented on and across compatible types.
-			*(&self as *const Self).cast()
+			*addr_of!(self).cast()
 		}
 	}
 
