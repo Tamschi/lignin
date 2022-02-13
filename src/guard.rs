@@ -82,9 +82,6 @@ impl<'a> ConsumedCallback<'a> {
 /// ```
 ///
 /// ```rust
-/// extern crate alloc;
-///
-/// use alloc::boxed::Box;
 /// use lignin::{guard::ConsumedCallback, Guard, Node, ThreadSafety};
 ///
 /// /// An efficient allocator that can reclaim instances leaked into it.
