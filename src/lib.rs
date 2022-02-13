@@ -137,12 +137,12 @@ pub mod callback_registry;
 mod remnants;
 pub mod web;
 
-use callback_registry::CallbackSignature;
 pub use callback_registry::{CallbackRef, CallbackRegistration};
 pub use web::{DomRef, Materialize};
 
 mod ergonomics;
 
+use callback_registry::CallbackSignature;
 use core::{convert::Infallible, fmt::Debug, hash::Hash, marker::PhantomData};
 use remnants::RemnantSite;
 use sealed::Sealed;
