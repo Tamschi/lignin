@@ -2,13 +2,17 @@
 
 <!-- markdownlint-disable no-trailing-punctuation -->
 
+TODO: Backport feature level 1 to the 0.1 branch.
+
 ## next
 
 TODO: Date
 
 - **Breaking changes:**
-  - Increased minimum Rust version to 1.54,
-    > which comes with the project template update.
+  - Increased minimum Rust version to 1.55,
+    > in order to use `MaybeUninit::write`.
+    >
+    > A Rust version upgrade had also been incurred by the updated Rust-template.
 
 - Features:
   - Added `Guard` struct that acts as type-erased drop guard for shared `Node`s.
