@@ -99,13 +99,13 @@ macro_rules! guard_AutoSafe_alias {
 			///
 			/// Iff this function was called on this instance before.
 			#[track_caller]
-			fn deanonymize(this: &mut Self) -> Self::BoundOrActual;
+			fn deanonymize(this: &mut Self) -> <Self as $Name>::BoundOrActual;
 		}
 		impl<T> $Name for T
 		where
 			T: $crate::guard::auto_safety::AutoSafe
 		{
-			type BoundOrActual = <T as $crate::guard::auto_safety::AutoSafe>>::BoundOrActual;
+			type BoundOrActual = <T as $crate::guard::auto_safety::AutoSafe>::BoundOrActual;
 
 			#[track_caller]
 			fn deanonymize(this: &mut Self) -> <Self as $Name>::BoundOrActual {
