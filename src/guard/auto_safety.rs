@@ -39,7 +39,7 @@ impl<'a, S: ThreadSafety> __<'a, S> {
 }
 
 /// Static thread safety smuggling through `impl AutoSafe` returns for [`Guard`] instances.
-pub trait AutoSafe: Sealed + Sized + IntoAutoSafe {
+pub trait AutoSafe: Sealed + Sized + IntoAutoSafe<AutoSafe = Self> {
 	/// When specified in consumer code (in the `impl` return type), use the bound variant here.
 	type BoundOrActual;
 
@@ -65,7 +65,7 @@ impl<'a, S: ThreadSafety> AutoSafe for __<'a, S> {
 		}
 	}
 }
-impl<'a, T> AutoSafe for &mut T
+impl<'a, T> AutoSafe for &'a mut T
 where
 	T: Send + Sync + AutoSafe<BoundOrActual = Guard<'a, ThreadBound>>,
 {
@@ -149,10 +149,10 @@ impl<'a, S: ThreadSafety> IntoAutoSafe for Guard<'a, S> {
 /// Panics unconditionally. (Just here to satisfy constraints.)
 impl<'a, T> IntoAutoSafe for &'a mut T
 where
-	T: Send + Sync + AutoSafe,
+	T: Send + Sync + AutoSafe<BoundOrActual = Guard<'a, ThreadBound>>,
 {
 	#[allow(deprecated)]
-	type AutoSafe = __<'a, ThreadBound>;
+	type AutoSafe = Self;
 
 	fn into_auto_safe(self) -> Self::AutoSafe {
 		panic!("Called `IntoAutoSafe::into_auto_safe` on a reference.")
