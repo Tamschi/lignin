@@ -2,7 +2,7 @@
 //!
 //! If a [`Node`] producer neither caches nor can act as container for other components which may, then it's fine to return a plain [`Node`] or [`&Node`](https://doc.rust-lang.org/stable/std/primitive.reference.html).
 
-use crate::{Node, ThreadBound, ThreadSafety};
+use crate::{Node, ThreadBound, ThreadSafe, ThreadSafety};
 use core::{
 	marker::PhantomData,
 	mem::MaybeUninit,
@@ -14,6 +14,13 @@ use self::auto_safety::{AutoSafe, Wrapper};
 pub mod auto_safety;
 
 /// A type-erased callback that's consumed upon calling and doesn't need to be allocated inside a `Box<_>`.
+///
+/// > This type could technically implement [`Send`] and [`Sync`],
+/// > but passing it to another thread separately is quite error-prone.
+/// >
+/// > *This theoretical thread-safety is not part of the public API.*
+///
+/// Use [`Guard`] instead if you require thread-safety, for example with [`Node::Comment{ comment: "PLACEHOLDER", dom_binding: None }`](`Node::Comment`) as placeholder.
 ///
 /// > This should really be either a trait callable with `self: *const Self` or better yet
 /// > a `Pin<Box<dyn Send + Sync + Guarded>, Pointing>` where [`Pointing: Allocator`](https://doc.rust-lang.org/stable/core/alloc/trait.Allocator.html)
@@ -29,7 +36,7 @@ impl<'a> ConsumedCallback<'a> {
 	///
 	/// # Safety
 	///
-	/// `call` may be called up to once, with `with`, but only within `'a`.
+	/// `call` may be called up to once, **from any thread**, with `with`, but only within `'a`.
 	pub unsafe fn new(call: fn(*const ()), with: *const ()) -> Self {
 		Self {
 			call,
@@ -129,6 +136,10 @@ pub struct Guard<'a, S: ThreadSafety> {
 	vdom: Node<'a, S>,
 	guarded: Option<ConsumedCallback<'a>>,
 }
+/// Sound due to [`ConsumedCallback::new`]'s safety contract.
+unsafe impl Send for Guard<'_, ThreadSafe> {}
+/// Sound due to [`ConsumedCallback::new`]'s safety contract.
+unsafe impl Sync for Guard<'_, ThreadSafe> {}
 impl<'a, S: ThreadSafety> Guard<'a, S> {
 	/// Creates a new instance of [`Guard`] which calls `guarded` once only when dropped.
 	#[must_use]
