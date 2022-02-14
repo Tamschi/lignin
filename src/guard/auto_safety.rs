@@ -12,7 +12,7 @@ mod sealed {
 
 	pub trait Sealed {}
 	impl<S: ThreadSafety> Sealed for Wrapper<'_, S> {}
-	impl<'a, T> Sealed for &mut T where T: AutoSafe<'a> {}
+	impl<'a, T> Sealed for &mut T where T: AutoSafe {}
 }
 
 pub(super) enum Wrapper<'a, S: ThreadSafety> {
@@ -34,9 +34,9 @@ impl<'a, S: ThreadSafety> Wrapper<'a, S> {
 }
 
 /// Static thread safety smuggling through `impl AutoSafe` returns for [`Guard`] instances.
-pub trait AutoSafe<'a>: Sealed {
+pub trait AutoSafe: Sealed {
 	/// When specified in consumer code (in the `impl` return type), use the bound variant here.
-	type BoundOrActual: 'a;
+	type BoundOrActual;
 
 	/// Call this function as `AutoSafe::deanonymize(…)` on an `&mut &mut impl Autosafe<'a>` [yes, double-mut]
 	/// to statically retrieve an instance with the actual type.
@@ -47,7 +47,7 @@ pub trait AutoSafe<'a>: Sealed {
 	#[track_caller]
 	fn deanonymize(this: &mut Self) -> Self::BoundOrActual;
 }
-impl<'a, S: ThreadSafety> AutoSafe<'a> for Wrapper<'a, S> {
+impl<'a, S: ThreadSafety> AutoSafe for Wrapper<'a, S> {
 	type BoundOrActual = Guard<'a, ThreadBound>;
 
 	#[track_caller]
@@ -59,9 +59,9 @@ impl<'a, S: ThreadSafety> AutoSafe<'a> for Wrapper<'a, S> {
 		}
 	}
 }
-impl<'a, T> AutoSafe<'a> for &mut T
+impl<'a, T> AutoSafe for &mut T
 where
-	T: Send + Sync + AutoSafe<'a, BoundOrActual = Guard<'a, ThreadBound>>,
+	T: Send + Sync + AutoSafe<BoundOrActual = Guard<'a, ThreadBound>>,
 {
 	type BoundOrActual = Guard<'a, ThreadSafe>;
 
@@ -81,9 +81,9 @@ where
 macro_rules! guard_AutoSafe_alias {
 	($vis:vis $Name:ident) => {
 		/// An alias for [`$crate::auto_safety::AutoSafe`] with custom visibility.
-		$vis trait $Name<'a>: $crate::guard::auto_safety::AutoSafe<'a> {
+		$vis trait $Name: $crate::guard::auto_safety::AutoSafe {
 			/// When specified in consumer code (in the `impl` return type), use the bound variant here.
-			type BoundOrActual: 'a;
+			type BoundOrActual;
 
 			/// Call this function as `AutoSafe::deanonymize(…)` on an `&mut &mut impl Autosafe<'a>` [yes, double-mut]
 			/// to statically retrieve an instance with the actual type.
@@ -94,9 +94,9 @@ macro_rules! guard_AutoSafe_alias {
 			#[track_caller]
 			fn deanonymize(this: &mut Self) -> Self::BoundOrActual;
 		}
-		impl<'a, T $Name<'a> for T
+		impl<T> $Name for T
 		where
-			T: $crate::guard::auto_safety::AutoSafe<'a>
+			T: $crate::guard::auto_safety::AutoSafe
 		{
 			type BoundOrActual = <T as $crate::guard::auto_safety::AutoSafe>>::BoundOrActual;
 

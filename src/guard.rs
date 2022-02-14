@@ -206,7 +206,7 @@ impl<'a, S: ThreadSafety> Guard<'a, S> {
 
 	/// Anonymises this instance for thread safety smuggling.
 	#[must_use]
-	pub fn into_auto_safe(self) -> impl AutoSafe<'a, BoundOrActual = Guard<'a, ThreadBound>> {
+	pub fn into_auto_safe(self) -> impl AutoSafe<BoundOrActual = Guard<'a, ThreadBound>> {
 		Wrapper::new(self)
 	}
 }
