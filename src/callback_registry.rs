@@ -87,17 +87,10 @@ mod callbacks_on {
 		static ref REGISTRY: RwLock<Registry> = RwLock::default();
 	}
 
+	#[derive(Default)]
 	struct Registry {
 		key_count: u32,
 		entries: HashMap<NonZeroU32, Entry>,
-	}
-	impl Default for Registry {
-		fn default() -> Self {
-			Self {
-				key_count: 0,
-				entries: HashMap::default(),
-			}
-		}
 	}
 
 	struct Entry {
