@@ -7,28 +7,33 @@ use core::mem;
 use sealed::Sealed;
 
 mod sealed {
-	use super::{AutoSafe, Wrapper};
+	#[allow(deprecated)]
+	use super::{AutoSafe, __};
 	use crate::ThreadSafety;
 
 	pub trait Sealed {}
-	impl<S: ThreadSafety> Sealed for Wrapper<'_, S> {}
+	#[allow(deprecated)]
+	impl<S: ThreadSafety> Sealed for __<'_, S> {}
 	impl<'a, T> Sealed for &mut T where T: AutoSafe {}
 }
 
-pub(super) enum Wrapper<'a, S: ThreadSafety> {
+#[doc(hidden)]
+#[deprecated = "private"]
+pub enum __<'a, S: ThreadSafety> {
 	Present(Guard<'a, S>),
 	Taken,
 }
-impl<'a, S: ThreadSafety> Wrapper<'a, S> {
-	pub(super) fn new(guard: Guard<'a, S>) -> Self {
+#[allow(deprecated)]
+impl<'a, S: ThreadSafety> __<'a, S> {
+	fn new(guard: Guard<'a, S>) -> Self {
 		Self::Present(guard)
 	}
 
 	#[track_caller]
 	fn take(&mut self) -> Guard<'a, S> {
 		match mem::replace(self, Self::Taken) {
-			Wrapper::Present(guard) => guard,
-			Wrapper::Taken => panic!("Tried to deanonymize `impl AutoGuard` twice. See `lignin::guard::auto_safety` for more information."),
+			__::Present(guard) => guard,
+			__::Taken => panic!("Tried to deanonymize `impl AutoGuard` twice. See `lignin::guard::auto_safety` for more information."),
 		}
 	}
 }
@@ -37,9 +42,6 @@ impl<'a, S: ThreadSafety> Wrapper<'a, S> {
 pub trait AutoSafe: Sealed + Sized {
 	/// When specified in consumer code (in the `impl` return type), use the bound variant here.
 	type BoundOrActual;
-
-	/// Identity, to duck-type [`Guard::into_auto_safe`].
-	fn into_auto_safe(self) -> Self;
 
 	/// Call this function as `AutoSafe::deanonymize(…)` on an `&mut &mut impl Autosafe<'a>` [yes, double-mut]
 	/// to statically retrieve an instance with the actual type.
@@ -50,12 +52,9 @@ pub trait AutoSafe: Sealed + Sized {
 	#[track_caller]
 	fn deanonymize(this: &mut Self) -> Self::BoundOrActual;
 }
-impl<'a, S: ThreadSafety> AutoSafe for Wrapper<'a, S> {
+#[allow(deprecated)]
+impl<'a, S: ThreadSafety> AutoSafe for __<'a, S> {
 	type BoundOrActual = Guard<'a, ThreadBound>;
-
-	fn into_auto_safe(self) -> Self {
-		self
-	}
 
 	#[track_caller]
 	fn deanonymize(this: &mut Self) -> Self::BoundOrActual {
@@ -72,15 +71,12 @@ where
 {
 	type BoundOrActual = Guard<'a, ThreadSafe>;
 
-	fn into_auto_safe(self) -> Self {
-		self
-	}
-
 	#[track_caller]
+	#[allow(deprecated)]
 	fn deanonymize(this: &mut Self) -> Self::BoundOrActual {
 		// A `TypeId` check would be better, but isn't possible here because `T` isn't `'static`.
-		assert!(mem::size_of::<T>() == mem::size_of::<Wrapper<'a, ThreadSafe>>());
-		unsafe { &mut *(*this as *mut T).cast::<Wrapper<'a, ThreadSafe>>() }.take()
+		assert!(mem::size_of::<T>() == mem::size_of::<__<'a, ThreadSafe>>());
+		unsafe { &mut *(*this as *mut T).cast::<__<'a, ThreadSafe>>() }.take()
 	}
 }
 
@@ -111,10 +107,6 @@ macro_rules! guard_AutoSafe_alias {
 		{
 			type BoundOrActual = <T as $crate::guard::auto_safety::AutoSafe>>::BoundOrActual;
 
-			fn into_auto_safe(self) -> Self {
-				self
-			}
-
 			#[track_caller]
 			fn deanonymize(this: &mut Self) -> Self::BoundOrActual {
 				<T as $crate::guard::auto_safety::AutoSafe>::deanonymize(this)
@@ -124,3 +116,34 @@ macro_rules! guard_AutoSafe_alias {
 }
 
 pub use crate::guard_AutoSafe_alias as AutoSafe_alias;
+
+/// Provides idempotent (i.e. repeatable) [`AutoSafe`] conversion.
+pub trait IntoAutoSafe {
+	/// The resulting [`AutoSafe`].
+	type AutoSafe: AutoSafe;
+
+	/// Converts this instance into an [`AutoSafe`].
+	///
+	/// Implemented as identity for types that are already [`AutoSafe`].
+	fn into_auto_safe(self) -> Self::AutoSafe;
+}
+impl<T> IntoAutoSafe for T
+where
+	T: AutoSafe,
+{
+	type AutoSafe = Self;
+
+	fn into_auto_safe(self) -> Self::AutoSafe {
+		self
+	}
+}
+
+impl<'a, S: ThreadSafety> IntoAutoSafe for Guard<'a, S> {
+	#[allow(deprecated)]
+	type AutoSafe = __<'a, S>;
+
+	fn into_auto_safe(self) -> Self::AutoSafe {
+		#[allow(deprecated)]
+		__::new(self)
+	}
+}
