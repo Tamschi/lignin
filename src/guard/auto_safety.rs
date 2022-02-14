@@ -34,9 +34,12 @@ impl<'a, S: ThreadSafety> Wrapper<'a, S> {
 }
 
 /// Static thread safety smuggling through `impl AutoSafe` returns for [`Guard`] instances.
-pub trait AutoSafe: Sealed {
+pub trait AutoSafe: Sealed + Sized {
 	/// When specified in consumer code (in the `impl` return type), use the bound variant here.
 	type BoundOrActual;
+
+	/// Identity, to duck-type [`Guard::into_auto_safe`].
+	fn into_auto_safe(self) -> Self;
 
 	/// Call this function as `AutoSafe::deanonymize(…)` on an `&mut &mut impl Autosafe<'a>` [yes, double-mut]
 	/// to statically retrieve an instance with the actual type.
@@ -49,6 +52,10 @@ pub trait AutoSafe: Sealed {
 }
 impl<'a, S: ThreadSafety> AutoSafe for Wrapper<'a, S> {
 	type BoundOrActual = Guard<'a, ThreadBound>;
+
+	fn into_auto_safe(self) -> Self {
+		self
+	}
 
 	#[track_caller]
 	fn deanonymize(this: &mut Self) -> Self::BoundOrActual {
@@ -64,6 +71,10 @@ where
 	T: Send + Sync + AutoSafe<BoundOrActual = Guard<'a, ThreadBound>>,
 {
 	type BoundOrActual = Guard<'a, ThreadSafe>;
+
+	fn into_auto_safe(self) -> Self {
+		self
+	}
 
 	#[track_caller]
 	fn deanonymize(this: &mut Self) -> Self::BoundOrActual {
@@ -99,6 +110,10 @@ macro_rules! guard_AutoSafe_alias {
 			T: $crate::guard::auto_safety::AutoSafe
 		{
 			type BoundOrActual = <T as $crate::guard::auto_safety::AutoSafe>>::BoundOrActual;
+
+			fn into_auto_safe(self) -> Self {
+				self
+			}
 
 			#[track_caller]
 			fn deanonymize(this: &mut Self) -> Self::BoundOrActual {
