@@ -2,12 +2,16 @@
 //!
 //! If a [`Node`] producer neither caches nor can act as container for other components which may, then it's fine to return a plain [`Node`] or [`&Node`](https://doc.rust-lang.org/stable/std/primitive.reference.html).
 
-use crate::{Node, ThreadSafety};
+use crate::{Node, ThreadBound, ThreadSafety};
 use core::{
 	marker::PhantomData,
 	mem::MaybeUninit,
 	ops::{Deref, DerefMut},
 };
+
+use self::auto_safety::{AutoSafe, Wrapper};
+
+pub mod auto_safety;
 
 /// A type-erased callback that's consumed upon calling and doesn't need to be allocated inside a `Box<_>`.
 ///
@@ -198,6 +202,12 @@ impl<'a, S: ThreadSafety> Guard<'a, S> {
 				guarded: self.guarded.take(),
 			}
 		}
+	}
+
+	/// Anonymises this instance for thread safety smuggling.
+	#[must_use]
+	pub fn into_auto_safe(self) -> impl AutoSafe<'a, BoundOrActual = Guard<'a, ThreadBound>> {
+		Wrapper::new(self)
 	}
 }
 
