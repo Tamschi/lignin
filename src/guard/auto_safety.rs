@@ -108,7 +108,7 @@ macro_rules! guard_AutoSafe_alias {
 			type BoundOrActual = <T as $crate::guard::auto_safety::AutoSafe>>::BoundOrActual;
 
 			#[track_caller]
-			fn deanonymize(this: &mut Self) -> Self::BoundOrActual {
+			fn deanonymize(this: &mut Self) -> <Self as $Name>::BoundOrActual {
 				<T as $crate::guard::auto_safety::AutoSafe>::deanonymize(this)
 			}
 		}
