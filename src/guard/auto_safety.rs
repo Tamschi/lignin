@@ -41,7 +41,7 @@ impl<'a, S: ThreadSafety> __<'a, S> {
 /// Static thread safety smuggling through `impl AutoSafe` returns for [`Guard`] instances.
 pub trait AutoSafe<'a>: Sealed + Sized + IntoAutoSafe<'a, AutoSafe = Self> {
 	/// When specified in consumer code (in the `impl` return type), use the bound variant here.
-	type BoundOrActual;
+	type BoundOrActual: 'a;
 
 	/// Call this function as `AutoSafe::deanonymize(…)` on an `&mut &mut impl Autosafe<'a>` [yes, double-mut]
 	/// to statically retrieve an instance with the actual type.
