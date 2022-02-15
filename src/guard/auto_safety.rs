@@ -39,7 +39,7 @@ impl<'a, S: ThreadSafety> __<'a, S> {
 }
 
 /// Static thread safety smuggling through `impl AutoSafe` returns for [`Guard`] instances.
-pub trait AutoSafe: Sealed + Sized + IntoAutoSafe<AutoSafe = Self> {
+pub trait AutoSafe: Sealed + Sized {
 	/// When specified in consumer code (in the `impl` return type), use the bound variant here.
 	type BoundOrActual;
 
@@ -85,42 +85,23 @@ where
 ///
 /// See [`auto_safety`#limiting-autosafe-exposure](`crate::auto_safety`#limiting-autosafe-exposure) for more information.
 #[macro_export]
-macro_rules! guard_AutoSafe_alias {
+macro_rules! guard_IntoAutoSafe_alias {
 	($vis:vis $Name:ident) => {
 		/// An alias for [`$crate::auto_safety::AutoSafe`] with custom visibility.
-		$vis trait $Name: $crate::guard::auto_safety::AutoSafe {
-			/// When specified in consumer code (in the `impl` return type), use the bound variant here.
-			type BoundOrActual;
-
-			/// Call this function as `AutoSafe::deanonymize(…)` on an `&mut &mut impl Autosafe<'a>` [yes, double-mut]
-			/// to statically retrieve an instance with the actual type.
-			///
-			/// # Panics
-			///
-			/// Iff this function was called on this instance before.
-			#[track_caller]
-			fn deanonymize(this: &mut Self) -> <Self as $Name>::BoundOrActual;
-		}
-		impl<T> $Name for T
+		$vis trait $Name<BoundOrActual>: $crate::guard::auto_safety::IntoAutoSafe<BoundOrActual> {}
+		impl<T, AutoSafe> $Name<AutoSafe> for T
 		where
-			T: $crate::guard::auto_safety::AutoSafe
-		{
-			type BoundOrActual = <T as $crate::guard::auto_safety::AutoSafe>::BoundOrActual;
-
-			#[track_caller]
-			fn deanonymize(this: &mut Self) -> <Self as $Name>::BoundOrActual {
-				<T as $crate::guard::auto_safety::AutoSafe>::deanonymize(this)
-			}
-		}
+			T: $crate::guard::auto_safety::IntoAutoSafe<AutoSafe>
+		{}
 	};
 }
 
-pub use crate::guard_AutoSafe_alias as AutoSafe_alias;
+pub use crate::guard_IntoAutoSafe_alias as IntoAutoSafe_alias;
 
 /// Provides idempotent (i.e. repeatable) [`AutoSafe`] conversion.
-pub trait IntoAutoSafe {
+pub trait IntoAutoSafe<BoundOrActual> {
 	/// The resulting [`AutoSafe`].
-	type AutoSafe: AutoSafe;
+	type AutoSafe: AutoSafe<BoundOrActual = BoundOrActual>;
 
 	/// Converts this instance into an [`AutoSafe`].
 	///
@@ -129,32 +110,19 @@ pub trait IntoAutoSafe {
 }
 
 #[allow(deprecated)]
-impl<'a, S: ThreadSafety> IntoAutoSafe for __<'a, S> {
+impl<'a, S: ThreadSafety> IntoAutoSafe<Guard<'a, ThreadBound>> for __<'a, S> {
 	type AutoSafe = Self;
 
 	fn into_auto_safe(self) -> Self::AutoSafe {
 		self
 	}
 }
-impl<'a, S: ThreadSafety> IntoAutoSafe for Guard<'a, S> {
+impl<'a, S: ThreadSafety> IntoAutoSafe<Guard<'a, ThreadBound>> for Guard<'a, S> {
 	#[allow(deprecated)]
 	type AutoSafe = __<'a, S>;
 
 	fn into_auto_safe(self) -> Self::AutoSafe {
 		#[allow(deprecated)]
 		__::new(self)
-	}
-}
-
-/// Panics unconditionally. (Just here to satisfy constraints.)
-impl<'a, T: 'a> IntoAutoSafe for &mut T
-where
-	T: Send + Sync + AutoSafe<BoundOrActual = Guard<'a, ThreadBound>>,
-{
-	#[allow(deprecated)]
-	type AutoSafe = Self;
-
-	fn into_auto_safe(self) -> Self::AutoSafe {
-		panic!("Called `IntoAutoSafe::into_auto_safe` on a reference.")
 	}
 }
