@@ -103,7 +103,9 @@ where
 macro_rules! guard_AutoSafe_alias {
 	($vis:vis $Name:ident) => {
 		/// An alias for [`$crate::auto_safety::AutoSafe`] with custom visibility.
-		$vis trait $Name: $crate::guard::auto_safety::AutoSafe<Bound = <Self as $Name>::Bound> {}
+		$vis trait $Name: $crate::guard::auto_safety::AutoSafe<Bound = <Self as $Name>::Bound> {
+			type Bound: $crate::guard::auto_safety::Bound;
+		}
 		impl<T> $Name for T
 		where
 			T: $crate::guard::auto_safety::AutoSafe
