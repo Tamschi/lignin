@@ -58,7 +58,7 @@ pub trait Deanonymize: Sealed + Sized {
 	///
 	/// Iff this function was called on this instance before.
 	#[track_caller]
-	unsafe fn deanonymize(this: &Self) -> Self::Actual;
+	unsafe fn deanonymize(&self) -> Self::Actual;
 }
 
 impl<'a, B: Bound, T: 'a> Deanonymize for &ManuallyDrop<T>
@@ -69,10 +69,10 @@ where
 
 	#[track_caller]
 	#[allow(deprecated)]
-	unsafe fn deanonymize(this: &Self) -> Self::Actual {
+	unsafe fn deanonymize(&self) -> Self::Actual {
 		// A `TypeId` check would be better, but isn't possible here because `T` isn't `'static`.
 		assert!(mem::size_of::<T>() == mem::size_of::<B::Safe>());
-		(*this as *const ManuallyDrop<T>)
+		(*self as *const ManuallyDrop<T>)
 			.cast::<Self::Actual>()
 			.read()
 	}
@@ -86,10 +86,10 @@ where
 
 	#[track_caller]
 	#[allow(deprecated)]
-	unsafe fn deanonymize(this: &Self) -> Self::Actual {
+	unsafe fn deanonymize(&self) -> Self::Actual {
 		// A `TypeId` check would be better, but isn't possible here because `T` isn't `'static`.
 		assert!(mem::size_of::<T>() == mem::size_of::<B>());
-		(this as *const ManuallyDrop<T>)
+		(self as *const ManuallyDrop<T>)
 			.cast::<Self::Actual>()
 			.read()
 	}
