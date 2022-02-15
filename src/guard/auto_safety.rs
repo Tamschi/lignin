@@ -65,7 +65,7 @@ impl<'a, S: ThreadSafety> AutoSafe<'a> for __<'a, S> {
 		}
 	}
 }
-impl<'a, T> AutoSafe<'a> for &'a mut T
+impl<'a, T: 'a> AutoSafe<'a> for &mut T
 where
 	T: Send + Sync + AutoSafe<'a, BoundOrActual = Guard<'a, ThreadBound>>,
 {
@@ -147,7 +147,7 @@ impl<'a, S: ThreadSafety> IntoAutoSafe<'a> for Guard<'a, S> {
 }
 
 /// Panics unconditionally. (Just here to satisfy constraints.)
-impl<'a, T> IntoAutoSafe<'a> for &'a mut T
+impl<'a, T: 'a> IntoAutoSafe<'a> for &mut T
 where
 	T: Send + Sync + AutoSafe<'a, BoundOrActual = Guard<'a, ThreadBound>>,
 {
