@@ -38,7 +38,7 @@ wasm-bindgen = { version = "0.2.78", optional = true } # public
 web-sys = { version = "0.3.55", optional = true, features = ["Comment", "Element", "Event", "HtmlElement", "SvgElement", "Text"] } # public
 
 [dev-dependencies]
-bumpalo = "3.7"
+bumpalo = "3.11"
 cargo-husky = "1.5"
 crc32fast = "1.2"
 git_info = "0.1.2"
