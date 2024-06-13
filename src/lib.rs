@@ -7,6 +7,9 @@
 //!
 //! [![Zulip Chat](https://img.shields.io/endpoint?label=chat&url=https%3A%2F%2Fiteration-square-automation.schichler.dev%2F.netlify%2Ffunctions%2Fstream_subscribers_shield%3Fstream%3Dproject%252Flignin)](https://iteration-square.schichler.dev/#narrow/stream/project.2Flignin)
 //!
+//! The primary interop types are [`Node`] and [`Guard`],
+//! meaning these are the ones most intended to appear in dependent crates' APIs.
+//!
 //! # About the Documentation
 //!
 //! DOM API terms are ***bold italic*** and linked to the MDN Web Docs.
@@ -134,15 +137,17 @@ mod readme {}
 
 pub mod auto_safety;
 pub mod callback_registry;
+pub mod guard;
 mod remnants;
 pub mod web;
 
-use callback_registry::CallbackSignature;
 pub use callback_registry::{CallbackRef, CallbackRegistration};
+pub use guard::Guard;
 pub use web::{DomRef, Materialize};
 
 mod ergonomics;
 
+use callback_registry::CallbackSignature;
 use core::{convert::Infallible, fmt::Debug, hash::Hash, marker::PhantomData};
 use remnants::RemnantSite;
 use sealed::Sealed;
@@ -667,7 +672,7 @@ mod sealed {
 }
 
 /// Marker trait for thread-safety tokens.
-pub trait ThreadSafety: Sealed + Into<ThreadBound>
+pub trait ThreadSafety: 'static + Sealed + Into<ThreadBound>
 where
 	Self: Sized + Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord + Hash,
 {

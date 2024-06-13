@@ -4,7 +4,7 @@
 [![Crates.io](https://img.shields.io/crates/v/lignin)](https://crates.io/crates/lignin)
 [![Docs.rs](https://docs.rs/lignin/badge.svg)](https://docs.rs/lignin)
 
-![Rust 1.54](https://img.shields.io/static/v1?logo=Rust&label=&message=1.54&color=grey)
+![Rust 1.55](https://img.shields.io/static/v1?logo=Rust&label=&message=1.55&color=grey)
 [![CI](https://github.com/Tamschi/lignin/workflows/CI/badge.svg?branch=develop)](https://github.com/Tamschi/lignin/actions?query=workflow%3ACI+branch%3Adevelop)
 ![Crates.io - License](https://img.shields.io/crates/l/lignin/0.1.0)
 
